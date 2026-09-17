@@ -17,7 +17,6 @@ import { interpolate } from "@/lib/copy";
 import { exportCss } from "@/lib/export";
 import { encodeShare } from "@/lib/share/encode";
 import { parseToOklch } from "@/lib/color-engine";
-import { getSpacePalette, palettePreviewVars } from "@/lib/space-palettes";
 import { useMatchuStore, type AppScreen, type PreviewTab, type WebScreen } from "@/lib/store";
 import { ExportSheet } from "./export-sheet";
 import { TokenPanel } from "./token-panel";
@@ -46,9 +45,7 @@ export function Workbench() {
   const [hexError, setHexError] = useState<string | null>(null);
   const [pressed, setPressed] = useState(false);
 
-  const result = useColorSystem(input);
-  const selectedPalette = getSpacePalette(input.hex, selectedPaletteId);
-  const paletteVars = palettePreviewVars(selectedPalette.colors);
+  const result = useColorSystem(input, selectedPaletteId);
   const failCount =
     result.accessibility.light.failCount + result.accessibility.dark.failCount;
   const stage = hasMatched ? "done" : matchStage;
@@ -210,7 +207,6 @@ export function Workbench() {
             <ThemeScope
               result={result}
               mode={themeMode}
-              extraVars={paletteVars}
               className="min-h-[640px] bg-transparent p-4 md:p-6"
             >
               <PreviewCanvas

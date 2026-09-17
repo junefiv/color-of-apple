@@ -296,10 +296,8 @@
 }
 
 .color-picker-tip {
-  position: absolute;
-  top: calc(100% + 0.65rem);
-  left: 0;
-  z-index: 40;
+  position: fixed;
+  z-index: 50;
   padding: 0.7rem;
   border-radius: 1rem;
   border: 1px solid var(--border-default);
@@ -310,13 +308,32 @@
 .color-picker-tip::before {
   content: "";
   position: absolute;
-  top: -5px;
-  left: 1.15rem;
   width: 10px;
   height: 10px;
+  background: var(--surface);
+}
+
+.color-picker-tip.is-right::before {
+  top: 1.35rem;
+  left: -5px;
+  border-bottom: 1px solid var(--border-default);
+  border-left: 1px solid var(--border-default);
+  transform: rotate(45deg);
+}
+
+.color-picker-tip.is-bottom::before {
+  top: -5px;
+  left: 1.15rem;
   border-left: 1px solid var(--border-default);
   border-top: 1px solid var(--border-default);
-  background: var(--surface);
+  transform: rotate(45deg);
+}
+
+.color-picker-tip.is-top::before {
+  bottom: -5px;
+  left: 1.15rem;
+  border-right: 1px solid var(--border-default);
+  border-bottom: 1px solid var(--border-default);
   transform: rotate(45deg);
 }
 
@@ -527,6 +544,28 @@
   to {
     --wash-fade: 100%;
   }
+}
+
+.palette-wash-root {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.palette-wash-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--wash-fade);
+  --wash-fade: 0%;
+  --palette-wash-ms: 1600ms;
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 100vw 100%;
+  animation: match-load-bleed var(--palette-wash-ms) linear both;
 }
 
 .input-step {

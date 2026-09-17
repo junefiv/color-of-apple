@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { PaletteWash } from "@/components/flow/palette-wash";
 import { useCopy } from "@/hooks/use-copy";
-import { extractSpacePalettes } from "@/lib/space-palettes";
+import { usePaletteSelect } from "@/hooks/use-palette-select";
+import { paletteName } from "@/lib/palette-names";
+import { extractSpacePalettes, paletteSwatches } from "@/lib/space-palettes";
 import { useMatchuStore } from "@/lib/store";
 
 export function PalettePicker({ hex }: { hex: string }) {
   const copy = useCopy();
-  const selectedPaletteId = useMatchuStore((state) => state.selectedPaletteId);
-  const setSelectedPaletteId = useMatchuStore((state) => state.setSelectedPaletteId);
+  const locale = useMatchuStore((state) => state.locale);
+  const { selectedPaletteId, selectPalette, wash, finishWash } = usePaletteSelect(hex);
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const palettes = useMemo(() => extractSpacePalettes(hex), [hex]);
@@ -45,10 +48,10 @@ export function PalettePicker({ hex }: { hex: string }) {
         onClick={() => setOpen((value) => !value)}
       >
         <span className="palette-picker-kicker">{copy.result.palette}</span>
-        <span className="palette-picker-name">{selected.name}</span>
+        <span className="palette-picker-name">{paletteName(selected.id, locale)}</span>
         <span className="space-palette-swatches" aria-hidden>
-          {selected.colors.map((color) => (
-            <span key={`${selected.id}-${color}`} style={{ background: color }} />
+          {paletteSwatches(selected).map((color, index) => (
+            <span key={`${selected.id}-${index}`} style={{ background: color }} />
           ))}
         </span>
       </button>
@@ -63,14 +66,14 @@ export function PalettePicker({ hex }: { hex: string }) {
                 className="space-palette"
                 data-active={palette.id === selected.id ? "true" : "false"}
                 onClick={() => {
-                  setSelectedPaletteId(palette.id);
+                  selectPalette(palette.id);
                   setOpen(false);
                 }}
               >
-                <span className="space-palette-name">{palette.name}</span>
+                <span className="space-palette-name">{paletteName(palette.id, locale)}</span>
                 <span className="space-palette-swatches">
-                  {palette.colors.map((color) => (
-                    <span key={`${palette.id}-${color}`} style={{ background: color }} />
+                  {paletteSwatches(palette).map((color, index) => (
+                    <span key={`${palette.id}-${index}`} style={{ background: color }} />
                   ))}
                 </span>
               </button>
@@ -78,6 +81,7 @@ export function PalettePicker({ hex }: { hex: string }) {
           </div>
         </div>
       ) : null}
+      {wash ? <PaletteWash colors={wash.colors} onDone={finishWash} /> : null}
     </div>
   );
 }

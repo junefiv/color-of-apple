@@ -7,33 +7,37 @@ import { ColorField } from "@/components/flow/color-field";
 import { MatchButton } from "@/components/flow/match-button";
 import { PlatformChoice } from "@/components/flow/platform-choice";
 import { StudioPreview } from "@/components/flow/studio-preview";
+import { PaletteWash } from "@/components/flow/palette-wash";
 import { useCopy } from "@/hooks/use-copy";
 import { useOptionalColorSystem } from "@/hooks/use-optional-color-system";
+import { usePaletteSelect } from "@/hooks/use-palette-select";
 import { parseToOklch } from "@/lib/color-engine";
 import { FALLBACK_HEX, isHexColor, normalizeHex } from "@/lib/picked-color";
+import { paletteName } from "@/lib/palette-names";
 import {
   DEFAULT_PALETTE_ID,
   extractSpacePalettes,
-  palettePreviewVars,
+  paletteSwatches,
 } from "@/lib/space-palettes";
 import { useMatchuStore } from "@/lib/store";
 
 export function InputStep() {
   const copy = useCopy();
+  const locale = useMatchuStore((state) => state.locale);
   const router = useRouter();
   const input = useMatchuStore((state) => state.input);
   const setInput = useMatchuStore((state) => state.setInput);
   const setPlatform = useMatchuStore((state) => state.setPlatform);
   const setSkipLoader = useMatchuStore((state) => state.setSkipLoader);
   const resetMatch = useMatchuStore((state) => state.resetMatch);
-  const selectedPaletteId = useMatchuStore((state) => state.selectedPaletteId);
   const setSelectedPaletteId = useMatchuStore((state) => state.setSelectedPaletteId);
   const palettesRevealed = useMatchuStore((state) => state.palettesRevealed);
   const setPalettesRevealed = useMatchuStore((state) => state.setPalettesRevealed);
   const [error, setError] = useState<string | null>(null);
   const [pressed, setPressed] = useState(false);
   const hex = isHexColor(input.hex) ? normalizeHex(input.hex) : FALLBACK_HEX;
-  const result = useOptionalColorSystem({ ...input, hex });
+  const { selectedPaletteId, selectPalette, wash, finishWash } = usePaletteSelect(hex);
+  const result = useOptionalColorSystem({ ...input, hex }, selectedPaletteId);
   const palettes = useMemo(() => extractSpacePalettes(hex), [hex]);
   const selected = palettes.find((palette) => palette.id === selectedPaletteId) ?? palettes[0];
   const hasTarget = input.previewTarget === "web" || input.previewTarget === "app";
@@ -119,15 +123,14 @@ export function InputStep() {
           {palettesRevealed && selected ? (
             <>
               <div className="space-palette-strip" aria-hidden>
-                {selected.colors.map((color) => (
-                  <span key={color} style={{ background: color }} />
+                {paletteSwatches(selected).map((color, index) => (
+                  <span key={`${selected.id}-${index}`} style={{ background: color }} />
                 ))}
               </div>
               <StudioPreview
                 result={result}
                 stage="done"
                 hasMatched
-                extraVars={palettePreviewVars(selected.colors)}
               />
               <section>
                 <p className="ui-label mb-3 text-[var(--text-secondary)]">{copy.input.palettesTitle}</p>
@@ -138,12 +141,12 @@ export function InputStep() {
                       type="button"
                       className="space-palette"
                       data-active={palette.id === selected.id ? "true" : "false"}
-                      onClick={() => setSelectedPaletteId(palette.id)}
+                      onClick={() => selectPalette(palette.id)}
                     >
-                      <span className="space-palette-name">{palette.name}</span>
+                      <span className="space-palette-name">{paletteName(palette.id, locale)}</span>
                       <span className="space-palette-swatches">
-                        {palette.colors.map((color) => (
-                          <span key={`${palette.id}-${color}`} style={{ background: color }} />
+                        {paletteSwatches(palette).map((color, index) => (
+                          <span key={`${palette.id}-${index}`} style={{ background: color }} />
                         ))}
                       </span>
                     </button>
@@ -156,6 +159,7 @@ export function InputStep() {
           )}
         </div>
       </main>
+      {wash ? <PaletteWash colors={wash.colors} onDone={finishWash} /> : null}
     </div>
   );
 }

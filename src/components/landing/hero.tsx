@@ -30,12 +30,13 @@ export function Hero({
   const setPlatform = useMatchuStore((state) => state.setPlatform);
   const resetMatch = useMatchuStore((state) => state.resetMatch);
   const setSelectedPaletteId = useMatchuStore((state) => state.setSelectedPaletteId);
+  const selectedPaletteId = useMatchuStore((state) => state.selectedPaletteId);
   const hasMatched = useMatchuStore((state) => state.hasMatched);
   const matchStage = useMatchuStore((state) => state.matchStage);
   const [error, setError] = useState<string | null>(null);
   const [pressed, setPressed] = useState(false);
   const hex = isHexColor(input.hex) ? normalizeHex(input.hex) : FALLBACK_HEX;
-  const result = useOptionalColorSystem({ ...input, hex });
+  const result = useOptionalColorSystem({ ...input, hex }, selectedPaletteId);
   const picked = isHexColor(input.hex);
   const hasTarget = input.previewTarget === "web" || input.previewTarget === "app";
   const showColor = frozen ? reveal : hasMatched;

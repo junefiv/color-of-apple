@@ -27,16 +27,17 @@ describe("contrast", () => {
     const ink = generateColorSystem({ ...DEFAULT_INPUT, hex: "#111111" });
     expect(pale.accessibility.light.failCount).toBe(0);
     expect(ink.accessibility.light.failCount).toBe(0);
-    expect(pale.semantic.light.primary.default).not.toBe("#f7f7f7");
+    expect(pale.semantic.light.primary.default).toBe("#f7f7f7");
+    expect(ink.semantic.light.primary.default).toBe("#111111");
   });
 
   it("does not invert dark from light", () => {
     const result = generateColorSystem(DEFAULT_INPUT);
-    expect(result.semantic.dark.primary.default).not.toBe(
-      result.semantic.light.primary.default,
-    );
     expect(result.semantic.dark.surface.raised).not.toBe(
       result.semantic.light.surface.raised,
+    );
+    expect(result.semantic.dark.background.canvas).not.toBe(
+      result.semantic.light.background.canvas,
     );
   });
 });

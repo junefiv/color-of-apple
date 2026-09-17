@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_INPUT, generateColorSystem } from "@/lib/color-engine";
+import { extractSpacePalettes } from "@/lib/space-palettes";
 
 function stable(value: unknown) {
   return JSON.stringify(value);
@@ -38,5 +39,29 @@ describe("generateColorSystem", () => {
     expect(() => generateColorSystem({ ...DEFAULT_INPUT, hex: "not-a-color" })).toThrow(
       /INVALID/,
     );
+  });
+
+  it("changes supporting tokens when the selected palette changes", () => {
+    const polar = generateColorSystem({ ...DEFAULT_INPUT, hex: "#2d2dca" }, "generic-gradient");
+    const sage = generateColorSystem({ ...DEFAULT_INPUT, hex: "#2d2dca" }, "matching");
+    expect(polar.semantic.light.primary.default).toBe("#2d2dca");
+    expect(sage.semantic.light.primary.default).toBe("#2d2dca");
+    expect(polar.semantic.light.secondary.default).not.toBe(
+      sage.semantic.light.secondary.default,
+    );
+    expect(polar.semantic.light.accent.default).not.toBe(sage.semantic.light.accent.default);
+  });
+
+  it("maps four chips plus paper and ink into tokens", () => {
+    for (const palette of extractSpacePalettes("#2d2dca")) {
+      const result = generateColorSystem({ ...DEFAULT_INPUT, hex: "#2d2dca" }, palette.id);
+      expect(result.semantic.light.primary.default).toBe("#2d2dca");
+      expect(result.semantic.light.background.canvas).toBe(palette.background);
+      expect(result.semantic.light.text.primary).toBe(palette.text);
+      expect(result.semantic.light.chart["1"]).toBe(palette.colors[0]);
+      expect(result.semantic.light.chart["2"]).toBe(palette.colors[1]);
+      expect(result.semantic.light.chart["3"]).toBe(palette.colors[2]);
+      expect(result.semantic.light.chart["4"]).toBe(palette.colors[3]);
+    }
   });
 });

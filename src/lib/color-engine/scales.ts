@@ -58,10 +58,20 @@ export function generateColorScale(options: {
   return { scale, anchorStep };
 }
 
+function closestNeutralStep(lightness: number) {
+  return Number(
+    (Object.entries(NEUTRAL_LIGHTNESS) as Array<[string, number]>).sort(
+      (left, right) => Math.abs(left[1] - lightness) - Math.abs(right[1] - lightness),
+    )[0][0],
+  );
+}
+
 export function generateNeutralScale(options: {
   hue: number;
   style: NeutralStyle;
   moodChroma: number;
+  sourceColor?: OklchColor;
+  sourceHex?: string;
 }): ColorScale<number> {
   const hue =
     NEUTRAL_HUE[options.style] === "source"
@@ -71,9 +81,17 @@ export function generateNeutralScale(options: {
     options.style === "pure"
       ? 0
       : clamp(Math.min(NEUTRAL_CHROMA[options.style], options.moodChroma), 0, 0.025);
+  const pinStep =
+    options.sourceColor && options.sourceHex
+      ? closestNeutralStep(options.sourceColor.l)
+      : null;
 
   const scale = {} as ColorScale<number>;
   for (const step of NEUTRAL_STEPS) {
+    if (pinStep === step && options.sourceColor && options.sourceHex) {
+      scale[step] = preserveSourceHex(options.sourceHex, options.sourceColor);
+      continue;
+    }
     const chroma = step === 0 || step === 1000 ? baseChroma * 0.35 : baseChroma;
     scale[step] = toHex(
       fitToSrgb({

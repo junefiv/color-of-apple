@@ -1,3 +1,4 @@
+import { paletteChartStops, themeInk, themePaper, type PaletteRoles } from "@/lib/space-palettes";
 import { MOOD_PRESETS } from "./constants";
 import {
   chooseOnColor,
@@ -57,16 +58,20 @@ export function mapSemanticTokens(options: {
   mood: Mood;
   mode: ThemeMode;
   target: AccessibilityTarget;
+  sourceHex?: string;
+  palette?: PaletteRoles;
 }): SemanticTokens {
   const { primitives, mood, mode } = options;
   const preset = MOOD_PRESETS[mood];
   const min = options.target === "AAA" ? 7 : 4.5;
   const { primary, secondary, accent, neutral } = primitives;
   const strong = preset.contrastStrength;
+  const primarySolid = options.sourceHex ?? (mode === "light" ? primary[600] : primary[400]);
+  const chart = paletteChartStops(options.palette?.chips ?? [primarySolid]);
 
   if (mode === "light") {
-    const canvas = setLightness(neutral[50], preset.backgroundLightness);
-    const primaryDefault = pickOn(primary[600], min);
+    const canvas = options.palette?.background ?? setLightness(neutral[50], preset.backgroundLightness);
+    const primaryDefault = pickOn(primarySolid, min);
     const secondaryDefault = pickOn(secondary[600], min);
     const accentDefault = pickOn(accent[500], min);
     const success = statusBlock(primitives.success, canvas, mode, preset.subtleMix, min);
@@ -74,22 +79,22 @@ export function mapSemanticTokens(options: {
     const danger = statusBlock(primitives.danger, canvas, mode, preset.subtleMix, min);
     const info = statusBlock(primitives.info, canvas, mode, preset.subtleMix, min);
 
-    const textPrimary = strong >= 1.15 ? neutral[1000] : strong < 0.95 ? neutral[800] : neutral[900];
+    const textPrimary = options.palette?.text ?? (strong >= 1.15 ? neutral[1000] : strong < 0.95 ? neutral[800] : neutral[900]);
     const textSecondary = strong >= 1.15 ? neutral[800] : neutral[700];
 
     return {
       background: {
         canvas,
-        subtle: neutral[100],
+        subtle: mixOklab(canvas, neutral[100], 0.45),
         inverse: neutral[950],
         brand: mixOklab(canvas, primaryDefault.background, 0.16),
       },
       surface: {
-        default: neutral[0],
-        subtle: neutral[50],
-        raised: neutral[0],
-        sunken: neutral[100],
-        overlay: neutral[0],
+        default: mixOklab(canvas, neutral[0], 0.72),
+        subtle: mixOklab(canvas, neutral[50], 0.55),
+        raised: mixOklab(canvas, neutral[0], 0.82),
+        sunken: mixOklab(canvas, neutral[100], 0.4),
+        overlay: mixOklab(canvas, neutral[0], 0.78),
         inverse: neutral[900],
       },
       text: {
@@ -159,7 +164,7 @@ export function mapSemanticTokens(options: {
         pressed: mixOklab(canvas, primaryDefault.background, 0.1),
         selected: mixOklab(canvas, primaryDefault.background, 0.14),
         focusRing: primary[500],
-        disabledBackground: neutral[100],
+        disabledBackground: mixOklab(canvas, neutral[100], 0.5),
         disabledForeground: neutral[400],
         selection: mixOklab(canvas, primaryDefault.background, 0.22),
       },
@@ -173,39 +178,39 @@ export function mapSemanticTokens(options: {
         default: toHex8({ ...parseToOklch(primary[900]), c: 0.03 }, 0.14),
         strong: toHex8({ ...parseToOklch(primary[950]), c: 0.04 }, 0.28),
       },
-      chart: {
-        1: primary[600],
-        2: secondary[500],
-        3: primitives.info[500],
-        4: primitives.success[500],
-        5: accent[500],
-      },
+      chart,
     };
   }
 
-  const canvas = neutral[950];
-  const primaryDefault = pickOn(primary[400], min);
+  const canvas = options.palette?.background
+    ? themePaper(options.palette.background, "dark")
+    : neutral[950];
+  const primaryDefault = pickOn(primarySolid, min);
   const secondaryDefault = pickOn(secondary[400], min);
   const accentDefault = pickOn(accent[400], min);
   const success = statusBlock(primitives.success, canvas, mode, 0.2, min);
   const warning = statusBlock(primitives.warning, canvas, mode, 0.22, min);
   const danger = statusBlock(primitives.danger, canvas, mode, 0.2, min);
   const info = statusBlock(primitives.info, canvas, mode, 0.2, min);
-  const textPrimary = strong >= 1.15 ? neutral[0] : neutral[50];
+  const textPrimary = options.palette?.text
+    ? themeInk(options.palette.text, "dark")
+    : strong >= 1.15
+      ? neutral[0]
+      : neutral[50];
 
   return {
     background: {
       canvas,
-      subtle: neutral[900],
+      subtle: mixOklab(canvas, neutral[900], 0.35),
       inverse: neutral[50],
       brand: mixOklab(canvas, primaryDefault.background, 0.22),
     },
     surface: {
-      default: neutral[900],
-      subtle: neutral[850],
-      raised: neutral[800],
-      sunken: neutral[950],
-      overlay: neutral[800],
+      default: mixOklab(canvas, neutral[900], 0.45),
+      subtle: mixOklab(canvas, neutral[850], 0.4),
+      raised: mixOklab(canvas, neutral[800], 0.35),
+      sunken: mixOklab(canvas, neutral[950], 0.5),
+      overlay: mixOklab(canvas, neutral[800], 0.3),
       inverse: neutral[50],
     },
     text: {
@@ -275,7 +280,7 @@ export function mapSemanticTokens(options: {
       pressed: mixOklab(canvas, primaryDefault.background, 0.18),
       selected: mixOklab(canvas, primaryDefault.background, 0.24),
       focusRing: primary[400],
-      disabledBackground: neutral[800],
+      disabledBackground: mixOklab(canvas, neutral[800], 0.4),
       disabledForeground: neutral[600],
       selection: mixOklab(canvas, primaryDefault.background, 0.3),
     },
@@ -289,12 +294,6 @@ export function mapSemanticTokens(options: {
       default: toHex8({ ...parseToOklch(neutral[1000]), c: 0.03 }, 0.4),
       strong: toHex8({ ...parseToOklch(neutral[1000]), c: 0.04 }, 0.56),
     },
-    chart: {
-      1: primary[400],
-      2: secondary[400],
-      3: primitives.info[400],
-      4: primitives.success[400],
-      5: accent[400],
-    },
+    chart,
   };
 }
