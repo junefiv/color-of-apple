@@ -55,10 +55,10 @@ export function generateColorSystem(
       style: input.neutralStyle,
       moodChroma: Math.max(mood.neutralChroma, parseToOklch(roles.background).c),
     }),
-    success: generateStatusScale("success", source.c),
-    warning: generateStatusScale("warning", source.c),
-    danger: generateStatusScale("danger", source.c),
-    info: generateStatusScale("info", source.c),
+    success: generateStatusScale("success", parseToOklch("#20B26B").c),
+    warning: generateStatusScale("warning", parseToOklch("#F59E0B").c),
+    danger: generateStatusScale("danger", parseToOklch("#E5484D").c),
+    info: generateStatusScale("info", parseToOklch("#3182F6").c),
   };
 
   const lightMapped = mapSemanticTokens({

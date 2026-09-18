@@ -148,3 +148,10 @@ export const CONTRAST_PAIRS: Array<[string, string, number]> = [
 ];
 
 export const AAA_TEXT_MIN = 7;
+
+export const FIXED_STATUS = {
+  success: "#20B26B",
+  warning: "#F59E0B",
+  danger: "#E5484D",
+  info: "#3182F6",
+} as const;

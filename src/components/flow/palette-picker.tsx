@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { PaletteWash } from "@/components/flow/palette-wash";
 import { useCopy } from "@/hooks/use-copy";
 import { usePaletteSelect } from "@/hooks/use-palette-select";
@@ -8,22 +9,54 @@ import { paletteName } from "@/lib/palette-names";
 import { extractSpacePalettes, paletteSwatches } from "@/lib/space-palettes";
 import { useMatchuStore } from "@/lib/store";
 
+const TIP_WIDTH = 416;
+const TIP_GAP = 10;
+
+function placeTip(anchor: DOMRect) {
+  const width = Math.min(window.innerWidth - 16, TIP_WIDTH);
+  let left = anchor.left;
+  const top = anchor.bottom + TIP_GAP;
+  if (left + width > window.innerWidth - 8) left = window.innerWidth - width - 8;
+  left = Math.max(8, left);
+  return { top, left, width };
+}
+
 export function PalettePicker({ hex }: { hex: string }) {
   const copy = useCopy();
   const locale = useMatchuStore((state) => state.locale);
   const { selectedPaletteId, selectPalette, wash, finishWash } = usePaletteSelect(hex);
   const rootRef = useRef<HTMLDivElement>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  const [tip, setTip] = useState({ top: 0, left: 0, width: TIP_WIDTH });
   const palettes = useMemo(() => extractSpacePalettes(hex), [hex]);
   const selected = palettes.find((palette) => palette.id === selectedPaletteId) ?? palettes[0];
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    function update() {
+      const anchor = rootRef.current?.getBoundingClientRect();
+      if (!anchor) return;
+      setTip(placeTip(anchor));
+    }
+
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
 
     function onPointerDown(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
+      const path = event.composedPath();
+      if (path.some((node) => node === rootRef.current || node === tipRef.current)) return;
+      setOpen(false);
     }
 
     function onKeyDown(event: KeyboardEvent) {
@@ -55,32 +88,41 @@ export function PalettePicker({ hex }: { hex: string }) {
           ))}
         </span>
       </button>
-      {open ? (
-        <div className="palette-picker-tip" role="dialog" aria-label={copy.result.palettePicker}>
-          <p className="palette-picker-tip-title">{copy.result.palettePicker}</p>
-          <div className="palette-picker-list">
-            {palettes.map((palette) => (
-              <button
-                key={palette.id}
-                type="button"
-                className="space-palette"
-                data-active={palette.id === selected.id ? "true" : "false"}
-                onClick={() => {
-                  selectPalette(palette.id);
-                  setOpen(false);
-                }}
-              >
-                <span className="space-palette-name">{paletteName(palette.id, locale)}</span>
-                <span className="space-palette-swatches">
-                  {paletteSwatches(palette).map((color, index) => (
-                    <span key={`${palette.id}-${index}`} style={{ background: color }} />
-                  ))}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
+      {open
+        ? createPortal(
+            <div
+              ref={tipRef}
+              className="palette-picker-tip"
+              role="dialog"
+              aria-label={copy.result.palettePicker}
+              style={{ top: tip.top, left: tip.left, width: tip.width }}
+            >
+              <p className="palette-picker-tip-title">{copy.result.palettePicker}</p>
+              <div className="palette-picker-list">
+                {palettes.map((palette) => (
+                  <button
+                    key={palette.id}
+                    type="button"
+                    className="space-palette"
+                    data-active={palette.id === selected.id ? "true" : "false"}
+                    onClick={() => {
+                      selectPalette(palette.id);
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="space-palette-name">{paletteName(palette.id, locale)}</span>
+                    <span className="space-palette-swatches">
+                      {paletteSwatches(palette).map((color, index) => (
+                        <span key={`${palette.id}-${index}`} style={{ background: color }} />
+                      ))}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
       {wash ? <PaletteWash colors={wash.colors} onDone={finishWash} /> : null}
     </div>
   );

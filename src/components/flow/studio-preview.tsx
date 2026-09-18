@@ -1,7 +1,7 @@
 "use client";
 
 import { ThemeScope } from "@/components/preview/theme-scope";
-import { WebAppShell } from "@/components/preview/web/app-shell";
+import { WorkWeb } from "@/components/preview/kinds/work";
 import { WireframePreview } from "@/components/preview/wireframe-preview";
 import type { ColorSystemResult } from "@/lib/color-engine";
 import type { MatchStage } from "@/lib/match-reveal";
@@ -40,7 +40,7 @@ export function StudioPreview({
           extraVars={extraVars}
           className="min-h-[420px] p-3 md:p-4"
         >
-          <WebAppShell />
+          <WorkWeb />
         </ThemeScope>
       ) : (
         <WireframePreview />

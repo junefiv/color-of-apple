@@ -27,8 +27,14 @@ describe("contrast", () => {
     const ink = generateColorSystem({ ...DEFAULT_INPUT, hex: "#111111" });
     expect(pale.accessibility.light.failCount).toBe(0);
     expect(ink.accessibility.light.failCount).toBe(0);
-    expect(pale.semantic.light.primary.default).toBe("#f7f7f7");
-    expect(ink.semantic.light.primary.default).toBe("#111111");
+    expect(pale.meta.sourceHex).toBe("#f7f7f7");
+    expect(ink.meta.sourceHex).toBe("#111111");
+    expect(
+      contrastRatio(
+        pale.semantic.light.primary.default,
+        pale.semantic.light.background.canvas,
+      ),
+    ).toBeGreaterThanOrEqual(3);
   });
 
   it("does not invert dark from light", () => {

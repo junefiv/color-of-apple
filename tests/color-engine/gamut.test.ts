@@ -16,6 +16,6 @@ describe("gamut and moods", () => {
     expect(vivid.semantic.light.primary.subtle).not.toBe(
       calm.semantic.light.primary.subtle,
     );
-    expect(balanced.meta.coreTokenCount).toBe(31);
+    expect(balanced.meta.coreTokenCount).toBe(33);
   });
 });

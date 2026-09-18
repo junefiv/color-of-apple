@@ -52,16 +52,15 @@ describe("generateColorSystem", () => {
     expect(polar.semantic.light.accent.default).not.toBe(sage.semantic.light.accent.default);
   });
 
-  it("maps four chips plus paper and ink into tokens", () => {
+  it("maps generated roles into tokens", () => {
     for (const palette of extractSpacePalettes("#2d2dca")) {
       const result = generateColorSystem({ ...DEFAULT_INPUT, hex: "#2d2dca" }, palette.id);
-      expect(result.semantic.light.primary.default).toBe("#2d2dca");
       expect(result.semantic.light.background.canvas).toBe(palette.background);
       expect(result.semantic.light.text.primary).toBe(palette.text);
+      expect(result.semantic.light.surface.default).toBe(palette.colors[3]);
       expect(result.semantic.light.chart["1"]).toBe(palette.colors[0]);
       expect(result.semantic.light.chart["2"]).toBe(palette.colors[1]);
       expect(result.semantic.light.chart["3"]).toBe(palette.colors[2]);
-      expect(result.semantic.light.chart["4"]).toBe(palette.colors[3]);
     }
   });
 });

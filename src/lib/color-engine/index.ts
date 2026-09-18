@@ -14,6 +14,17 @@ export type {
   ThemeMode,
 } from "./types";
 export { generateColorSystem } from "./generate";
+export {
+  generateCorePalette,
+  createHarmonyHues,
+  toDarkStructural,
+} from "./core-palette";
+export type {
+  CorePalette,
+  Harmony,
+  PaletteMood,
+  PaletteRecipe,
+} from "./core-palette";
 export { CORE_TOKENS, TOKEN_USES } from "./core-tokens";
 export { flattenObject, primitivesToCssVars, semanticToCssVars, tokenPathToCssVar } from "./flatten";
 export { contrastRatio, parseToOklch, preserveSourceHex, chooseOnColor } from "./color-utils";

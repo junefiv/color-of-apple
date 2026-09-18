@@ -31,7 +31,7 @@ export function TokenPanel({
   }, {});
 
   return (
-    <aside className="flex h-full min-h-0 flex-col border-l border-[var(--border-default)] bg-[var(--surface)]">
+    <aside className="flex h-full min-h-0 flex-col bg-[var(--surface)]">
       <div className="flex items-center justify-between px-4 py-3">
         <p className="ui-label text-[var(--text-tertiary)]">
           {copy.tokens.title}

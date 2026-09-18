@@ -29,7 +29,7 @@ export default function ResultPage() {
     try {
       parseToOklch(hex);
     } catch {
-      router.replace("/generate");
+      router.replace("/");
     }
   }, [hex, hydrated, router]);
 

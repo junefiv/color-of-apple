@@ -7,10 +7,34 @@ import type { MatchStage } from "@/lib/match-reveal";
 import { FALLBACK_HEX } from "@/lib/picked-color";
 import { DEFAULT_PALETTE_ID } from "@/lib/space-palettes";
 
-export type PreviewTab = "overview" | "components" | "states" | "colors";
-export type WebScreen = "shell" | "form" | "data" | "overlay";
-export type AppScreen = "list" | "detail" | "form" | "overlay";
+export type PreviewTab = "overview" | "components";
+export type PreviewKind =
+  | "work"
+  | "shop"
+  | "finance"
+  | "travel"
+  | "community"
+  | "education"
+  | "health"
+  | "media"
+  | "food";
 export type PlatformView = "web" | "app";
+
+export const PREVIEW_KINDS: PreviewKind[] = [
+  "work",
+  "shop",
+  "finance",
+  "travel",
+  "community",
+  "education",
+  "health",
+  "media",
+  "food",
+];
+
+export function normalizePreviewKind(value?: string): PreviewKind {
+  return PREVIEW_KINDS.includes(value as PreviewKind) ? (value as PreviewKind) : "work";
+}
 
 type Persisted = {
   locale: Locale;
@@ -18,8 +42,7 @@ type Persisted = {
   themeMode: ThemeMode;
   platform: PlatformView;
   previewTab: PreviewTab;
-  webScreen: WebScreen;
-  appScreen: AppScreen;
+  previewKind: PreviewKind;
   hasMatched: boolean;
   matchedHex: string | null;
   selectedPaletteId: string;
@@ -40,8 +63,7 @@ type MatchuState = Persisted & {
   setThemeMode: (mode: ThemeMode) => void;
   setPlatform: (platform: PlatformView) => void;
   setPreviewTab: (tab: PreviewTab) => void;
-  setWebScreen: (screen: WebScreen) => void;
-  setAppScreen: (screen: AppScreen) => void;
+  setPreviewKind: (kind: PreviewKind) => void;
   setViewAllTokens: (value: boolean) => void;
   setSkipLoader: (value: boolean) => void;
   setPendingBleed: (value: boolean) => void;
@@ -68,8 +90,7 @@ export const useMatchuStore = create<MatchuState>((set) => ({
   themeMode: "light",
   platform: "web",
   previewTab: "overview",
-  webScreen: "shell",
-  appScreen: "list",
+  previewKind: "work",
   viewAllTokens: false,
   hydrated: false,
   skipLoader: false,
@@ -90,8 +111,7 @@ export const useMatchuStore = create<MatchuState>((set) => ({
   setThemeMode: (themeMode) => set({ themeMode }),
   setPlatform: (platform) => set({ platform }),
   setPreviewTab: (previewTab) => set({ previewTab }),
-  setWebScreen: (webScreen) => set({ webScreen }),
-  setAppScreen: (appScreen) => set({ appScreen }),
+  setPreviewKind: (previewKind) => set({ previewKind }),
   setViewAllTokens: (viewAllTokens) => set({ viewAllTokens }),
   setSkipLoader: (skipLoader) => set({ skipLoader }),
   setPendingBleed: (pendingBleed) => set({ pendingBleed }),
@@ -123,8 +143,7 @@ export const useMatchuStore = create<MatchuState>((set) => ({
       themeMode: "light",
       platform: "web",
       previewTab: "overview",
-      webScreen: "shell",
-      appScreen: "list",
+      previewKind: "work",
       viewAllTokens: false,
       skipLoader: false,
       pendingBleed: false,
@@ -144,6 +163,8 @@ export const useMatchuStore = create<MatchuState>((set) => ({
       matchStage: value.hasMatched ? "done" : "idle",
       selectedPaletteId: value.selectedPaletteId ?? DEFAULT_PALETTE_ID,
       palettesRevealed: Boolean(value.palettesRevealed),
+      previewTab: value.previewTab === "components" ? "components" : "overview",
+      previewKind: normalizePreviewKind(value.previewKind),
     }),
 }));
 
@@ -165,8 +186,7 @@ export function writeDraft(state: MatchuState) {
     themeMode: state.themeMode,
     platform: state.platform,
     previewTab: state.previewTab,
-    webScreen: state.webScreen,
-    appScreen: state.appScreen,
+    previewKind: state.previewKind,
     hasMatched: state.hasMatched,
     matchedHex: state.matchedHex,
     selectedPaletteId: state.selectedPaletteId,

@@ -1,9 +1,9 @@
-import { WebAppShell } from "./web/app-shell";
+import { WorkWeb } from "./kinds/work";
 
 export function WireframePreview() {
   return (
     <div className="wireframe-preview matchu-preview p-3 md:p-4">
-      <WebAppShell />
+      <WorkWeb />
     </div>
   );
 }
