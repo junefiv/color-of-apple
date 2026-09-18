@@ -115,7 +115,7 @@ export const ko = {
     tokens: "컬러 토큰",
   },
   preview: {
-    overview: "Pages",
+    overview: "클래스 찾기",
     components: "Components",
     states: "States",
     colors: "Colors",

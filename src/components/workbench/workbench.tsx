@@ -6,7 +6,6 @@ import { SiteHeader } from "@/components/brand/site-header";
 import { ChromeChip } from "@/components/chrome/chrome-chip";
 import { ColorField } from "@/components/flow/color-field";
 import { PalettePicker } from "@/components/flow/palette-picker";
-import { KindPicker } from "@/components/preview/kind-picker";
 import { PreviewCanvas } from "@/components/preview/preview-canvas";
 import { ThemeScope } from "@/components/preview/theme-scope";
 import {
@@ -125,7 +124,6 @@ export function Workbench() {
               label={label}
             />
           ))}
-          {previewTab === "overview" ? <KindPicker /> : null}
         </div>
         <button
           type="button"

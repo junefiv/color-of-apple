@@ -2,7 +2,7 @@ export function StatusBadge({
   tone,
   children,
 }: {
-  tone: "success" | "warning" | "danger" | "info" | "neutral";
+  tone: "success" | "warning" | "danger" | "info" | "neutral" | "accent";
   children: React.ReactNode;
 }) {
   const map = {
@@ -21,6 +21,10 @@ export function StatusBadge({
     info: {
       background: "var(--color-info-surface)",
       color: "var(--color-info-text)",
+    },
+    accent: {
+      background: "var(--color-accent-subtle)",
+      color: "var(--color-accent-text)",
     },
     neutral: {
       background: "var(--color-primary-subtle)",

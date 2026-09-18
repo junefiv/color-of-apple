@@ -117,7 +117,7 @@ export const en: Copy = {
     tokens: "Color tokens",
   },
   preview: {
-    overview: "Pages",
+    overview: "Find a class",
     components: "Components",
     states: "States",
     colors: "Colors",
