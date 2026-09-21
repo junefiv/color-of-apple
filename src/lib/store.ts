@@ -155,17 +155,20 @@ export const useMatchuStore = create<MatchuState>((set) => ({
       locale: state.locale,
     })),
   hydrate: (value) =>
-    set({
-      ...value,
-      hydrated: true,
+    set((state) => ({
+      locale: value.locale ?? state.locale,
+      input: value.input ? { ...state.input, ...value.input } : state.input,
+      themeMode: value.themeMode ?? state.themeMode,
+      platform: value.platform ?? state.platform,
+      previewTab: value.previewTab === "components" ? "components" : state.previewTab,
+      previewKind: normalizePreviewKind(value.previewKind ?? state.previewKind),
       hasMatched: Boolean(value.hasMatched),
       matchedHex: value.matchedHex ?? null,
       matchStage: value.hasMatched ? "done" : "idle",
       selectedPaletteId: value.selectedPaletteId ?? DEFAULT_PALETTE_ID,
       palettesRevealed: Boolean(value.palettesRevealed),
-      previewTab: value.previewTab === "components" ? "components" : "overview",
-      previewKind: normalizePreviewKind(value.previewKind),
-    }),
+      hydrated: true,
+    })),
 }));
 
 export function readDraft(): Partial<Persisted> | null {

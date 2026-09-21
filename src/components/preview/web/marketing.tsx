@@ -54,11 +54,7 @@ export function WebMarketing() {
             </button>
           </div>
         </div>
-        <div
-          data-token="primary"
-          className="min-h-44 rounded-3xl"
-          style={{ background: "var(--color-primary-default)" }}
-        />
+        <div data-token="primary" className="pv-bg-primary min-h-44 rounded-3xl" />
       </section>
       <section className="flex flex-wrap justify-center gap-3 px-6 pb-8">
         {["North", "Harbor", "Atlas", "Pike", "Orbit"].map((name) => (

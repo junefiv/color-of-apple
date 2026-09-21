@@ -15,6 +15,15 @@ const CSS_ALIASES: Record<string, string> = {
   "interaction.focusRing": "--color-interaction-focus-ring",
   "interaction.disabledBackground": "--color-interaction-disabled-bg",
   "interaction.disabledForeground": "--color-interaction-disabled-fg",
+  "interaction.primaryHover": "--color-primary-hover",
+  "interaction.primaryPressed": "--color-primary-pressed",
+  "interaction.primarySelected": "--color-interaction-selected",
+  "interaction.secondaryHover": "--color-secondary-hover",
+  "interaction.secondaryPressed": "--color-secondary-pressed",
+  "interaction.neutralHover": "--color-interaction-hover",
+  "interaction.neutralPressed": "--color-interaction-pressed",
+  "interaction.disabledSurface": "--color-interaction-disabled-bg",
+  "interaction.disabledBorder": "--color-interaction-disabled-border",
 };
 
 function toKebab(path: string) {

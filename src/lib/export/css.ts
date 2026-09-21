@@ -4,6 +4,7 @@ import {
   semanticToCssVars,
   type ColorSystemResult,
 } from "@/lib/color-engine";
+import { paletteTokensToCssVariables } from "@/lib/palette-semantic-tokens";
 
 function block(title: string, vars: Record<string, string>) {
   const lines = Object.entries(vars).map(([key, value]) => `  ${key}: ${value};`);
@@ -28,7 +29,8 @@ export function exportCss(result: ColorSystemResult) {
   const dark = semanticToCssVars(result.semantic.dark);
   const primitives = primitivesToCssVars(result.primitive);
 
-  return `:root {\n${groupedSemantic(light)}\n\n${block("primitives", primitives)}\n}\n\n.dark {\n${groupedSemantic(dark)}\n}\n`;
+  const derived = paletteTokensToCssVariables(result.derived);
+  return `:root {\n${groupedSemantic(light)}\n\n${block("primitives", primitives)}\n\n${block("derived", derived)}\n}\n\n.dark {\n${groupedSemantic(dark)}\n}\n`;
 }
 
 export function exportCssLightOnly(result: ColorSystemResult) {

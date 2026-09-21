@@ -54,8 +54,7 @@ export function ShopWeb() {
         <div className="preview-scroll space-y-8 p-6">
           <button
             type="button"
-            className="w-full rounded-2xl px-5 py-6 text-left"
-            style={{ background: "var(--color-primary-subtle)", color: "var(--color-primary-text)" }}
+            className="pv-tint-primary w-full rounded-2xl px-5 py-6 text-left"
             onClick={() => show({ type: "toast", message: "가을 프로모션이 시작되었습니다.", tone: "info" }, 2000)}
           >
             <p className="text-xs">이번 주만</p>

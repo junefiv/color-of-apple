@@ -1,4 +1,6 @@
 import { toDarkStructural } from "./core-palette";
+import { filledScaleStates } from "./on-ink";
+import { primaryButtonTokens } from "./primary-button";
 import { paletteChartStops, type PaletteRoles } from "@/lib/space-palettes";
 import { FIXED_STATUS, MOOD_PRESETS } from "./constants";
 import {
@@ -6,6 +8,8 @@ import {
   contrastRatio,
   mixOklab,
   parseToOklch,
+  readableOnColor,
+  resolveSurfaceInk,
   setLightness,
   shiftLightness,
   toHex,
@@ -20,7 +24,7 @@ import type {
 } from "./types";
 
 function pickOn(background: string, min: number) {
-  let on = chooseOnColor(background);
+  let on = readableOnColor(background, min);
   if (contrastRatio(background, on) >= min) {
     return { background, on };
   }
@@ -83,81 +87,80 @@ export function mapSemanticTokens(options: {
   if (mode === "light") {
     const canvas = palette?.background ?? setLightness(neutral[50], preset.backgroundLightness);
     const surfaceBase = palette?.surface ?? mixOklab(canvas, neutral[0], 0.72);
-    const primaryDefault = palette
-      ? { background: primarySolid, on: palette.onPrimary }
-      : pickOn(primarySolid, min);
+    const canvasSubtle = palette?.backgroundSubtle ?? mixOklab(canvas, neutral[100], 0.45);
+    const primaryFill = primaryButtonTokens(primary, neutral, mode);
+    const secondaryFill = filledScaleStates(secondary, neutral, mode === "light" ? 500 : 400);
     const secondaryDefault = palette
-      ? { background: secondarySolid, on: palette.onSecondary }
+      ? { background: secondaryFill.default, on: secondaryFill.on }
       : pickOn(secondarySolid, min);
-    const accentDefault = palette
-      ? { background: accentSolid, on: palette.onAccent }
-      : pickOn(accentSolid, min);
+    const accentDefault = palette ? resolveSurfaceInk(accentSolid, min) : pickOn(accentSolid, min);
+    const brandPrimary = palette?.primary ?? primary[500];
     const success = statusBlock(FIXED_STATUS.success, canvas, mode, preset.subtleMix, min);
     const warning = statusBlock(FIXED_STATUS.warning, canvas, mode, Math.min(preset.subtleMix + 0.02, 0.14), min);
     const danger = statusBlock(FIXED_STATUS.danger, canvas, mode, preset.subtleMix, min);
     const info = statusBlock(FIXED_STATUS.info, canvas, mode, preset.subtleMix, min);
 
     const textPrimary = palette?.text ?? (strong >= 1.15 ? neutral[1000] : strong < 0.95 ? neutral[800] : neutral[900]);
-    const textSecondary = fade(textPrimary, canvas, 0.35);
+    const textSecondary = palette?.textSecondary ?? fade(textPrimary, canvas, 0.35);
 
     return {
       background: {
         canvas,
-        subtle: mixOklab(canvas, neutral[100], 0.45),
+        subtle: canvasSubtle,
         inverse: neutral[950],
-        brand: mixOklab(canvas, primaryDefault.background, 0.16),
+        brand: mixOklab(canvas, primaryFill.default, 0.16),
       },
       surface: {
         default: surfaceBase,
         subtle: mixOklab(surfaceBase, canvas, 0.35),
-        raised: mixOklab(surfaceBase, "#ffffff", 0.28),
-        sunken: mixOklab(surfaceBase, canvas, 0.55),
+        raised: palette?.surfaceRaised ?? mixOklab(surfaceBase, "#ffffff", 0.28),
+        sunken: palette?.surfaceSunken ?? mixOklab(surfaceBase, canvas, 0.55),
         overlay: mixOklab(surfaceBase, "#ffffff", 0.18),
         inverse: fade(textPrimary, canvas, 0.08),
       },
       text: {
         primary: textPrimary,
         secondary: textSecondary,
-        tertiary: fade(textPrimary, canvas, 0.55),
-        disabled: fade(textPrimary, canvas, 0.68),
+        tertiary: palette?.textTertiary ?? fade(textPrimary, canvas, 0.55),
+        disabled: palette?.textDisabled ?? fade(textPrimary, canvas, 0.68),
         inverse: chooseOnColor(textPrimary),
-        brand: primaryDefault.background,
-        link: primaryDefault.background,
+        brand: brandPrimary,
+        link: brandPrimary,
         danger: danger.text,
         success: success.text,
         warning: warning.text,
       },
       border: {
-        subtle: fade(textPrimary, canvas, 0.9),
-        default: fade(textPrimary, canvas, 0.82),
-        strong: fade(textPrimary, canvas, 0.7),
-        focus: primaryDefault.background,
+        subtle: palette?.borderSubtle ?? fade(textPrimary, canvas, 0.9),
+        default: palette?.borderDefault ?? fade(textPrimary, canvas, 0.82),
+        strong: palette?.borderStrong ?? fade(textPrimary, canvas, 0.7),
+        focus: primaryFill.default,
         disabled: fade(textPrimary, canvas, 0.92),
         danger: danger.default,
       },
       primary: {
-        default: primaryDefault.background,
-        hover: shiftLightness(primaryDefault.background, -0.05),
-        pressed: shiftLightness(primaryDefault.background, -0.1),
-        selected: primaryDefault.background,
-        subtle: mixOklab(canvas, primaryDefault.background, preset.subtleMix),
-        border: primaryDefault.background,
-        text: primaryDefault.background,
-        onPrimary: primaryDefault.on,
+        default: primaryFill.default,
+        hover: primaryFill.hover,
+        pressed: primaryFill.pressed,
+        selected: primaryFill.default,
+        subtle: mixOklab(canvas, primaryFill.default, preset.subtleMix),
+        border: primaryFill.default,
+        text: brandPrimary,
+        onPrimary: primaryFill.on,
       },
       secondary: {
-        default: secondaryDefault.background,
-        hover: shiftLightness(secondaryDefault.background, -0.05),
-        pressed: shiftLightness(secondaryDefault.background, -0.1),
-        subtle: mixOklab(canvas, secondaryDefault.background, preset.subtleMix),
-        border: secondaryDefault.background,
-        text: secondaryDefault.background,
-        onSecondary: secondaryDefault.on,
+        default: palette ? secondaryFill.default : secondaryDefault.background,
+        hover: palette ? secondaryFill.hover : shiftLightness(secondaryDefault.background, -0.05),
+        pressed: palette ? secondaryFill.pressed : shiftLightness(secondaryDefault.background, -0.1),
+        subtle: mixOklab(canvas, (palette ? secondaryFill.default : secondaryDefault.background), preset.subtleMix),
+        border: palette ? secondary[200] : secondaryDefault.background,
+        text: secondarySolid,
+        onSecondary: palette ? secondaryFill.on : secondaryDefault.on,
       },
       accent: {
         default: accentDefault.background,
         subtle: mixOklab(canvas, accentDefault.background, preset.subtleMix),
-        text: accentDefault.background,
+        text: accentSolid,
         onAccent: accentDefault.on,
       },
       success: {
@@ -178,13 +181,22 @@ export function mapSemanticTokens(options: {
         onInfo: info.on,
       },
       interaction: {
-        hover: mixOklab(canvas, primaryDefault.background, 0.06),
-        pressed: mixOklab(canvas, primaryDefault.background, 0.1),
-        selected: mixOklab(canvas, primaryDefault.background, 0.14),
+        hover: mixOklab(canvas, textPrimary, 0.06),
+        pressed: mixOklab(canvas, textPrimary, 0.1),
+        selected: mixOklab(canvas, primaryFill.default, 0.14),
         focusRing: primary[500],
         disabledBackground: fade(textPrimary, canvas, 0.94),
         disabledForeground: fade(textPrimary, canvas, 0.68),
-        selection: mixOklab(canvas, primaryDefault.background, 0.22),
+        selection: mixOklab(canvas, primaryFill.default, 0.22),
+        primaryHover: primaryFill.hover,
+        primaryPressed: primaryFill.pressed,
+        primarySelected: mixOklab(canvas, primaryFill.default, 0.18),
+        secondaryHover: palette ? secondaryFill.hover : shiftLightness(secondaryDefault.background, -0.05),
+        secondaryPressed: palette ? secondaryFill.pressed : shiftLightness(secondaryDefault.background, -0.1),
+        neutralHover: mixOklab(canvas, textPrimary, 0.06),
+        neutralPressed: mixOklab(canvas, textPrimary, 0.1),
+        disabledSurface: fade(textPrimary, canvas, 0.94),
+        disabledBorder: fade(textPrimary, canvas, 0.82),
       },
       overlay: {
         scrim: toHex8(parseToOklch(neutral[1000]), 0.48),
@@ -216,7 +228,7 @@ export function mapSemanticTokens(options: {
     : null;
   const canvas = darkPaper?.background ?? neutral[950];
   const surfaceBase = darkPaper?.surface ?? mixOklab(canvas, neutral[900], 0.45);
-  const primaryDefault = pickOn(primarySolid, min);
+  const primaryFill = primaryButtonTokens(primary, neutral, mode);
   const secondaryDefault = pickOn(secondarySolid, min);
   const accentDefault = pickOn(accentSolid, min);
   const success = statusBlock(FIXED_STATUS.success, canvas, mode, 0.2, min);
@@ -234,7 +246,7 @@ export function mapSemanticTokens(options: {
       canvas,
       subtle: mixOklab(canvas, surfaceBase, 0.35),
       inverse: textPrimary,
-      brand: mixOklab(canvas, primaryDefault.background, 0.22),
+      brand: mixOklab(canvas, primaryFill.default, 0.22),
     },
     surface: {
       default: surfaceBase,
@@ -250,8 +262,8 @@ export function mapSemanticTokens(options: {
       tertiary: fade(textPrimary, canvas, 0.55),
       disabled: fade(textPrimary, canvas, 0.68),
       inverse: chooseOnColor(textPrimary),
-      brand: primaryDefault.background,
-      link: primaryDefault.background,
+      brand: palette?.primary ?? primary[500],
+      link: palette?.primary ?? primary[500],
       danger: danger.text,
       success: success.text,
       warning: warning.text,
@@ -260,19 +272,19 @@ export function mapSemanticTokens(options: {
       subtle: fade(textPrimary, canvas, 0.86),
       default: fade(textPrimary, canvas, 0.76),
       strong: fade(textPrimary, canvas, 0.62),
-      focus: primaryDefault.background,
+      focus: primaryFill.default,
       disabled: fade(textPrimary, canvas, 0.9),
       danger: danger.default,
     },
     primary: {
-      default: primaryDefault.background,
-      hover: shiftLightness(primaryDefault.background, 0.05),
-      pressed: shiftLightness(primaryDefault.background, 0.09),
-      selected: primaryDefault.background,
-      subtle: mixOklab(canvas, primaryDefault.background, 0.22),
-      border: primaryDefault.background,
-      text: primaryDefault.background,
-      onPrimary: primaryDefault.on,
+      default: primaryFill.default,
+      hover: primaryFill.hover,
+      pressed: primaryFill.pressed,
+      selected: primaryFill.default,
+      subtle: mixOklab(canvas, primaryFill.default, 0.22),
+      border: primaryFill.default,
+      text: palette?.primary ?? primary[500],
+      onPrimary: primaryFill.on,
     },
     secondary: {
       default: secondaryDefault.background,
@@ -307,13 +319,22 @@ export function mapSemanticTokens(options: {
       onInfo: info.on,
     },
     interaction: {
-      hover: mixOklab(canvas, primaryDefault.background, 0.12),
-      pressed: mixOklab(canvas, primaryDefault.background, 0.18),
-      selected: mixOklab(canvas, primaryDefault.background, 0.24),
-      focusRing: primaryDefault.background,
+      hover: mixOklab(canvas, textPrimary, 0.12),
+      pressed: mixOklab(canvas, textPrimary, 0.18),
+      selected: mixOklab(canvas, primaryFill.default, 0.24),
+      focusRing: primaryFill.default,
       disabledBackground: fade(textPrimary, canvas, 0.88),
       disabledForeground: fade(textPrimary, canvas, 0.68),
-      selection: mixOklab(canvas, primaryDefault.background, 0.3),
+      selection: mixOklab(canvas, primaryFill.default, 0.3),
+      primaryHover: primaryFill.hover,
+      primaryPressed: primaryFill.pressed,
+      primarySelected: mixOklab(canvas, primaryFill.default, 0.22),
+      secondaryHover: shiftLightness(secondaryDefault.background, 0.05),
+      secondaryPressed: shiftLightness(secondaryDefault.background, 0.09),
+      neutralHover: mixOklab(canvas, textPrimary, 0.12),
+      neutralPressed: mixOklab(canvas, textPrimary, 0.18),
+      disabledSurface: fade(textPrimary, canvas, 0.88),
+      disabledBorder: fade(textPrimary, canvas, 0.76),
     },
     overlay: {
       scrim: toHex8(parseToOklch(neutral[1000]), 0.64),

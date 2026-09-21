@@ -1,19 +1,14 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { SiteHeader } from "@/components/brand/site-header";
 import { ChromeChip } from "@/components/chrome/chrome-chip";
-import { ColorField } from "@/components/flow/color-field";
 import { PalettePicker } from "@/components/flow/palette-picker";
 import { PreviewCanvas } from "@/components/preview/preview-canvas";
 import { ThemeScope } from "@/components/preview/theme-scope";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -24,30 +19,37 @@ import { useColorSystem } from "@/hooks/use-color-system";
 import { useCopy } from "@/hooks/use-copy";
 import { exportCss } from "@/lib/export";
 import { encodeShare } from "@/lib/share/encode";
-import { parseToOklch } from "@/lib/color-engine";
+import { isHexColor, normalizeHex, resolvePickedHex } from "@/lib/picked-color";
 import { useMatchuStore, type PreviewTab } from "@/lib/store";
 import { ExportSheet } from "./export-sheet";
 import { TokenPanel } from "./token-panel";
+import { WorkbenchMoreMenu } from "./workbench-more-menu";
 
 export function Workbench() {
   const copy = useCopy();
+  const router = useRouter();
   const input = useMatchuStore((state) => state.input);
-  const setInput = useMatchuStore((state) => state.setInput);
+  const matchedHex = useMatchuStore((state) => state.matchedHex);
+  const hasMatched = useMatchuStore((state) => state.hasMatched);
+  const hydrated = useMatchuStore((state) => state.hydrated);
+  const resetSession = useMatchuStore((state) => state.resetSession);
   const themeMode = useMatchuStore((state) => state.themeMode);
   const setThemeMode = useMatchuStore((state) => state.setThemeMode);
   const platform = useMatchuStore((state) => state.platform);
   const setPlatform = useMatchuStore((state) => state.setPlatform);
   const previewTab = useMatchuStore((state) => state.previewTab);
   const setPreviewTab = useMatchuStore((state) => state.setPreviewTab);
-  const hasMatched = useMatchuStore((state) => state.hasMatched);
   const matchStage = useMatchuStore((state) => state.matchStage);
   const selectedPaletteId = useMatchuStore((state) => state.selectedPaletteId);
   const [exportOpen, setExportOpen] = useState(false);
   const [tokensOpen, setTokensOpen] = useState(false);
-  const [hexError, setHexError] = useState<string | null>(null);
 
   const result = useColorSystem(input, selectedPaletteId);
   const stage = hasMatched ? "done" : matchStage;
+  const mainColor =
+    hydrated && hasMatched && matchedHex && isHexColor(matchedHex)
+      ? normalizeHex(matchedHex)
+      : resolvePickedHex(input.hex);
 
   const tabs = useMemo(
     () =>
@@ -58,14 +60,9 @@ export function Workbench() {
     [copy],
   );
 
-  function onHexChange(value: string) {
-    setInput({ hex: value });
-    try {
-      parseToOklch(value);
-      setHexError(null);
-    } catch {
-      setHexError(copy.input.invalid);
-    }
+  function remake() {
+    resetSession();
+    router.push("/");
   }
 
   async function copyCss() {
@@ -93,13 +90,25 @@ export function Workbench() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-[var(--background)]">
-      <SiteHeader>
-        <div className="studio-color min-w-[11rem] max-w-xs flex-1">
-          <ColorField hideLabel value={input.hex} onChange={onHexChange} error={hexError} />
-        </div>
-        <div className="min-w-[10rem] max-w-[16rem] shrink-0">
-          <PalettePicker hex={input.hex} />
-        </div>
+      <SiteHeader
+        endAction={
+          <WorkbenchMoreMenu
+            onTokens={() => setTokensOpen(true)}
+            onCopyCss={copyCss}
+            onExport={() => setExportOpen(true)}
+            onSave={saveDraft}
+            onShare={share}
+          />
+        }
+      >
+        <button type="button" className="studio-remake" onClick={remake}>
+          <span className="studio-remake-swatch" style={{ background: mainColor }} aria-hidden />
+          <span className="studio-remake-copy">
+            <span className="studio-remake-title">{copy.result.remake}</span>
+            <span className="studio-remake-hint">{copy.result.remakeHint}</span>
+          </span>
+          <ChevronRight className="studio-remake-icon" aria-hidden />
+        </button>
         <div className="studio-nav" role="group" aria-label={copy.result.platforms}>
           <ChromeChip
             active={platform === "web"}
@@ -134,32 +143,15 @@ export function Workbench() {
           <span data-on={themeMode === "light"}>{copy.result.light}</span>
           <span data-on={themeMode === "dark"}>{copy.result.dark}</span>
         </button>
-        <button
-          type="button"
-          className="shrink-0 rounded-full border border-[var(--border-default)] px-3 py-1 text-sm text-[var(--text-secondary)]"
-          onClick={() => setTokensOpen(true)}
-        >
-          {copy.result.tokens}
-        </button>
-        <DropdownMenu>
-          <DropdownMenuTrigger className="shrink-0 rounded-full border border-[var(--border-default)] px-3 py-1 text-sm text-[var(--text-secondary)]">
-            {copy.result.export}
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={copyCss}>{copy.result.copy}</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setExportOpen(true)}>{copy.result.export}</DropdownMenuItem>
-            <DropdownMenuItem onClick={saveDraft}>{copy.result.save}</DropdownMenuItem>
-            <DropdownMenuItem onClick={share}>{copy.result.share}</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </SiteHeader>
 
-      <div className="match-transition flex min-h-0 flex-1 flex-col" data-stage={stage}>
+      <div className="match-transition relative flex min-h-0 flex-1 flex-col" data-stage={stage}>
         <ThemeScope result={result} mode={themeMode} className="flex h-full min-h-0 flex-col bg-transparent p-2">
           <div className="min-h-0 flex-1">
             <PreviewCanvas platform={platform} tab={previewTab} />
           </div>
         </ThemeScope>
+        <PalettePicker hex={input.hex} variant="floating" />
       </div>
 
       <Sheet open={tokensOpen} onOpenChange={setTokensOpen}>

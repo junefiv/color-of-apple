@@ -1,70 +1,23 @@
 import { formatHex, interpolate } from "culori";
-import { generateCorePalette, type PaletteRecipe } from "@/lib/color-engine/core-palette";
+import { generateCorePalette } from "@/lib/color-engine/core-palette";
+import { generateColorScale } from "@/lib/color-engine/scales";
 import {
-  chooseOnColor,
   mixOklab,
   parseToOklch,
+  readableOnColor,
   shiftLightness,
   toHex,
 } from "@/lib/color-engine/color-utils";
 import type { OklchColor } from "@/lib/color-engine/types";
+import { PALETTE_RECIPES, type PaletteRecipe, type SpacePaletteId } from "@/lib/palette-recipes";
+import {
+  derivePaletteTokens,
+  type CorePalette as SemanticCorePalette,
+} from "@/lib/palette-semantic-tokens";
+
+export { PALETTE_RECIPES, type PaletteRecipe, type SpacePaletteId } from "@/lib/palette-recipes";
 
 export const DEFAULT_PALETTE_ID = "generic-gradient";
-
-export type SpacePaletteId =
-  | "generic-gradient"
-  | "matching-gradient"
-  | "spot"
-  | "twisted-spot"
-  | "classy"
-  | "cube"
-  | "switch"
-  | "small-switch"
-  | "skip-gradient"
-  | "natural"
-  | "matching"
-  | "squash"
-  | "grey-friends"
-  | "dotting"
-  | "skip-shade"
-  | "threedom"
-  | "highlight"
-  | "neighbor"
-  | "discreet"
-  | "dust"
-  | "collective"
-  | "friend"
-  | "pin"
-  | "shades"
-  | "random-shades";
-
-export const PALETTE_RECIPES: Record<SpacePaletteId, PaletteRecipe> = {
-  "generic-gradient": { harmony: "analogous", mood: "clean", hueDirection: 1, backgroundTint: "brand" },
-  "matching-gradient": { harmony: "analogous", mood: "soft", hueDirection: -1, backgroundTint: "cool" },
-  spot: { harmony: "monochrome", mood: "clean", hueDirection: 1, backgroundTint: "neutral" },
-  "twisted-spot": { harmony: "complementary", mood: "soft", hueDirection: 1, backgroundTint: "cool" },
-  classy: { harmony: "analogous", mood: "muted", hueDirection: -1, backgroundTint: "warm" },
-  cube: { harmony: "splitComplementary", mood: "highContrast", hueDirection: 1, backgroundTint: "neutral" },
-  switch: { harmony: "complementary", mood: "vivid", hueDirection: 1, backgroundTint: "brand" },
-  "small-switch": { harmony: "complementary", mood: "clean", hueDirection: -1, backgroundTint: "cool" },
-  "skip-gradient": { harmony: "complementary", mood: "muted", hueDirection: 1, backgroundTint: "complement" },
-  natural: { harmony: "analogous", mood: "muted", hueDirection: 1, backgroundTint: "warm" },
-  matching: { harmony: "splitComplementary", mood: "soft", hueDirection: -1, backgroundTint: "neutral" },
-  squash: { harmony: "splitComplementary", mood: "soft", hueDirection: 1, backgroundTint: "warm" },
-  "grey-friends": { harmony: "monochrome", mood: "muted", hueDirection: 1, backgroundTint: "neutral" },
-  dotting: { harmony: "splitComplementary", mood: "vivid", hueDirection: -1, backgroundTint: "brand" },
-  "skip-shade": { harmony: "complementary", mood: "clean", hueDirection: 1, backgroundTint: "cool" },
-  threedom: { harmony: "triadic", mood: "vivid", hueDirection: 1, backgroundTint: "neutral" },
-  highlight: { harmony: "triadic", mood: "highContrast", hueDirection: 1, backgroundTint: "warm" },
-  neighbor: { harmony: "analogous", mood: "clean", hueDirection: -1, backgroundTint: "brand" },
-  discreet: { harmony: "monochrome", mood: "soft", hueDirection: 1, backgroundTint: "neutral" },
-  dust: { harmony: "analogous", mood: "muted", hueDirection: -1, backgroundTint: "warm" },
-  collective: { harmony: "splitComplementary", mood: "muted", hueDirection: 1, backgroundTint: "cool" },
-  friend: { harmony: "analogous", mood: "soft", hueDirection: 1, backgroundTint: "brand" },
-  pin: { harmony: "splitComplementary", mood: "highContrast", hueDirection: -1, backgroundTint: "warm" },
-  shades: { harmony: "monochrome", mood: "clean", hueDirection: -1, backgroundTint: "brand" },
-  "random-shades": { harmony: "triadic", mood: "muted", hueDirection: -1, backgroundTint: "complement" },
-};
 
 const SPACE_PALETTE_IDS = Object.keys(PALETTE_RECIPES) as SpacePaletteId[];
 
@@ -89,8 +42,18 @@ export type PaletteRoles = {
   accent: PaletteChip;
   onAccent: string;
   surface: string;
+  surfaceRaised: string;
+  surfaceSunken: string;
+  surfaceSelected: string;
   background: string;
+  backgroundSubtle: string;
   text: string;
+  textSecondary: string;
+  textTertiary: string;
+  textDisabled: string;
+  borderSubtle: string;
+  borderDefault: string;
+  borderStrong: string;
   chips: string[];
 };
 
@@ -122,6 +85,23 @@ export function extractSpacePalettes(hex: string): SpacePalette[] {
 export function getSpacePalette(hex: string, id: string) {
   const resolved = recipeFor(id);
   return paletteFromCore(resolved.id, hex);
+}
+
+export function generateSelectedPalette(hex: string, paletteId?: string): SemanticCorePalette {
+  const { recipe } = recipeFor(paletteId);
+  const core = generateCorePalette(hex, recipe);
+  return {
+    primary: core.primary,
+    secondary: core.secondary,
+    accent: core.accent,
+    background: core.background,
+    surface: core.surface,
+    primaryText: core.textPrimary,
+  };
+}
+
+export function deriveSelectedPaletteTokens(hex: string, paletteId?: string) {
+  return derivePaletteTokens(generateSelectedPalette(hex, paletteId));
 }
 
 export function paletteSwatches(palette: SpacePalette) {
@@ -162,8 +142,18 @@ export function paletteRoles(hex: string, paletteId?: string): PaletteRoles {
     accent: asChip(core.accent),
     onAccent: core.onAccent,
     surface: core.surface,
+    surfaceRaised: core.surfaceRaised,
+    surfaceSunken: core.surfaceSunken,
+    surfaceSelected: core.surfaceSelected,
     background: core.background,
+    backgroundSubtle: core.backgroundSubtle,
     text: core.textPrimary,
+    textSecondary: core.textSecondary,
+    textTertiary: core.textTertiary,
+    textDisabled: core.textDisabled,
+    borderSubtle: core.borderSubtle,
+    borderDefault: core.borderDefault,
+    borderStrong: core.borderStrong,
     chips: [core.primary, core.secondary, core.accent, chartFourth],
   };
 }
@@ -181,20 +171,28 @@ export function paletteChartStops(chips: string[]): Record<string, string> {
 
 export function palettePreviewVars(colors: string[]) {
   const primary = colors[0];
+  const primaryColor = parseToOklch(primary);
+  const primaryScale = generateColorScale({
+    hue: primaryColor.h,
+    chroma: primaryColor.c,
+    sourceColor: primaryColor,
+    sourceHex: primary,
+  });
+  primaryScale.scale[500] = primary;
   const secondary = colors[1] ?? shiftLightness(primary, 0.2);
   const accent = colors[2] ?? colors[1] ?? primary;
   return {
-    "--color-primary-default": primary,
-    "--color-primary-hover": shiftLightness(primary, 0.04),
-    "--color-primary-pressed": shiftLightness(primary, -0.04),
-    "--color-primary-on": chooseOnColor(primary),
+    "--color-primary-default": primaryScale.scale[500],
+    "--color-primary-hover": primaryScale.scale[600],
+    "--color-primary-pressed": primaryScale.scale[700],
+    "--color-primary-on": readableOnColor(primaryScale.scale[500], 4.5),
     "--color-primary-subtle": shiftLightness(primary, 0.32),
     "--color-primary-text": primary,
     "--color-primary-border": primary,
     "--color-secondary-default": secondary,
-    "--color-secondary-on": chooseOnColor(secondary),
+    "--color-secondary-on": readableOnColor(secondary, 4.5),
     "--color-accent-default": accent,
-    "--color-accent-on": chooseOnColor(accent),
+    "--color-accent-on": readableOnColor(accent, 4.5),
     ...Object.fromEntries(
       Object.entries(paletteChartStops(colors)).map(([slot, value]) => [
         `--color-chart-${slot}`,

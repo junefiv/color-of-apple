@@ -5,35 +5,8 @@ export function StatusBadge({
   tone: "success" | "warning" | "danger" | "info" | "neutral" | "accent";
   children: React.ReactNode;
 }) {
-  const map = {
-    success: {
-      background: "var(--color-success-surface)",
-      color: "var(--color-success-text)",
-    },
-    warning: {
-      background: "var(--color-warning-surface)",
-      color: "var(--color-warning-text)",
-    },
-    danger: {
-      background: "var(--color-danger-surface)",
-      color: "var(--color-danger-text)",
-    },
-    info: {
-      background: "var(--color-info-surface)",
-      color: "var(--color-info-text)",
-    },
-    accent: {
-      background: "var(--color-accent-subtle)",
-      color: "var(--color-accent-text)",
-    },
-    neutral: {
-      background: "var(--color-primary-subtle)",
-      color: "var(--color-primary-text)",
-    },
-  } as const;
-
   return (
-    <span className="pv-badge" style={map[tone]}>
+    <span className="pv-badge" data-tone={tone}>
       {children}
     </span>
   );

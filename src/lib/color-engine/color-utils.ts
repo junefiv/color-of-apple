@@ -145,12 +145,67 @@ export function findClosestStep(inputLightness: number): PrimaryStep {
   ) as PrimaryStep;
 }
 
+const ON_COLOR_CANDIDATES = ["#ffffff", "#fafaf8", "#161619", "#111111"] as const;
+
+export function readableOnColor(background: string, minimum = 4.5) {
+  const bg = parseToOklch(background);
+  const scored = ON_COLOR_CANDIDATES.map((hex) => ({
+    hex,
+    ratio: contrastRatio(background, hex),
+  }));
+  const passing = scored.filter((entry) => entry.ratio >= minimum);
+  const pool = (passing.length > 0 ? passing : [...scored]).sort((a, b) => b.ratio - a.ratio);
+
+  const light = pool.find((entry) => entry.hex === "#ffffff" || entry.hex === "#fafaf8");
+  const dark = pool.find((entry) => entry.hex === "#111111" || entry.hex === "#161619");
+  const chromatic = bg.c >= 0.035;
+
+  if (chromatic && bg.l >= 0.78 && dark && dark.ratio >= minimum) {
+    return dark.hex;
+  }
+
+  if (chromatic && bg.l >= 0.4 && bg.l < 0.82 && light) {
+    if (!dark || dark.ratio < light.ratio * 1.12) {
+      return light.hex;
+    }
+  }
+
+  return pool[0]?.hex ?? "#ffffff";
+}
+
 export function chooseOnColor(background: string) {
-  const darkText = "#111111";
-  const lightText = "#ffffff";
-  const darkContrast = contrastRatio(background, darkText);
-  const lightContrast = contrastRatio(background, lightText);
-  return darkContrast >= lightContrast ? darkText : lightText;
+  return readableOnColor(background, 3);
+}
+
+export function prefersLightInk(background: string) {
+  const bg = parseToOklch(background);
+  return bg.c >= 0.055 && bg.l >= 0.4 && bg.l <= 0.78;
+}
+
+export function resolveSurfaceInk(background: string, minimum = 4.5) {
+  let fill = background;
+
+  if (prefersLightInk(fill)) {
+    const on = "#ffffff";
+    for (let i = 0; i < 56 && contrastRatio(fill, on) < minimum; i += 1) {
+      fill = shiftLightness(fill, -0.012);
+    }
+    if (contrastRatio(fill, on) >= minimum) {
+      return { background: fill, on };
+    }
+  }
+
+  const on = readableOnColor(fill, minimum);
+  if (contrastRatio(fill, on) >= minimum) {
+    return { background: fill, on };
+  }
+
+  let adjusted = fill;
+  const towardDark = on === "#111111" || on === "#161619";
+  for (let i = 0; i < 48 && contrastRatio(adjusted, on) < minimum; i += 1) {
+    adjusted = shiftLightness(adjusted, towardDark ? 0.012 : -0.012);
+  }
+  return { background: adjusted, on: readableOnColor(adjusted, minimum) };
 }
 
 export function preserveSourceHex(input: string, fallback: OklchColor) {

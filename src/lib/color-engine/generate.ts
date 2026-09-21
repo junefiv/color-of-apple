@@ -1,4 +1,4 @@
-import { paletteRoles } from "@/lib/space-palettes";
+import { deriveSelectedPaletteTokens, paletteRoles } from "@/lib/space-palettes";
 import { MOOD_PRESETS } from "./constants";
 import { parseToOklch, preserveSourceHex } from "./color-utils";
 import { CORE_TOKENS } from "./core-tokens";
@@ -31,6 +31,7 @@ export function generateColorSystem(
     sourceColor: source,
     sourceHex,
   });
+  primary.scale[500] = sourceHex;
 
   const secondary = generateColorScale({
     hue: roles.secondary.color.h,
@@ -82,8 +83,9 @@ export function generateColorSystem(
   const dark = fixContrastFailures(darkMapped, input.accessibilityTarget);
 
   return {
-    source: primary.scale[primary.anchorStep],
+    source: primary.scale[500],
     primitive: primitives,
+    derived: deriveSelectedPaletteTokens(input.hex, paletteId),
     semantic: {
       light: light.theme,
       dark: dark.theme,
@@ -94,8 +96,8 @@ export function generateColorSystem(
     },
     meta: {
       engineVersion: ENGINE_VERSION,
-      anchorStep: primary.anchorStep,
-      sourceHex: primary.scale[primary.anchorStep],
+      anchorStep: 500,
+      sourceHex: primary.scale[500],
       coreTokenCount: CORE_TOKENS.length,
     },
   };

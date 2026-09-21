@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { readDraft, useMatchuStore, writeDraft } from "@/lib/store";
 
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
 export function PersistGate() {
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const saved = readDraft();
     if (saved) {
       useMatchuStore.getState().hydrate(saved);

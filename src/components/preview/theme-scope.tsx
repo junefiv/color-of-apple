@@ -1,11 +1,13 @@
 "use client";
 
 import {
+  previewComponentVars,
   primitivesToCssVars,
   semanticToCssVars,
   type ColorSystemResult,
   type ThemeMode,
 } from "@/lib/color-engine";
+import { paletteTokensToCssVariables } from "@/lib/palette-semantic-tokens";
 
 export function ThemeScope({
   result,
@@ -20,9 +22,12 @@ export function ThemeScope({
   extraVars?: Record<string, string>;
   children: React.ReactNode;
 }) {
+  const semantic = result.semantic[mode];
   const vars = {
     ...primitivesToCssVars(result.primitive),
-    ...semanticToCssVars(result.semantic[mode]),
+    ...semanticToCssVars(semantic),
+    ...previewComponentVars(result.primitive, semantic),
+    ...paletteTokensToCssVariables(result.derived),
     ...extraVars,
   };
 

@@ -168,6 +168,15 @@ export type SemanticTokens = {
     disabledBackground: string;
     disabledForeground: string;
     selection: string;
+    primaryHover: string;
+    primaryPressed: string;
+    primarySelected: string;
+    secondaryHover: string;
+    secondaryPressed: string;
+    neutralHover: string;
+    neutralPressed: string;
+    disabledSurface: string;
+    disabledBorder: string;
   };
   overlay: {
     scrim: string;
@@ -200,6 +209,7 @@ export type AccessibilityReport = {
 export type ColorSystemResult = {
   source: string;
   primitive: PrimitiveScales;
+  derived: import("@/lib/palette-semantic-tokens").PaletteTokens;
   semantic: {
     light: SemanticTokens;
     dark: SemanticTokens;

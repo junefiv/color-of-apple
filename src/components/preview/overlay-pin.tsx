@@ -19,7 +19,7 @@ export function OverlayPin<T extends string>({
           className="rounded-full px-2 py-0.5"
           style={
             value === id
-              ? { background: "var(--color-primary-subtle)", color: "var(--color-primary-text)" }
+              ? { background: "var(--color-primary-subtle)", color: "var(--color-text-primary)" }
               : { color: "var(--color-text-secondary)" }
           }
           onClick={() => onChange(id)}

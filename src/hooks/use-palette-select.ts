@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { prefersReducedMotion } from "@/lib/match-reveal";
+import { resolvePaletteRepresentativeId } from "@/lib/palette-groups";
 import { getSpacePalette, type SpacePaletteId } from "@/lib/space-palettes";
 import { useMatchuStore } from "@/lib/store";
 
@@ -17,8 +18,9 @@ export function usePaletteSelect(hex: string) {
 
   const selectPalette = useCallback(
     (id: string) => {
-      if (id === selectedPaletteId || wash) return;
-      const palette = getSpacePalette(hex, id);
+      const resolvedId = resolvePaletteRepresentativeId(hex, id);
+      if (resolvedId === selectedPaletteId || wash) return;
+      const palette = getSpacePalette(hex, resolvedId);
       if (prefersReducedMotion()) {
         setSelectedPaletteId(palette.id);
         return;

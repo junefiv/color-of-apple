@@ -74,7 +74,7 @@ export function WebWorkspace() {
               className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm"
               style={
                 nav === label
-                  ? { background: "var(--color-primary-subtle)", color: "var(--color-primary-text)" }
+                  ? { background: "var(--color-primary-subtle)", color: "var(--color-text-primary)" }
                   : { color: "var(--color-text-secondary)" }
               }
               onClick={() => setNav(label)}

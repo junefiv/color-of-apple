@@ -27,5 +27,14 @@ export type {
 } from "./core-palette";
 export { CORE_TOKENS, TOKEN_USES } from "./core-tokens";
 export { flattenObject, primitivesToCssVars, semanticToCssVars, tokenPathToCssVar } from "./flatten";
-export { contrastRatio, parseToOklch, preserveSourceHex, chooseOnColor } from "./color-utils";
+export {
+  chooseOnColor,
+  contrastRatio,
+  parseToOklch,
+  preserveSourceHex,
+  readableOnColor,
+  resolveSurfaceInk,
+} from "./color-utils";
+export { filledScaleStates, pickOnNeutral } from "./on-ink";
+export { previewComponentVars } from "./preview-component-vars";
 export { getToken, validateTheme, fixContrastFailures } from "./contrast";

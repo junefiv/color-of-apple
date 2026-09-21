@@ -13,9 +13,10 @@ describe("generateColorSystem", () => {
     expect(stable(first)).toBe(stable(second));
   });
 
-  it("keeps the source hex on the closest primary step", () => {
+  it("keeps the source hex on primary 500", () => {
     const result = generateColorSystem(DEFAULT_INPUT);
-    expect(result.primitive.primary[result.meta.anchorStep]).toBe("#ff6b35");
+    expect(result.primitive.primary[500]).toBe("#ff6b35");
+    expect(result.meta.anchorStep).toBe(500);
     expect(result.meta.sourceHex).toBe("#ff6b35");
   });
 

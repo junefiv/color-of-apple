@@ -26,6 +26,9 @@ export const en: Copy = {
     sampleCta: "View a sample",
     chips: "Web · App · Accessibility · Code export",
     hexLabel: "Main Color",
+    pickHint: "Click me to pick a color!",
+    generate: "Generate",
+    appleLabel: "Apple color picker",
   },
   features: {
     title: "One color.\nMatched to every role.",
@@ -85,9 +88,9 @@ export const en: Copy = {
   loading: {
     title: "Matching your colors",
     phrases: [
-      "Reading your color",
-      "Matching the rest",
-      "Painting the screen",
+      "Analyzing your pick: {hex}.",
+      "Building palettes around {hex}.",
+      "{count} palette styles are ready.",
     ],
   },
   result: {
@@ -115,6 +118,9 @@ export const en: Copy = {
     palette: "Palette",
     palettePicker: "Color palettes",
     tokens: "Color tokens",
+    remake: "Start over",
+    remakeHint: "Pick a new main color",
+    moreMenu: "More",
   },
   preview: {
     overview: "Find a class",
@@ -160,6 +166,7 @@ export const en: Copy = {
     title: "Color tokens",
     viewAll: "View all tokens",
     viewCore: "Core tokens",
+    usesLabel: "Used for",
     groups: {
       core: "Core Colors",
       background: "Background & Surface",
@@ -198,12 +205,201 @@ export const en: Copy = {
       warning: "Warning",
       warningSurface: "Warning Surface",
       danger: "Danger",
+      dangerSurface: "Danger Surface",
       info: "Info",
-      hover: "Hover",
-      pressed: "Pressed",
-      selected: "Selected",
-      focus: "Focus",
-      disabled: "Disabled",
+      infoSurface: "Info Surface",
+      onSuccess: "On Success",
+      onWarning: "On Warning",
+      onDanger: "On Danger",
+      onInfo: "On Info",
+      primaryHover: "Primary Hover",
+      primaryPressed: "Primary Pressed",
+      primarySelected: "Primary Selected",
+      secondaryHover: "Secondary Hover",
+      secondaryPressed: "Secondary Pressed",
+      neutralHover: "Neutral Hover",
+      neutralPressed: "Neutral Pressed",
+      focusRing: "Focus Ring",
+      disabledSurface: "Disabled Surface",
+      disabledBorder: "Disabled Border",
+    },
+    guides: {
+      primary: {
+        role: "The brand identity color. Use it for the most important actions and selections.",
+        uses: "Primary CTA buttons, active tabs, key icons, checked states",
+      },
+      secondary: {
+        role: "Supports Primary and separates a second function or information area.",
+        uses: "Secondary buttons, supporting categories, secondary charts",
+      },
+      accent: {
+        role: "Pulls attention briefly and strongly.",
+        uses: "New features, emphasis badges, promotions, highlights",
+      },
+      surface: {
+        role: "The default surface content and components sit on.",
+        uses: "Cards, inputs, panels, modal interiors",
+      },
+      onPrimary: {
+        role: "Content color on Primary. Chosen by contrast against that background, not always white.",
+        uses: "Primary button text and icons",
+      },
+      onSecondary: {
+        role: "Content color on Secondary. Chosen by contrast against that background.",
+        uses: "Secondary button text and icons",
+      },
+      onAccent: {
+        role: "Content color on Accent. Chosen by contrast against that background.",
+        uses: "Accent badge and button text and icons",
+      },
+      primarySubtle: {
+        role: "A tinted Primary used for quieter selection or emphasis.",
+        uses: "Selected menu backgrounds, tags, info boxes, Primary icon backgrounds",
+      },
+      background: {
+        role: "The outermost page or app background.",
+        uses: "Body, full-screen app canvas",
+      },
+      backgroundSubtle: {
+        role: "A softer background that divides regions inside the screen.",
+        uses: "Sidebars, section backgrounds, table headers",
+      },
+      surfaceRaised: {
+        role: "A surface that sits above the default background.",
+        uses: "Cards, dropdowns, floating panels",
+      },
+      surfaceOverlay: {
+        role: "A surface layered over the current screen.",
+        uses: "Modals, dialogs, popovers, bottom sheets",
+      },
+      textPrimary: {
+        role: "The highest-priority default text.",
+        uses: "Titles, body copy, key metrics",
+      },
+      textSecondary: {
+        role: "Supporting text with lower priority than body copy.",
+        uses: "Descriptions, extra detail, metadata",
+      },
+      textTertiary: {
+        role: "Readable information that should not compete for attention.",
+        uses: "Dates, captions, help text, secondary labels",
+      },
+      textDisabled: {
+        role: "Text for controls that cannot be used. Not just low-priority copy.",
+        uses: "Disabled buttons, disabled menus, locked inputs",
+      },
+      textInverse: {
+        role: "Reversed text for dark or strongly colored backgrounds.",
+        uses: "Dark surfaces, image overlays, color banners",
+      },
+      textLink: {
+        role: "Marks text that can be clicked or navigated.",
+        uses: "Inline links, learn more, URLs",
+      },
+      borderSubtle: {
+        role: "A light edge that separates regions without a hard divide.",
+        uses: "Card dividers, list dividers, table rows",
+      },
+      borderDefault: {
+        role: "The default outline of a component.",
+        uses: "Inputs, buttons, cards",
+      },
+      borderStrong: {
+        role: "A stronger edge for clearer separation or emphasis.",
+        uses: "Selected regions, important cards, highlighted sections",
+      },
+      borderFocus: {
+        role: "Shows the keyboard or input focus. Prefer a 2px-or-thicker focus ring.",
+        uses: "Focused inputs, buttons, selects",
+      },
+      success: {
+        role: "Success, healthy state, or completion.",
+        uses: "Success icons, complete badges, success messages",
+      },
+      successSurface: {
+        role: "A tinted background for success information.",
+        uses: "Success alerts, completed card backgrounds",
+      },
+      warning: {
+        role: "Needs attention, but is not an immediate failure.",
+        uses: "Warning icons, caution badges, review-needed states",
+      },
+      warningSurface: {
+        role: "A tinted background for warning information.",
+        uses: "Warning alerts, caution boxes",
+      },
+      danger: {
+        role: "Error, failure, deletion, or a dangerous action.",
+        uses: "Delete buttons, error messages, failure badges",
+      },
+      dangerSurface: {
+        role: "A tinted background for errors and delete warnings.",
+        uses: "Error alerts, delete confirmation boxes",
+      },
+      info: {
+        role: "Neutral guidance or reference information.",
+        uses: "Help, notices, info badges",
+      },
+      infoSurface: {
+        role: "A tinted background for notices and info boxes.",
+        uses: "Help boxes, info alerts",
+      },
+      onSuccess: {
+        role: "Text and icons on Success fills, chosen by contrast.",
+        uses: "Success badges, complete buttons",
+      },
+      onWarning: {
+        role: "Text and icons on Warning fills, chosen by contrast.",
+        uses: "Warning badges, caution buttons",
+      },
+      onDanger: {
+        role: "Text and icons on Danger fills, chosen by contrast.",
+        uses: "Delete buttons, error badges",
+      },
+      onInfo: {
+        role: "Text and icons on Info fills, chosen by contrast.",
+        uses: "Info badges, notice buttons",
+      },
+      primaryHover: {
+        role: "A Primary control with a pointer over it.",
+        uses: "Primary CTA buttons, active icon buttons, Primary links",
+      },
+      primaryPressed: {
+        role: "A Primary control being clicked or touched.",
+        uses: "CTA buttons mid-click, Primary buttons mid-touch",
+      },
+      primarySelected: {
+        role: "A Primary item that stays selected.",
+        uses: "Selected tabs, active menus, selected filters and options",
+      },
+      secondaryHover: {
+        role: "A Secondary control with a pointer over it.",
+        uses: "Secondary buttons, supporting actions, Secondary icon buttons",
+      },
+      secondaryPressed: {
+        role: "A Secondary control being clicked or touched.",
+        uses: "Secondary buttons mid-click or mid-touch",
+      },
+      neutralHover: {
+        role: "Hover for ordinary elements that do not use brand color.",
+        uses: "List items, table rows, dropdown options, neutral buttons",
+      },
+      neutralPressed: {
+        role: "A neutral element being clicked or touched.",
+        uses: "List items, menus, cards, neutral icon buttons",
+      },
+      focusRing: {
+        role: "The outline for keyboard focus or the current input target.",
+        uses: "Buttons, inputs, selects, checkboxes, links",
+      },
+      disabledSurface: {
+        role: "The inactive background of a control that cannot be used.",
+        uses: "Disabled buttons, inputs, selects, toggles",
+      },
+      disabledBorder: {
+        role: "The inactive edge of a control that cannot be used.",
+        uses: "Disabled inputs, buttons, checkboxes, radios",
+      },
     },
   },
   export: {

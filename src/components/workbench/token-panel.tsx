@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import {
   CORE_TOKENS,
   flattenObject,
@@ -50,9 +52,11 @@ export function TokenPanel({
             {flattenObject(tokens).map((entry) => (
               <TokenRow
                 key={entry.path}
+                group={copy.tokens.groups.all}
                 label={entry.path}
                 hex={entry.value}
-                hint={TOKEN_USES[entry.path]}
+                role={TOKEN_USES[entry.path]}
+                usesLabel={copy.tokens.usesLabel}
               />
             ))}
           </div>
@@ -63,17 +67,23 @@ export function TokenPanel({
                 {copy.tokens.groups[group as keyof typeof copy.tokens.groups]}
               </p>
               <div className="space-y-1">
-                {items.map((token) => (
-                  <TokenRow
-                    key={token.key}
-                    label={
-                      copy.tokens.labels[token.key as keyof typeof copy.tokens.labels] ??
-                      token.key
-                    }
-                    hex={getToken(tokens, token.path)}
-                    hint={TOKEN_USES[token.path]}
-                  />
-                ))}
+                {items.map((token) => {
+                  const guide = copy.tokens.guides[token.key as keyof typeof copy.tokens.guides];
+                  return (
+                    <TokenRow
+                      key={token.key}
+                      group={copy.tokens.groups[group as keyof typeof copy.tokens.groups]}
+                      label={
+                        copy.tokens.labels[token.key as keyof typeof copy.tokens.labels] ??
+                        token.key
+                      }
+                      hex={getToken(tokens, token.path)}
+                      role={guide?.role}
+                      uses={guide?.uses}
+                      usesLabel={copy.tokens.usesLabel}
+                    />
+                  );
+                })}
               </div>
             </div>
           ))
@@ -90,24 +100,68 @@ export function TokenPanel({
 }
 
 function TokenRow({
+  group,
   label,
   hex,
-  hint,
+  role,
+  uses,
+  usesLabel,
 }: {
+  group: string;
   label: string;
   hex: string;
-  hint?: string;
+  role?: string;
+  uses?: string;
+  usesLabel: string;
 }) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [tipStyle, setTipStyle] = useState<CSSProperties | null>(null);
+
+  const hideTip = () => setTipStyle(null);
+  const showTip = () => {
+    const rect = rowRef.current?.getBoundingClientRect();
+    if (!rect || !role) return;
+    const width = Math.min(Math.max(rect.width, 240), 320);
+    const left = Math.min(Math.max(12, rect.left), window.innerWidth - width - 12);
+    const preferAbove = rect.top > 188;
+    setTipStyle(
+      preferAbove
+        ? { left, width, bottom: window.innerHeight - rect.top + 8 }
+        : { left, width, top: rect.bottom + 8 },
+    );
+  };
+
   return (
     <div
-      className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 hover:bg-muted/70"
-      title={hint}
+      ref={rowRef}
+      className="token-row"
+      tabIndex={role ? 0 : undefined}
+      onMouseEnter={showTip}
+      onMouseLeave={hideTip}
+      onFocus={showTip}
+      onBlur={hideTip}
     >
       <span className="size-5 shrink-0 rounded-md border border-border" style={{ background: hex }} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13px] font-semibold">{label}</p>
         <p className="token-name text-[var(--text-tertiary)]">{hex.toUpperCase()}</p>
       </div>
+      {role && tipStyle
+        ? createPortal(
+            <div className="token-tip" role="tooltip" style={tipStyle}>
+              <p className="token-tip-kicker">{group}</p>
+              <p className="token-tip-name">{label}</p>
+              <p className="token-tip-role">{role}</p>
+              {uses ? (
+                <p className="token-tip-uses">
+                  <span>{usesLabel}</span>
+                  {uses}
+                </p>
+              ) : null}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

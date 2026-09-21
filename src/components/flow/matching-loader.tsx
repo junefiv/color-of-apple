@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { LoadingPhrase } from "@/components/flow/loading-phrase";
 import { useCopy } from "@/hooks/use-copy";
 import { prefersReducedMotion } from "@/lib/match-reveal";
-import { FALLBACK_HEX, isHexColor, normalizeHex } from "@/lib/picked-color";
+import { countDistinctPaletteGroups } from "@/lib/palette-groups";
+import { resolvePickedHex } from "@/lib/picked-color";
 import { useMatchuStore } from "@/lib/store";
 
 const LOAD_MS = 5400;
@@ -14,8 +16,10 @@ export function MatchingLoader({ onDone }: { onDone: () => void }) {
   const completeMatch = useMatchuStore((state) => state.completeMatch);
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(false);
-  const phrases = copy.loading.phrases;
-  const hex = isHexColor(rawHex) ? normalizeHex(rawHex) : FALLBACK_HEX;
+  const hex = resolvePickedHex(rawHex);
+  const paletteGroupCount = useMemo(() => countDistinctPaletteGroups(hex), [hex]);
+  const templates = copy.loading.phrases;
+  const activeTemplate = templates[phraseIndex] ?? templates[0];
 
   useEffect(() => {
     if (prefersReducedMotion()) {
@@ -25,12 +29,19 @@ export function MatchingLoader({ onDone }: { onDone: () => void }) {
       return () => window.clearTimeout(timeout);
     }
 
-    const slot = LOAD_MS / phrases.length;
-    const timers = phrases.map((_, index) =>
+    const slot = LOAD_MS / templates.length;
+    const timers = templates.map((_, index) =>
       window.setTimeout(() => setPhraseIndex(index), index * slot),
     );
-    return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, [completeMatch, hex, onDone, phrases]);
+    const safety = window.setTimeout(() => {
+      completeMatch(hex);
+      onDone();
+    }, LOAD_MS + 160);
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      window.clearTimeout(safety);
+    };
+  }, [completeMatch, hex, onDone, templates]);
 
   function finish(event: React.AnimationEvent<HTMLDivElement>) {
     if (event.target !== event.currentTarget) return;
@@ -51,8 +62,8 @@ export function MatchingLoader({ onDone }: { onDone: () => void }) {
       )}
       <div className="match-load-copy">
         <p className="match-load-kicker">{copy.loading.title}</p>
-        <p key={phrases[phraseIndex]} className="match-load-phrase">
-          {phrases[phraseIndex]}
+        <p key={`${phraseIndex}-${hex}-${paletteGroupCount}`} className="match-load-phrase">
+          <LoadingPhrase template={activeTemplate} hex={hex} count={paletteGroupCount} />
         </p>
       </div>
     </div>

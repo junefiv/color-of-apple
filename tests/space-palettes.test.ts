@@ -28,10 +28,10 @@ describe("extractSpacePalettes", () => {
       const surface = parseToOklch(palette.colors[3]);
       expect(paper.l).toBeGreaterThan(0.95);
       expect(paper.c).toBeLessThanOrEqual(0.02);
-      expect(surface.l).toBeLessThan(paper.l);
-      expect(surface.c).toBeLessThanOrEqual(0.025);
+      expect(surface.l).toBeGreaterThan(0.97);
+      expect(surface.c).toBeLessThanOrEqual(0.012);
       expect(ink.l).toBeLessThan(0.28);
-      expect(ink.c).toBeLessThanOrEqual(0.03);
+      expect(ink.c).toBeLessThanOrEqual(0.035);
       expect(contrastRatio(palette.text, palette.background)).toBeGreaterThanOrEqual(4.5);
     }
   });
@@ -50,8 +50,8 @@ describe("paletteRoles", () => {
     const roles = paletteRoles("#2d2dca", "generic-gradient");
     const background = parseToOklch(roles.background);
     const surface = parseToOklch(roles.surface);
-    expect(surface.c).toBeLessThanOrEqual(0.025);
-    expect(surface.l).toBeLessThan(background.l);
+    expect(surface.c).toBeLessThanOrEqual(0.012);
+    expect(surface.l).toBeGreaterThan(background.l);
     expect(roles.chips.includes(roles.surface)).toBe(false);
   });
 });

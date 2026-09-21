@@ -24,6 +24,9 @@ export const ko = {
     sampleCta: "샘플 먼저 보기",
     chips: "웹 · 앱 · 접근성 검사 · 코드 내보내기",
     hexLabel: "Main Color",
+    pickHint: "저를 클릭해서 색을 선택하세요!",
+    generate: "Generate",
+    appleLabel: "색을 고를 사과",
   },
   features: {
     title: "한 색에 맞춰,\n필요한 컬러를 전부.",
@@ -83,9 +86,9 @@ export const ko = {
   loading: {
     title: "컬러를 맞추고 있어요",
     phrases: [
-      "기준색을 읽고 있어요",
-      "나머지 색을 맞추고 있어요",
-      "화면에 입히고 있어요",
+      "선택하신 {hex}을 분석하고 있어요.",
+      "{hex} 컬러에 맞는 팔레트를 생성하고 있어요.",
+      "{count}종의 컬러 팔레트가 준비되었어요.",
     ],
   },
   result: {
@@ -113,9 +116,12 @@ export const ko = {
     palette: "팔레트",
     palettePicker: "컬러 팔레트",
     tokens: "컬러 토큰",
+    remake: "다시 만들기",
+    remakeHint: "메인 컬러를 다시 고르기",
+    moreMenu: "더보기",
   },
   preview: {
-    overview: "클래스 찾기",
+    overview: "Page",
     components: "Components",
     states: "States",
     colors: "Colors",
@@ -158,6 +164,7 @@ export const ko = {
     title: "COLOR TOKENS",
     viewAll: "전체 토큰 보기",
     viewCore: "핵심 토큰만",
+    usesLabel: "주요 적용",
     groups: {
       core: "Core Colors",
       background: "Background & Surface",
@@ -196,12 +203,201 @@ export const ko = {
       warning: "Warning",
       warningSurface: "Warning Surface",
       danger: "Danger",
+      dangerSurface: "Danger Surface",
       info: "Info",
-      hover: "Hover",
-      pressed: "Pressed",
-      selected: "Selected",
-      focus: "Focus",
-      disabled: "Disabled",
+      infoSurface: "Info Surface",
+      onSuccess: "On Success",
+      onWarning: "On Warning",
+      onDanger: "On Danger",
+      onInfo: "On Info",
+      primaryHover: "Primary Hover",
+      primaryPressed: "Primary Pressed",
+      primarySelected: "Primary Selected",
+      secondaryHover: "Secondary Hover",
+      secondaryPressed: "Secondary Pressed",
+      neutralHover: "Neutral Hover",
+      neutralPressed: "Neutral Pressed",
+      focusRing: "Focus Ring",
+      disabledSurface: "Disabled Surface",
+      disabledBorder: "Disabled Border",
+    },
+    guides: {
+      primary: {
+        role: "서비스의 정체성을 나타내는 대표 색상. 가장 중요한 행동과 선택을 강조합니다.",
+        uses: "주요 CTA 버튼, 활성 탭, 핵심 아이콘, 체크 상태",
+      },
+      secondary: {
+        role: "Primary를 보조하면서 별도의 기능이나 정보 영역을 구분합니다.",
+        uses: "보조 버튼, 보조 카테고리, 서브 그래프",
+      },
+      accent: {
+        role: "사용자의 시선을 짧고 강하게 끌어야 하는 요소에 사용합니다.",
+        uses: "신규 기능, 강조 배지, 프로모션, 하이라이트",
+      },
+      surface: {
+        role: "콘텐츠나 컴포넌트가 놓이는 기본 바탕색입니다.",
+        uses: "카드, 입력 필드, 패널, 모달 내부",
+      },
+      onPrimary: {
+        role: "Primary 색상 위에 올라가는 콘텐츠 색상입니다. 배경과의 명도 대비를 기준으로 결정합니다.",
+        uses: "Primary 버튼의 텍스트·아이콘",
+      },
+      onSecondary: {
+        role: "Secondary 색상 위에 올라가는 콘텐츠 색상입니다. 배경과의 명도 대비를 기준으로 결정합니다.",
+        uses: "Secondary 버튼의 텍스트·아이콘",
+      },
+      onAccent: {
+        role: "Accent 색상 위에 올라가는 콘텐츠 색상입니다. 배경과의 명도 대비를 기준으로 결정합니다.",
+        uses: "Accent 배지·버튼의 텍스트와 아이콘",
+      },
+      primarySubtle: {
+        role: "Primary를 옅게 사용하여 강하지 않은 선택·강조 상태를 표현합니다.",
+        uses: "선택된 메뉴 배경, 태그, 정보 박스, Primary 아이콘 배경",
+      },
+      background: {
+        role: "페이지나 앱 화면 전체의 가장 바깥쪽 배경입니다.",
+        uses: "body, 앱 전체 화면",
+      },
+      backgroundSubtle: {
+        role: "화면 안에서 영역을 부드럽게 구분하는 보조 배경입니다.",
+        uses: "사이드바, 섹션 배경, 테이블 헤더",
+      },
+      surfaceRaised: {
+        role: "기본 배경보다 위에 떠 있는 것처럼 보이는 표면입니다.",
+        uses: "카드, 드롭다운, 플로팅 패널",
+      },
+      surfaceOverlay: {
+        role: "현재 화면 위에 겹쳐서 나타나는 콘텐츠의 표면입니다.",
+        uses: "모달, 다이얼로그, 팝오버, 바텀시트",
+      },
+      textPrimary: {
+        role: "가장 높은 우선순위의 기본 텍스트입니다.",
+        uses: "제목, 본문, 핵심 수치",
+      },
+      textSecondary: {
+        role: "본문보다 중요도가 낮은 보조 텍스트입니다.",
+        uses: "설명, 부가 정보, 메타데이터",
+      },
+      textTertiary: {
+        role: "읽을 수는 있어야 하지만 강조할 필요가 적은 정보입니다.",
+        uses: "날짜, 캡션, 도움말, 보조 레이블",
+      },
+      textDisabled: {
+        role: "사용할 수 없거나 비활성화된 요소의 텍스트입니다. 중요도가 낮은 텍스트가 아닙니다.",
+        uses: "비활성 버튼, 비활성 메뉴, 입력 불가 항목",
+      },
+      textInverse: {
+        role: "어두운색 또는 강한 색상의 배경 위에 사용하는 반전 텍스트입니다.",
+        uses: "다크 배경, 이미지 오버레이, 컬러 배너",
+      },
+      textLink: {
+        role: "클릭 또는 이동할 수 있는 텍스트임을 나타냅니다.",
+        uses: "텍스트 링크, 자세히 보기, URL",
+      },
+      borderSubtle: {
+        role: "강한 구분 없이 영역이나 항목의 경계를 가볍게 표현합니다.",
+        uses: "카드 구분선, 리스트 디바이더, 테이블 행",
+      },
+      borderDefault: {
+        role: "컴포넌트의 기본 윤곽을 명확하게 표현합니다.",
+        uses: "입력 필드, 버튼, 카드",
+      },
+      borderStrong: {
+        role: "보다 확실한 구분이나 강조가 필요한 경계입니다.",
+        uses: "선택 영역, 중요한 카드, 강조 구획",
+      },
+      borderFocus: {
+        role: "키보드나 입력 포커스가 위치한 요소를 표시합니다. 일반 테두리와 구분되는 2px 이상 포커스 링이 좋습니다.",
+        uses: "포커스된 입력 필드, 버튼, 셀렉트",
+      },
+      success: {
+        role: "작업 성공, 정상 상태, 완료를 표현합니다.",
+        uses: "성공 아이콘, 완료 배지, 성공 메시지",
+      },
+      successSurface: {
+        role: "성공 정보를 담는 영역의 옅은 배경입니다.",
+        uses: "성공 알림, 완료 카드 배경",
+      },
+      warning: {
+        role: "주의가 필요하지만 즉각적인 실패는 아닌 상태입니다.",
+        uses: "경고 아이콘, 주의 배지, 검토 필요 상태",
+      },
+      warningSurface: {
+        role: "경고 정보를 담는 영역의 옅은 배경입니다.",
+        uses: "경고 알림, 주의 안내 박스",
+      },
+      danger: {
+        role: "오류, 실패, 삭제, 위험한 행동을 표현합니다.",
+        uses: "삭제 버튼, 오류 메시지, 실패 배지",
+      },
+      dangerSurface: {
+        role: "오류 메시지·삭제 경고 영역의 옅은 배경입니다.",
+        uses: "오류 알림, 삭제 확인 박스",
+      },
+      info: {
+        role: "중립적인 안내나 참고 정보를 표현합니다.",
+        uses: "도움말, 안내 메시지, 정보 배지",
+      },
+      infoSurface: {
+        role: "안내 메시지·정보 박스의 옅은 배경입니다.",
+        uses: "도움말 박스, 안내 알림",
+      },
+      onSuccess: {
+        role: "Success 배경 위에 올리는 텍스트·아이콘 색상입니다. 대비를 기준으로 결정합니다.",
+        uses: "성공 배지, 완료 버튼",
+      },
+      onWarning: {
+        role: "Warning 배경 위에 올리는 텍스트·아이콘 색상입니다. 대비를 기준으로 결정합니다.",
+        uses: "경고 배지, 주의 버튼",
+      },
+      onDanger: {
+        role: "Danger 배경 위에 올리는 텍스트·아이콘 색상입니다. 대비를 기준으로 결정합니다.",
+        uses: "삭제 버튼, 오류 배지",
+      },
+      onInfo: {
+        role: "Info 배경 위에 올리는 텍스트·아이콘 색상입니다. 대비를 기준으로 결정합니다.",
+        uses: "정보 배지, 안내 버튼",
+      },
+      primaryHover: {
+        role: "Primary 요소에 포인터가 올라간 상태를 표현합니다.",
+        uses: "주요 CTA 버튼, 활성 아이콘 버튼, Primary 링크",
+      },
+      primaryPressed: {
+        role: "Primary 요소를 클릭하거나 터치하고 있는 순간을 표현합니다.",
+        uses: "클릭 중인 CTA 버튼, 터치 중인 Primary 버튼",
+      },
+      primarySelected: {
+        role: "Primary 성격의 항목이 선택되어 유지되는 상태를 표현합니다.",
+        uses: "선택된 탭, 활성 메뉴, 선택된 필터·옵션",
+      },
+      secondaryHover: {
+        role: "Secondary 요소에 포인터가 올라간 상태를 표현합니다.",
+        uses: "보조 버튼, 보조 액션, Secondary 아이콘 버튼",
+      },
+      secondaryPressed: {
+        role: "Secondary 요소를 클릭하거나 터치하고 있는 순간을 표현합니다.",
+        uses: "클릭 중인 보조 버튼, 터치 중인 Secondary 버튼",
+      },
+      neutralHover: {
+        role: "브랜드 색상을 사용하지 않는 일반 요소의 마우스 오버 상태를 표현합니다.",
+        uses: "리스트 항목, 테이블 행, 드롭다운 옵션, 중립 버튼",
+      },
+      neutralPressed: {
+        role: "일반 요소를 클릭하거나 터치하고 있는 순간을 표현합니다.",
+        uses: "리스트 항목, 메뉴, 카드, 중립 아이콘 버튼",
+      },
+      focusRing: {
+        role: "키보드 탐색 또는 입력 대상이 된 요소의 외곽선을 표시합니다.",
+        uses: "버튼, 입력 필드, 셀렉트, 체크박스, 링크",
+      },
+      disabledSurface: {
+        role: "조작할 수 없는 컴포넌트의 비활성 배경을 표현합니다.",
+        uses: "비활성 버튼, 입력 필드, 셀렉트, 토글",
+      },
+      disabledBorder: {
+        role: "조작할 수 없는 컴포넌트의 비활성 경계를 표현합니다.",
+        uses: "비활성 입력 필드, 버튼, 체크박스, 라디오 버튼",
+      },
     },
   },
   export: {

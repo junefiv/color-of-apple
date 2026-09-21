@@ -32,7 +32,7 @@ export function AppDetail({
           ))}
         </div>
       ) : null}
-      <div className="mx-5 mt-3 h-36 rounded-2xl" data-token="primary" style={{ background: "var(--color-primary-default)" }} />
+      <div className="mx-5 mt-3 h-36 rounded-2xl pv-bg-primary" data-token="primary" />
       <div className="flex-1 space-y-3 px-5 py-4">
         <h2 className="text-2xl font-semibold" data-token="text">
           Northwind
