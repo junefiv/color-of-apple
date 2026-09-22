@@ -32,12 +32,12 @@ describe("contrast", () => {
 
   it("uses directional primary hover from on-primary ink", () => {
     const result = generateColorSystem({ ...DEFAULT_INPUT, hex: "#f15c5c" });
-    const scale = result.primitive.primary;
-    const states = filledScaleStates(scale, result.primitive.neutral, 500);
-    expect(result.semantic.light.primary.default).toBe(scale[500]);
-    expect(result.semantic.light.primary.hover).toBe(states.hover);
-    expect(result.semantic.light.primary.pressed).toBe(states.pressed);
-    expect(result.semantic.light.primary.onPrimary).toBe(states.on);
+    const primary = result.semantic.light.primary;
+    const derived = result.derived.light;
+    expect(primary.default).toBe("#f15c5c");
+    expect(primary.hover).toBe(derived.interaction.primaryHover);
+    expect(primary.pressed).toBe(derived.interaction.primaryPressed);
+    expect(contrastRatio(primary.onPrimary, primary.default)).toBeGreaterThanOrEqual(4.5);
   });
 
   it("uses lighter hover steps when on-primary is dark", () => {

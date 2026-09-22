@@ -1,16 +1,14 @@
-import { CORE_TOKENS, flattenObject, getToken, type ColorSystemResult, type ThemeMode } from "@/lib/color-engine";
+import { CORE_TOKENS, flattenObject, getToken, type ColorSystemResult } from "@/lib/color-engine";
 import type { Copy } from "@/lib/copy";
 
 export function ColorsTab({
   result,
-  mode,
   copy,
 }: {
   result: ColorSystemResult;
-  mode: ThemeMode;
   copy: Copy;
 }) {
-  const tokens = result.semantic[mode];
+  const tokens = result.semantic.light;
 
   return (
     <div className="space-y-6 bg-[var(--color-bg-canvas)] p-4">

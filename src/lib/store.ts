@@ -1,11 +1,11 @@
 "use client";
 
 import { create } from "zustand";
-import { DEFAULT_INPUT, type GenerateInput, type ThemeMode } from "@/lib/color-engine";
+import { DEFAULT_INPUT, type GenerateInput } from "@/lib/color-engine";
 import type { Locale } from "@/lib/copy";
 import type { MatchStage } from "@/lib/match-reveal";
 import { FALLBACK_HEX } from "@/lib/picked-color";
-import { DEFAULT_PALETTE_ID } from "@/lib/space-palettes";
+import { DEFAULT_PALETTE_ID, resolvePaletteId } from "@/lib/space-palettes";
 
 export type PreviewTab = "overview" | "components";
 export type PreviewKind =
@@ -39,7 +39,6 @@ export function normalizePreviewKind(value?: string): PreviewKind {
 type Persisted = {
   locale: Locale;
   input: GenerateInput;
-  themeMode: ThemeMode;
   platform: PlatformView;
   previewTab: PreviewTab;
   previewKind: PreviewKind;
@@ -60,7 +59,6 @@ type MatchuState = Persisted & {
   setLocale: (locale: Locale) => void;
   setInput: (input: Partial<GenerateInput>) => void;
   replaceInput: (input: GenerateInput) => void;
-  setThemeMode: (mode: ThemeMode) => void;
   setPlatform: (platform: PlatformView) => void;
   setPreviewTab: (tab: PreviewTab) => void;
   setPreviewKind: (kind: PreviewKind) => void;
@@ -87,7 +85,6 @@ export const EMPTY_INPUT: GenerateInput = {
 export const useMatchuStore = create<MatchuState>((set) => ({
   locale: "ko",
   input: EMPTY_INPUT,
-  themeMode: "light",
   platform: "web",
   previewTab: "overview",
   previewKind: "work",
@@ -108,7 +105,6 @@ export const useMatchuStore = create<MatchuState>((set) => ({
       input: { ...state.input, ...input },
     })),
   replaceInput: (input) => set({ input }),
-  setThemeMode: (themeMode) => set({ themeMode }),
   setPlatform: (platform) => set({ platform }),
   setPreviewTab: (previewTab) => set({ previewTab }),
   setPreviewKind: (previewKind) => set({ previewKind }),
@@ -116,7 +112,7 @@ export const useMatchuStore = create<MatchuState>((set) => ({
   setSkipLoader: (skipLoader) => set({ skipLoader }),
   setPendingBleed: (pendingBleed) => set({ pendingBleed }),
   setMatchStage: (matchStage) => set({ matchStage }),
-  setSelectedPaletteId: (selectedPaletteId) => set({ selectedPaletteId }),
+  setSelectedPaletteId: (selectedPaletteId) => set({ selectedPaletteId: resolvePaletteId(selectedPaletteId) }),
   setPalettesRevealed: (palettesRevealed) => set({ palettesRevealed }),
   completeMatch: (hex) =>
     set((state) => ({
@@ -140,7 +136,6 @@ export const useMatchuStore = create<MatchuState>((set) => ({
   resetSession: () =>
     set((state) => ({
       input: EMPTY_INPUT,
-      themeMode: "light",
       platform: "web",
       previewTab: "overview",
       previewKind: "work",
@@ -158,14 +153,13 @@ export const useMatchuStore = create<MatchuState>((set) => ({
     set((state) => ({
       locale: value.locale ?? state.locale,
       input: value.input ? { ...state.input, ...value.input } : state.input,
-      themeMode: value.themeMode ?? state.themeMode,
       platform: value.platform ?? state.platform,
       previewTab: value.previewTab === "components" ? "components" : state.previewTab,
       previewKind: normalizePreviewKind(value.previewKind ?? state.previewKind),
       hasMatched: Boolean(value.hasMatched),
       matchedHex: value.matchedHex ?? null,
       matchStage: value.hasMatched ? "done" : "idle",
-      selectedPaletteId: value.selectedPaletteId ?? DEFAULT_PALETTE_ID,
+      selectedPaletteId: resolvePaletteId(value.selectedPaletteId ?? DEFAULT_PALETTE_ID),
       palettesRevealed: Boolean(value.palettesRevealed),
       hydrated: true,
     })),
@@ -186,7 +180,6 @@ export function writeDraft(state: MatchuState) {
   const draft: Persisted = {
     locale: state.locale,
     input: state.input,
-    themeMode: state.themeMode,
     platform: state.platform,
     previewTab: state.previewTab,
     previewKind: state.previewKind,

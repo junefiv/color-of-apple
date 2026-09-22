@@ -23,7 +23,6 @@ export type {
   CorePalette,
   Harmony,
   PaletteMood,
-  PaletteRecipe,
 } from "./core-palette";
 export { CORE_TOKENS, TOKEN_USES } from "./core-tokens";
 export { flattenObject, primitivesToCssVars, semanticToCssVars, tokenPathToCssVar } from "./flatten";

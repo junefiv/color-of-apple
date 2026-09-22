@@ -5,35 +5,32 @@ import {
   primitivesToCssVars,
   semanticToCssVars,
   type ColorSystemResult,
-  type ThemeMode,
 } from "@/lib/color-engine";
 import { paletteTokensToCssVariables } from "@/lib/palette-semantic-tokens";
 
 export function ThemeScope({
   result,
-  mode,
   className,
   extraVars,
   children,
 }: {
   result: ColorSystemResult;
-  mode: ThemeMode;
   className?: string;
   extraVars?: Record<string, string>;
   children: React.ReactNode;
 }) {
-  const semantic = result.semantic[mode];
+  const semantic = result.semantic.light;
   const vars = {
     ...primitivesToCssVars(result.primitive),
     ...semanticToCssVars(semantic),
     ...previewComponentVars(result.primitive, semantic),
-    ...paletteTokensToCssVariables(result.derived),
+    ...paletteTokensToCssVariables(result.derived.light),
     ...extraVars,
   };
 
   return (
     <div
-      data-theme={mode}
+      data-theme="light"
       className={`matchu-preview ${className ?? ""}`}
       style={vars as React.CSSProperties}
     >

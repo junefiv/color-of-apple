@@ -1,4 +1,5 @@
-import { deriveSelectedPaletteTokens, paletteRoles } from "@/lib/space-palettes";
+import { applyGeneratedToSemantic, generatePalette } from "@/lib/palette";
+import { paletteRoles } from "@/lib/space-palettes";
 import { MOOD_PRESETS } from "./constants";
 import { parseToOklch, preserveSourceHex } from "./color-utils";
 import { CORE_TOKENS } from "./core-tokens";
@@ -62,22 +63,31 @@ export function generateColorSystem(
     info: generateStatusScale("info", parseToOklch("#3182F6").c),
   };
 
-  const lightMapped = mapSemanticTokens({
-    primitives,
-    mood: input.mood,
-    mode: "light",
-    target: input.accessibilityTarget,
-    sourceHex,
-    palette: roles,
-  });
-  const darkMapped = mapSemanticTokens({
-    primitives,
-    mood: input.mood,
-    mode: "dark",
-    target: input.accessibilityTarget,
-    sourceHex,
-    palette: roles,
-  });
+  const lightTokens = generatePalette(input.hex, paletteId, "light").tokens;
+  const darkTokens = generatePalette(input.hex, paletteId, "dark").tokens;
+
+  const lightMapped = applyGeneratedToSemantic(
+    mapSemanticTokens({
+      primitives,
+      mood: input.mood,
+      mode: "light",
+      target: input.accessibilityTarget,
+      sourceHex,
+      palette: roles,
+    }),
+    lightTokens,
+  );
+  const darkMapped = applyGeneratedToSemantic(
+    mapSemanticTokens({
+      primitives,
+      mood: input.mood,
+      mode: "dark",
+      target: input.accessibilityTarget,
+      sourceHex,
+      palette: roles,
+    }),
+    darkTokens,
+  );
 
   const light = fixContrastFailures(lightMapped, input.accessibilityTarget);
   const dark = fixContrastFailures(darkMapped, input.accessibilityTarget);
@@ -85,7 +95,10 @@ export function generateColorSystem(
   return {
     source: primary.scale[500],
     primitive: primitives,
-    derived: deriveSelectedPaletteTokens(input.hex, paletteId),
+    derived: {
+      light: lightTokens,
+      dark: darkTokens,
+    },
     semantic: {
       light: light.theme,
       dark: dark.theme,

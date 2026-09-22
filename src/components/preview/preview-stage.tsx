@@ -44,10 +44,9 @@ export function PreviewStage({
   const [counts, setCounts] = useState(EMPTY);
   const [focus, setFocus] = useState<TokenRole | null>(null);
   const input = useMatchuStore((state) => state.input);
-  const themeMode = useMatchuStore((state) => state.themeMode);
   const selectedPaletteId = useMatchuStore((state) => state.selectedPaletteId);
   const result = useColorSystem(input, selectedPaletteId);
-  const failCount = result.accessibility[themeMode].failCount;
+  const failCount = result.accessibility.light.failCount;
 
   useEffect(() => {
     const root = canvasRef.current;

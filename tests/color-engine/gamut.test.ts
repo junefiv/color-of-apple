@@ -9,12 +9,13 @@ describe("gamut and moods", () => {
     }
   });
 
-  it("changes chroma across moods", () => {
-    const balanced = generateColorSystem({ ...DEFAULT_INPUT, mood: "balanced" });
-    const vivid = generateColorSystem({ ...DEFAULT_INPUT, mood: "vivid" });
-    const calm = generateColorSystem({ ...DEFAULT_INPUT, mood: "calm" });
-    expect(vivid.semantic.light.primary.subtle).not.toBe(
-      calm.semantic.light.primary.subtle,
+  it("changes supporting colors across concepts, not moods", () => {
+    const balanced = generateColorSystem({ ...DEFAULT_INPUT, hex: "#ff6b35" }, "balance");
+    const vivid = generateColorSystem({ ...DEFAULT_INPUT, hex: "#ff6b35" }, "vivid-pop");
+    const clean = generateColorSystem({ ...DEFAULT_INPUT, hex: "#ff6b35" }, "clean");
+    expect(vivid.semantic.light.primary.subtle).not.toBe(clean.semantic.light.primary.subtle);
+    expect(vivid.semantic.light.secondary.default).not.toBe(
+      balanced.semantic.light.secondary.default,
     );
     expect(balanced.meta.coreTokenCount).toBe(44);
   });

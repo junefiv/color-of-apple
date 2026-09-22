@@ -1,7 +1,7 @@
 "use client";
 
-import { ClassFinderWeb } from "./class-finder";
+import { BudgetWeb } from "./budget-preview";
 
 export function WebPages() {
-  return <ClassFinderWeb />;
+  return <BudgetWeb />;
 }

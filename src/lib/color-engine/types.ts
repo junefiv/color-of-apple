@@ -209,7 +209,10 @@ export type AccessibilityReport = {
 export type ColorSystemResult = {
   source: string;
   primitive: PrimitiveScales;
-  derived: import("@/lib/palette-semantic-tokens").PaletteTokens;
+  derived: {
+    light: import("@/lib/palette-semantic-tokens").PaletteTokens;
+    dark: import("@/lib/palette-semantic-tokens").PaletteTokens;
+  };
   semantic: {
     light: SemanticTokens;
     dark: SemanticTokens;

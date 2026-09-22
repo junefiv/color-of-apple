@@ -1,17 +1,18 @@
 "use client";
 
-import { ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { PaletteWash } from "@/components/flow/palette-wash";
 import { useCopy } from "@/hooks/use-copy";
 import { usePaletteSelect } from "@/hooks/use-palette-select";
-import { paletteName } from "@/lib/palette-names";
-import { extractUniqueSpacePalettes, resolvePaletteRepresentativeId } from "@/lib/palette-groups";
+import { paletteImpression, paletteName } from "@/lib/palette-names";
+import { extractUniqueSpacePalettes } from "@/lib/palette-groups";
+import { getPaletteConcept, resolvePaletteId, type PaletteTag } from "@/lib/palette";
 import { paletteSwatches } from "@/lib/space-palettes";
 import { useMatchuStore } from "@/lib/store";
 
-const TIP_WIDTH = 416;
+const TIP_WIDTH = 448;
 const TIP_GAP = 10;
 
 function placeTip(anchor: DOMRect) {
@@ -34,24 +35,42 @@ function PaletteList({
   locale: "ko" | "en";
   onSelect: (id: string) => void;
 }) {
+  const copy = useCopy();
+
   return (
     <div className="palette-picker-list">
-      {palettes.map((palette) => (
-        <button
-          key={palette.id}
-          type="button"
-          className="space-palette"
-          data-active={palette.id === resolvedSelectedId ? "true" : "false"}
-          onClick={() => onSelect(palette.id)}
-        >
-          <span className="space-palette-name">{paletteName(palette.id, locale)}</span>
-          <span className="space-palette-swatches">
-            {paletteSwatches(palette).map((color, index) => (
-              <span key={`${palette.id}-${index}`} style={{ background: color }} />
-            ))}
-          </span>
-        </button>
-      ))}
+      {palettes.map((palette) => {
+        const concept = getPaletteConcept(palette.id);
+        return (
+          <button
+            key={palette.id}
+            type="button"
+            className="space-palette"
+            data-active={palette.id === resolvedSelectedId ? "true" : "false"}
+            onClick={() => onSelect(palette.id)}
+          >
+            <span className="space-palette-copy">
+              <span className="space-palette-name">{paletteName(palette.id, locale)}</span>
+              <span className="space-palette-impression">{paletteImpression(palette.id, locale)}</span>
+            </span>
+            <span className="space-palette-swatches" aria-hidden>
+              {paletteSwatches(palette).map((color, index) => (
+                <span key={`${palette.id}-${index}`} style={{ background: color }} />
+              ))}
+            </span>
+            <span className="space-palette-meta">
+              <span className="space-palette-tags">
+                {concept.tags.map((tag: PaletteTag) => (
+                  <span key={tag}>{copy.result.paletteTags[tag]}</span>
+                ))}
+              </span>
+              <span className="space-palette-a11y" data-ok={palette.accessible ? "true" : "false"}>
+                {palette.accessible ? copy.result.paletteA11yPass : copy.result.paletteA11yFail}
+              </span>
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -61,7 +80,7 @@ export function PalettePicker({
   variant = "inline",
 }: {
   hex: string;
-  variant?: "inline" | "floating";
+  variant?: "inline" | "floating" | "header";
 }) {
   const copy = useCopy();
   const locale = useMatchuStore((state) => state.locale);
@@ -71,14 +90,12 @@ export function PalettePicker({
   const [open, setOpen] = useState(false);
   const [tip, setTip] = useState({ top: 0, left: 0, width: TIP_WIDTH });
   const palettes = useMemo(() => extractUniqueSpacePalettes(hex), [hex]);
-  const resolvedSelectedId = useMemo(
-    () => resolvePaletteRepresentativeId(hex, selectedPaletteId),
-    [hex, selectedPaletteId],
-  );
-  const selected = palettes.find((palette) => palette.id === resolvedSelectedId) ?? palettes[0];
+  const resolvedSelectedId = resolvePaletteId(selectedPaletteId);
+  const selected =
+    palettes.find((palette) => palette.id === resolvedSelectedId) ?? palettes[0];
 
   useLayoutEffect(() => {
-    if (!open || variant !== "inline") return;
+    if (!open || variant === "floating") return;
 
     function update() {
       const anchor = rootRef.current?.getBoundingClientRect();
@@ -132,13 +149,30 @@ export function PalettePicker({
         onClick={() => setOpen((value) => !value)}
       >
         <span className="palette-fab-swatches" aria-hidden>
-          {selected.colors.map((color, index) => (
+          {selected.colors.slice(0, 3).map((color, index) => (
             <span key={`${selected.id}-${index}`} className="palette-fab-chip" style={{ background: color }} />
           ))}
         </span>
         <span className="palette-fab-chevron-wrap" aria-hidden>
           <ChevronUp className="palette-fab-chevron" data-open={open ? "true" : "false"} />
         </span>
+      </button>
+    ) : variant === "header" ? (
+      <button
+        type="button"
+        className="studio-palette"
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-label={copy.result.palettePicker}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span className="studio-palette-swatches" aria-hidden>
+          {selected.colors.slice(0, 3).map((color, index) => (
+            <span key={`${selected.id}-${index}`} style={{ background: color }} />
+          ))}
+        </span>
+        <span className="studio-palette-name">{paletteName(selected.id, locale)}</span>
+        <ChevronDown className="studio-palette-chevron" data-open={open ? "true" : "false"} aria-hidden />
       </button>
     ) : (
       <button
@@ -162,17 +196,17 @@ export function PalettePicker({
 
   const panel = (
     <div
-      ref={variant === "inline" ? tipRef : undefined}
+      ref={variant === "floating" ? undefined : tipRef}
       className={variant === "floating" ? "palette-fab-panel" : "palette-picker-tip"}
       role="dialog"
       aria-label={copy.result.palettePicker}
       style={
-        variant === "inline"
-          ? { top: tip.top, left: tip.left, width: tip.width }
-          : undefined
+        variant === "floating"
+          ? undefined
+          : { top: tip.top, left: tip.left, width: tip.width }
       }
     >
-      {variant === "inline" ? <p className="palette-picker-tip-title">{copy.result.palettePicker}</p> : null}
+      {variant !== "floating" ? <p className="palette-picker-tip-title">{copy.result.palettePicker}</p> : null}
       <PaletteList
         palettes={palettes}
         resolvedSelectedId={resolvedSelectedId}

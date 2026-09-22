@@ -29,8 +29,9 @@ export function exportCss(result: ColorSystemResult) {
   const dark = semanticToCssVars(result.semantic.dark);
   const primitives = primitivesToCssVars(result.primitive);
 
-  const derived = paletteTokensToCssVariables(result.derived);
-  return `:root {\n${groupedSemantic(light)}\n\n${block("primitives", primitives)}\n\n${block("derived", derived)}\n}\n\n.dark {\n${groupedSemantic(dark)}\n}\n`;
+  const derived = paletteTokensToCssVariables(result.derived.light);
+  const derivedDark = paletteTokensToCssVariables(result.derived.dark);
+  return `:root {\n${groupedSemantic(light)}\n\n${block("primitives", primitives)}\n\n${block("derived", derived)}\n}\n\n.dark {\n${groupedSemantic(dark)}\n\n${block("derived", derivedDark)}\n}\n`;
 }
 
 export function exportCssLightOnly(result: ColorSystemResult) {

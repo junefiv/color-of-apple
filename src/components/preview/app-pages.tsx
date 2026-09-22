@@ -1,7 +1,7 @@
 "use client";
 
-import { ClassFinderApp } from "./class-finder";
+import { BudgetApp } from "./budget-preview";
 
 export function AppPages() {
-  return <ClassFinderApp />;
+  return <BudgetApp />;
 }

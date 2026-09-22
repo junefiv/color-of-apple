@@ -1,7 +1,7 @@
 "use client";
 
 import { ThemeScope } from "@/components/preview/theme-scope";
-import { ClassFinderWeb } from "@/components/preview/class-finder";
+import { BudgetWeb } from "@/components/preview/budget-preview";
 import { WireframePreview } from "@/components/preview/wireframe-preview";
 import type { ColorSystemResult } from "@/lib/color-engine";
 import type { MatchStage } from "@/lib/match-reveal";
@@ -36,11 +36,10 @@ export function StudioPreview({
       {colored ? (
         <ThemeScope
           result={result}
-          mode="light"
           extraVars={extraVars}
           className="min-h-[420px] p-3 md:p-4"
         >
-          <ClassFinderWeb />
+          <BudgetWeb />
         </ThemeScope>
       ) : (
         <WireframePreview />

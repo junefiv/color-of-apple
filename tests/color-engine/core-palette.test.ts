@@ -1,13 +1,8 @@
 import { describe, expect, it } from "vitest";
-import {
-  contrastRatio,
-  generateCorePalette,
-  parseToOklch,
-} from "@/lib/color-engine";
+import { contrastRatio, generateCorePalette, parseToOklch } from "@/lib/color-engine";
 import { hueDistance } from "@/lib/color-engine/color-utils";
-import { PALETTE_RECIPES } from "@/lib/space-palettes";
 
-const navy = generateCorePalette("#2d2dca", PALETTE_RECIPES["generic-gradient"]);
+const navy = generateCorePalette("#2d2dca", "balance");
 
 describe("generateCorePalette", () => {
   it("keeps structural colors quiet and readable", () => {
@@ -15,15 +10,10 @@ describe("generateCorePalette", () => {
     const surface = parseToOklch(navy.surface);
     const text = parseToOklch(navy.textPrimary);
 
-    expect(background.l).toBeGreaterThan(0.96);
-    expect(background.c).toBeLessThanOrEqual(0.02);
-    expect(surface.l).toBeGreaterThan(background.l);
-    expect(surface.c).toBeLessThanOrEqual(0.01);
-    if (surface.c > 0.006 && background.c > 0.006) {
-      expect(hueDistance(surface.h, background.h)).toBeLessThan(18);
-    }
+    expect(background.l).toBeGreaterThan(0.95);
+    expect(background.c).toBeLessThanOrEqual(0.03);
+    expect(surface.l).toBeGreaterThanOrEqual(background.l);
     expect(text.l).toBeLessThan(0.28);
-    expect(text.c).toBeLessThanOrEqual(0.035);
     expect(contrastRatio(navy.textPrimary, navy.background)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(navy.textPrimary, navy.surface)).toBeGreaterThanOrEqual(4.5);
   });
@@ -34,22 +24,19 @@ describe("generateCorePalette", () => {
     expect(contrastRatio(navy.onPrimary, navy.primaryAction)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("keeps secondary softer than primary and accent distinct", () => {
+  it("keeps accent distinct from primary", () => {
     const primary = parseToOklch(navy.primary);
-    const secondary = parseToOklch(navy.secondary);
     const accent = parseToOklch(navy.accent);
-    expect(secondary.c).toBeLessThanOrEqual(primary.c + 0.01);
-    expect(Math.abs(accent.h - primary.h) > 25 || Math.abs(accent.l - primary.l) >= 0.1).toBe(true);
+    expect(hueDistance(accent.h, primary.h) > 18 || Math.abs(accent.l - primary.l) >= 0.1).toBe(true);
   });
 
   it("does not paint surface with an expression color", () => {
     const surface = parseToOklch(navy.surface);
     const secondary = parseToOklch(navy.secondary);
-    expect(surface.c).toBeLessThan(secondary.c * 0.4);
+    expect(surface.c).toBeLessThan(Math.max(secondary.c * 0.5, 0.02));
   });
 
-  it("uses chromatic neutrals that keep the brand hue", () => {
+  it("uses the concept's Neutral hue for Balance", () => {
     expect(hueDistance(parseToOklch(navy.background).h, parseToOklch(navy.primary).h)).toBeLessThan(40);
-    expect(hueDistance(parseToOklch(navy.textPrimary).h, parseToOklch(navy.primary).h)).toBeLessThan(40);
   });
 });

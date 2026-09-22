@@ -8,23 +8,20 @@ import {
   getToken,
   TOKEN_USES,
   type ColorSystemResult,
-  type ThemeMode,
 } from "@/lib/color-engine";
 import { useCopy } from "@/hooks/use-copy";
 import { useMatchuStore } from "@/lib/store";
 
 export function TokenPanel({
   result,
-  mode,
 }: {
   result: ColorSystemResult;
-  mode: ThemeMode;
 }) {
   const copy = useCopy();
   const viewAll = useMatchuStore((state) => state.viewAllTokens);
   const setViewAll = useMatchuStore((state) => state.setViewAllTokens);
-  const tokens = result.semantic[mode];
-  const report = result.accessibility[mode];
+  const tokens = result.semantic.light;
+  const report = result.accessibility.light;
 
   const grouped = CORE_TOKENS.reduce<Record<string, typeof CORE_TOKENS>>((acc, token) => {
     acc[token.group] = acc[token.group] ?? [];

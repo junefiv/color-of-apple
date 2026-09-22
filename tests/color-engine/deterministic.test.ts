@@ -43,8 +43,8 @@ describe("generateColorSystem", () => {
   });
 
   it("changes supporting tokens when the selected palette changes", () => {
-    const polar = generateColorSystem({ ...DEFAULT_INPUT, hex: "#2d2dca" }, "generic-gradient");
-    const sage = generateColorSystem({ ...DEFAULT_INPUT, hex: "#2d2dca" }, "matching");
+    const polar = generateColorSystem({ ...DEFAULT_INPUT, hex: "#2d2dca" }, "balance");
+    const sage = generateColorSystem({ ...DEFAULT_INPUT, hex: "#2d2dca" }, "natural");
     expect(polar.semantic.light.primary.default).toBe("#2d2dca");
     expect(sage.semantic.light.primary.default).toBe("#2d2dca");
     expect(polar.semantic.light.secondary.default).not.toBe(
@@ -58,7 +58,7 @@ describe("generateColorSystem", () => {
       const result = generateColorSystem({ ...DEFAULT_INPUT, hex: "#2d2dca" }, palette.id);
       expect(result.semantic.light.background.canvas).toBe(palette.background);
       expect(result.semantic.light.text.primary).toBe(palette.text);
-      expect(result.semantic.light.surface.default).toBe(palette.colors[3]);
+      expect(result.semantic.light.background.canvas).toBe(palette.colors[3]);
       expect(result.semantic.light.chart["1"]).toBe(palette.colors[0]);
       expect(result.semantic.light.chart["2"]).toBe(palette.colors[1]);
       expect(result.semantic.light.chart["3"]).toBe(palette.colors[2]);
