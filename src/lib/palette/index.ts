@@ -8,6 +8,8 @@ export {
   resolvePaletteId,
 } from "./concepts";
 export { generatePalette, generatePaletteTokens, listGeneratedPalettes } from "./engine";
+export { extractOnColor, getAdaptiveThreshold, getOnColor } from "./on-color";
+export type { OnColorMode, OnColorToken } from "./on-color";
 export { applyPaletteTokens, paletteTokensToCssVariables } from "./css-vars";
 export { applyGeneratedToSemantic } from "./apply-semantic";
 export type {

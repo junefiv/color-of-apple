@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { SiteHeader } from "@/components/brand/site-header";
 import { ChromeChip } from "@/components/chrome/chrome-chip";
@@ -17,7 +17,7 @@ import { useColorSystem } from "@/hooks/use-color-system";
 import { useCopy } from "@/hooks/use-copy";
 import { exportCss } from "@/lib/export";
 import { encodeShare } from "@/lib/share/encode";
-import { useMatchuStore, type PreviewTab } from "@/lib/store";
+import { useMatchuStore } from "@/lib/store";
 import { ExportSheet } from "./export-sheet";
 import { TokenPanel } from "./token-panel";
 import { WorkbenchMoreMenu } from "./workbench-more-menu";
@@ -37,15 +37,7 @@ export function Workbench() {
 
   const result = useColorSystem(input, selectedPaletteId);
   const stage = hasMatched ? "done" : matchStage;
-
-  const tabs = useMemo(
-    () =>
-      [
-        ["overview", copy.preview.overview],
-        ["components", copy.preview.components],
-      ] as Array<[PreviewTab, string]>,
-    [copy],
-  );
+  const view = previewTab === "components" ? "components" : platform;
 
   async function copyCss() {
     try {
@@ -87,28 +79,29 @@ export function Workbench() {
         <PalettePicker hex={input.hex} variant="header" />
         <div className="studio-nav" role="group" aria-label={copy.result.platforms}>
           <ChromeChip
-            active={platform === "web"}
+            active={view === "web"}
             matched={hasMatched}
-            onClick={() => setPlatform("web")}
+            onClick={() => {
+              setPlatform("web");
+              setPreviewTab("overview");
+            }}
             label={copy.result.web}
           />
           <ChromeChip
-            active={platform === "app"}
+            active={view === "app"}
             matched={hasMatched}
-            onClick={() => setPlatform("app")}
+            onClick={() => {
+              setPlatform("app");
+              setPreviewTab("overview");
+            }}
             label={copy.result.app}
           />
-        </div>
-        <div className="studio-nav-sub" role="group" aria-label={copy.preview.overview}>
-          {tabs.map(([key, label]) => (
-            <ChromeChip
-              key={key}
-              active={previewTab === key}
-              matched={hasMatched}
-              onClick={() => setPreviewTab(key)}
-              label={label}
-            />
-          ))}
+          <ChromeChip
+            active={view === "components"}
+            matched={hasMatched}
+            onClick={() => setPreviewTab("components")}
+            label={copy.preview.components}
+          />
         </div>
       </SiteHeader>
 

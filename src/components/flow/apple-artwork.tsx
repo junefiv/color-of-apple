@@ -46,12 +46,16 @@ export function AppleArtwork({
         filter={`url(#${textureId})`}
       />
       <g transform="translate(66.5 92)">
-        <ellipse ref={leftEyeRef} rx="14.5" ry="19.5" fill="#FFFEF8" transform="rotate(-3)" />
-        <ellipse rx="8.2" ry="10.7" fill="#302623" transform={`translate(${look.left.x} ${look.left.y}) rotate(-8)`} />
+        <g className="apple-eye">
+          <ellipse ref={leftEyeRef} rx="14.5" ry="19.5" fill="#FFFEF8" transform="rotate(-3)" />
+          <ellipse rx="8.2" ry="10.7" fill="#302623" transform={`translate(${look.left.x} ${look.left.y}) rotate(-8)`} />
+        </g>
       </g>
       <g transform="translate(100.5 92)">
-        <ellipse ref={rightEyeRef} rx="14.5" ry="19.5" fill="#FFFEF8" transform="rotate(2)" />
-        <ellipse rx="8.2" ry="10.7" fill="#302623" transform={`translate(${look.right.x} ${look.right.y}) rotate(-5)`} />
+        <g className="apple-eye">
+          <ellipse ref={rightEyeRef} rx="14.5" ry="19.5" fill="#FFFEF8" transform="rotate(2)" />
+          <ellipse rx="8.2" ry="10.7" fill="#302623" transform={`translate(${look.right.x} ${look.right.y}) rotate(-5)`} />
+        </g>
       </g>
     </svg>
   );

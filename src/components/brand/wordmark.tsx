@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { LogoApple } from "@/components/brand/logo-apple";
+import { useAppleHop } from "@/hooks/use-apple-hop";
 import { useCopy } from "@/hooks/use-copy";
 import { isHexColor, normalizeHex, resolvePickedHex } from "@/lib/picked-color";
 import { useMatchuStore } from "@/lib/store";
@@ -22,45 +22,12 @@ export function Wordmark({
   const matchedHex = useMatchuStore((state) => state.matchedHex);
   const hasMatched = useMatchuStore((state) => state.hasMatched);
   const hydrated = useMatchuStore((state) => state.hydrated);
-  const [hopping, setHopping] = useState(false);
-  const [tip, setTip] = useState(false);
+  const { hopping, tip } = useAppleHop(remake);
 
   const appleHex =
     hydrated && hasMatched && matchedHex && isHexColor(matchedHex)
       ? normalizeHex(matchedHex)
       : resolvePickedHex(inputHex);
-
-  useEffect(() => {
-    if (!remake) return;
-
-    let cancelled = false;
-    const timers: number[] = [];
-
-    function hop(nextDelay: number) {
-      if (cancelled) return;
-      setHopping(true);
-      setTip(true);
-      timers.push(
-        window.setTimeout(() => {
-          if (!cancelled) setHopping(false);
-        }, 1900),
-      );
-      timers.push(
-        window.setTimeout(() => {
-          if (cancelled) return;
-          setTip(false);
-          timers.push(window.setTimeout(() => hop(8000 + Math.random() * 7000), nextDelay));
-        }, 3600),
-      );
-    }
-
-    timers.push(window.setTimeout(() => hop(8000 + Math.random() * 7000), 2200));
-
-    return () => {
-      cancelled = true;
-      timers.forEach((id) => window.clearTimeout(id));
-    };
-  }, [remake]);
 
   function goRemake() {
     resetSession();

@@ -1,7 +1,6 @@
 "use client";
 
 import type { PreviewTab } from "@/lib/store";
-import { AppComponentsCatalog } from "./app/components-catalog";
 import { AppPages } from "./app-pages";
 import { WebComponentsCatalog } from "./web/components-catalog";
 import { WebPages } from "./web-pages";
@@ -14,7 +13,7 @@ export function PreviewCanvas({
   tab: PreviewTab;
 }) {
   if (tab === "components") {
-    return platform === "web" ? <WebComponentsCatalog /> : <AppComponentsCatalog />;
+    return <WebComponentsCatalog />;
   }
 
   return platform === "web" ? <WebPages /> : <AppPages />;

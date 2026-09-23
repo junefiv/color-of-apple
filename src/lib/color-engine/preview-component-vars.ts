@@ -157,6 +157,22 @@ export function previewComponentVars(
   vars["--switch-thumb-on"] = onP;
   vars["--switch-track-on-hover"] = primaryFilled.hover;
 
+  vars["--selection-selected-bg"] = p[500];
+  vars["--selection-selected-border"] = p[500];
+  vars["--selection-selected-icon"] = onP;
+  vars["--selection-selected-hover"] = primaryFilled.hover;
+  vars["--selection-selected-pressed"] = primaryFilled.pressed;
+  vars["--selection-unselected-bg"] = semantic.surface.default;
+  vars["--selection-unselected-border"] = semantic.border.default;
+  vars["--selection-hover-bg"] = semantic.primary.subtle;
+  vars["--selection-hover-border"] = p[500];
+  vars["--selection-focus-ring"] = semantic.interaction.focusRing;
+  vars["--selection-error-border"] = semantic.danger.default;
+  vars["--selection-disabled-bg"] = semantic.interaction.disabledBackground;
+  vars["--selection-disabled-border"] = semantic.interaction.disabledBorder;
+  vars["--selection-disabled-icon"] = semantic.interaction.disabledForeground;
+  vars["--selection-radio-dot"] = p[500];
+
   set(vars, "--card", "default", { bg: n[0], fg: n[900], border: n[200] });
   set(vars, "--card", "hover", { bg: n[50], fg: n[900], border: n[300] });
   set(vars, "--card", "pressed", { bg: n[100], fg: n[900], border: n[300] });

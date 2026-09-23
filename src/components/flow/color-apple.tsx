@@ -5,6 +5,7 @@ import { AppleArtwork } from "@/components/flow/apple-artwork";
 import { useAppleEyeLook } from "@/hooks/use-apple-eye-look";
 import { createPortal } from "react-dom";
 import { HexColorPicker } from "react-colorful";
+import { useAppleHop } from "@/hooks/use-apple-hop";
 import { useCopy } from "@/hooks/use-copy";
 import { APPLE_HEX, isHexColor, normalizeHex } from "@/lib/picked-color";
 
@@ -47,6 +48,7 @@ export function ColorApple({
   const { look, leftEyeRef, rightEyeRef } = useAppleEyeLook();
   const [open, setOpen] = useState(false);
   const [tip, setTip] = useState({ top: 0, left: 0, place: "right" as "right" | "left" | "bottom" });
+  const { hopping, tip: hopTip } = useAppleHop(!open);
   const fill = isHexColor(hex) ? normalizeHex(hex) : APPLE_HEX;
 
   function commit(next: string) {
@@ -96,14 +98,17 @@ export function ColorApple({
 
   return (
     <div className="color-apple">
-      <div className="apple-bubble" role="note">
-        <p>{copy.hero.pickHint}</p>
-      </div>
+      {hopTip ? (
+        <div className="apple-bubble" role="note">
+          <p>{copy.hero.pickHint}</p>
+        </div>
+      ) : null}
 
       <button
         ref={appleRef}
         type="button"
         className="apple-hit"
+        data-hop={hopping ? "true" : "false"}
         data-testid="color-apple"
         aria-label={copy.hero.appleLabel}
         aria-expanded={open}

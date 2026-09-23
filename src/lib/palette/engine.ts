@@ -10,6 +10,7 @@ import {
 } from "@/lib/color-engine/color-utils";
 import type { OklchColor } from "@/lib/color-engine/types";
 import { PALETTE_CONCEPTS, getPaletteConcept, resolvePaletteId } from "./concepts";
+import { getOnColor } from "./on-color";
 import type {
   ColorRule,
   ColorStrength,
@@ -219,12 +220,6 @@ function resolveNeutralHue(
   }
 }
 
-function getOnColor(background: string, dark: string, light: string) {
-  const preferred =
-    contrastRatio(dark, background) >= contrastRatio(light, background) ? dark : light;
-  return ensureContrast(preferred, background, 4.5).hex;
-}
-
 function isLightOn(onColor: string) {
   return parseToOklch(onColor).l >= 0.65;
 }
@@ -323,7 +318,7 @@ function buildStatus(preset: PalettePreset, surface: string, background: string)
     return {
       solid,
       surface: mixOklab(surface, solid, ratio),
-      on: getOnColor(solid, "#111111", "#ffffff"),
+      on: getOnColor(solid),
     };
   };
 
@@ -376,9 +371,9 @@ export function generatePalette(
   const surfaces = buildSurfaces(preset, neutralHue, mode);
   const text = buildText(preset, neutralHue, surfaces.background, mode);
   const link = buildLink(primary, surfaces.background);
-  const onPrimary = getOnColor(primaryKept, text.primary, text.inverse);
-  const onSecondary = getOnColor(secondaryHex, text.primary, text.inverse);
-  const onAccent = getOnColor(accentHex, text.primary, text.inverse);
+  const onPrimary = getOnColor(primaryKept);
+  const onSecondary = getOnColor(secondaryHex);
+  const onAccent = getOnColor(accentHex);
   const strength = STRENGTH[preset.colorStrength];
   const borders = buildBorders(preset, neutralHue, primaryKept, surfaces.surface, mode);
   const status = buildStatus(preset, surfaces.surface, surfaces.background);
