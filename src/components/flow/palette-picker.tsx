@@ -6,9 +6,9 @@ import { createPortal } from "react-dom";
 import { PaletteWash } from "@/components/flow/palette-wash";
 import { useCopy } from "@/hooks/use-copy";
 import { usePaletteSelect } from "@/hooks/use-palette-select";
-import { paletteImpression, paletteName } from "@/lib/palette-names";
+import { paletteName } from "@/lib/palette-names";
 import { extractUniqueSpacePalettes } from "@/lib/palette-groups";
-import { getPaletteConcept, resolvePaletteId, type PaletteTag } from "@/lib/palette";
+import { resolvePaletteId } from "@/lib/palette";
 import { paletteSwatches } from "@/lib/space-palettes";
 import { useMatchuStore } from "@/lib/store";
 
@@ -35,42 +35,26 @@ function PaletteList({
   locale: "ko" | "en";
   onSelect: (id: string) => void;
 }) {
-  const copy = useCopy();
-
   return (
     <div className="palette-picker-list">
-      {palettes.map((palette) => {
-        const concept = getPaletteConcept(palette.id);
-        return (
-          <button
-            key={palette.id}
-            type="button"
-            className="space-palette"
-            data-active={palette.id === resolvedSelectedId ? "true" : "false"}
-            onClick={() => onSelect(palette.id)}
-          >
-            <span className="space-palette-copy">
-              <span className="space-palette-name">{paletteName(palette.id, locale)}</span>
-              <span className="space-palette-impression">{paletteImpression(palette.id, locale)}</span>
-            </span>
-            <span className="space-palette-swatches" aria-hidden>
-              {paletteSwatches(palette).map((color, index) => (
-                <span key={`${palette.id}-${index}`} style={{ background: color }} />
-              ))}
-            </span>
-            <span className="space-palette-meta">
-              <span className="space-palette-tags">
-                {concept.tags.map((tag: PaletteTag) => (
-                  <span key={tag}>{copy.result.paletteTags[tag]}</span>
-                ))}
-              </span>
-              <span className="space-palette-a11y" data-ok={palette.accessible ? "true" : "false"}>
-                {palette.accessible ? copy.result.paletteA11yPass : copy.result.paletteA11yFail}
-              </span>
-            </span>
-          </button>
-        );
-      })}
+      {palettes.map((palette) => (
+        <button
+          key={palette.id}
+          type="button"
+          className="space-palette"
+          data-active={palette.id === resolvedSelectedId ? "true" : "false"}
+          onClick={() => onSelect(palette.id)}
+        >
+          <span className="space-palette-copy">
+            <span className="space-palette-name">{paletteName(palette.id, locale)}</span>
+          </span>
+          <span className="space-palette-swatches" aria-hidden>
+            {paletteSwatches(palette).map((color, index) => (
+              <span key={`${palette.id}-${index}`} style={{ background: color }} />
+            ))}
+          </span>
+        </button>
+      ))}
     </div>
   );
 }

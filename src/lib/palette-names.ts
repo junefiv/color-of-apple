@@ -6,9 +6,4 @@ export function paletteName(id: string, locale: Locale = "en") {
   return concept.name;
 }
 
-export function paletteImpression(id: string, locale: Locale = "ko") {
-  const concept = getPaletteConcept(id);
-  return concept.impression[locale];
-}
-
 export { resolvePaletteId };

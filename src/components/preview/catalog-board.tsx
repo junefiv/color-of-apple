@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Moon, Sun } from "lucide-react";
+import { Loader2, Minus, Moon, Plus, Search, SendHorizontal, Star, Sun } from "lucide-react";
 import { AppleArtwork } from "@/components/flow/apple-artwork";
 import { useCopy } from "@/hooks/use-copy";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 
 const COLOR_TONES = ["neutral", "primary", "secondary", "accent", "info", "success", "warning", "error"] as const;
@@ -60,6 +61,18 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
   const [fontSize, setFontSize] = useState("medium");
   const [motionEnabled, setMotionEnabled] = useState(true);
   const [blinkEnabled, setBlinkEnabled] = useState(true);
+  const [chatDraft, setChatDraft] = useState("");
+  const [chatMessages, setChatMessages] = useState<Array<{ id: number; side: "me" | "other"; text: string }>>([]);
+  const [pendingReplies, setPendingReplies] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const [rating, setRating] = useState(3);
+  const [sliderValue, setSliderValue] = useState(42);
+  const chatThreadRef = useRef<HTMLDivElement>(null);
+  const chatMessageIdRef = useRef(0);
+  const chatReplyIndexRef = useRef(0);
+  const chatReplyTimersRef = useRef<number[]>([]);
   const emailInvalid = emailTouched && !email.trim().includes("@");
   const planInvalid = planTouched && !plan;
   const noteInvalid = noteTouched && note.trim().length < 10;
@@ -72,13 +85,22 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
     planning: k.requestPlanning,
     partnership: k.requestPartnership,
   };
+  const filteredSearchOptions = k.searchOptions.filter((option) =>
+    option.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase()),
+  );
 
   useEffect(() => {
     return () => {
       if (submitTimerRef.current !== null) window.clearTimeout(submitTimerRef.current);
       if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
+      chatReplyTimersRef.current.forEach((timer) => window.clearTimeout(timer));
     };
   }, []);
+
+  useEffect(() => {
+    const thread = chatThreadRef.current;
+    if (thread) thread.scrollTop = thread.scrollHeight;
+  }, [chatMessages, pendingReplies]);
 
   function sendRequest(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -113,6 +135,27 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
     setNoteTouched(false);
     setSubmitState("idle");
     setRequestToastVisible(false);
+  }
+
+  function sendChat(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const text = chatDraft.trim();
+    if (!text) return;
+
+    chatMessageIdRef.current += 1;
+    setChatMessages((messages) => [...messages, { id: chatMessageIdRef.current, side: "me", text }]);
+    setChatDraft("");
+    setPendingReplies((count) => count + 1);
+
+    const reply = k.chatReplies[chatReplyIndexRef.current % k.chatReplies.length];
+    chatReplyIndexRef.current += 1;
+    const timer = window.setTimeout(() => {
+      chatMessageIdRef.current += 1;
+      setChatMessages((messages) => [...messages, { id: chatMessageIdRef.current, side: "other", text: reply }]);
+      setPendingReplies((count) => Math.max(0, count - 1));
+      chatReplyTimersRef.current = chatReplyTimersRef.current.filter((item) => item !== timer);
+    }, 650);
+    chatReplyTimersRef.current.push(timer);
   }
   const labels = {
     default: b.default,
@@ -159,7 +202,7 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
 
         <section className="kit-docs-section kit-docs-section-wide">
           <h2># {k.formControls}</h2>
-          <div className="kit-docs-preview kit-form-preview">
+          <div className="kit-docs-preview kit-component-row">
             <form className="kit-request-card" onSubmit={sendRequest}>
               <div className="kit-field-grid">
               <div className="kit-field-group">
@@ -247,24 +290,20 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
                 ) : null}
               </div>
             </form>
-          </div>
-        </section>
+            <div className="kit-choice-preview">
+              <div className="kit-a11y-card" data-night={nightMode || undefined}>
+                <div className="kit-a11y-theme-row">
+                  <Switch
+                    className="kit-theme-switch"
+                    checked={nightMode}
+                    onCheckedChange={setNightMode}
+                    aria-label={k.nightMode}
+                    icon={nightMode ? <Moon key="moon" /> : <Sun key="sun" />}
+                  />
+                </div>
 
-        <section className="kit-docs-section kit-docs-section-wide">
-          <div className="kit-docs-preview kit-choice-preview">
-            <div className="kit-a11y-card" data-night={nightMode || undefined}>
-              <div className="kit-a11y-theme-row">
-                <Switch
-                  className="kit-theme-switch"
-                  checked={nightMode}
-                  onCheckedChange={setNightMode}
-                  aria-label={k.nightMode}
-                  icon={nightMode ? <Moon key="moon" /> : <Sun key="sun" />}
-                />
-              </div>
-
-              <div className="kit-a11y-grid">
-                <fieldset className="kit-a11y-setting">
+                <div className="kit-a11y-grid">
+                  <fieldset className="kit-a11y-setting">
                   <legend>{k.fontSize}</legend>
                   <RadioGroup value={fontSize} onValueChange={setFontSize} className="kit-radio-row">
                     {[
@@ -281,9 +320,9 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
                   <p className="kit-font-sample" data-size={fontSize}>
                     {k.fontSample}
                   </p>
-                </fieldset>
+                  </fieldset>
 
-                <fieldset className="kit-a11y-setting">
+                  <fieldset className="kit-a11y-setting">
                   <legend>{k.motionSettings}</legend>
                   <div className="kit-motion-layout">
                     <div className="kit-motion-options">
@@ -307,9 +346,161 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
                       <AppleArtwork />
                     </div>
                   </div>
-                </fieldset>
+                  </fieldset>
+                </div>
               </div>
             </div>
+
+            <article className="kit-chat-card">
+              <header className="kit-chat-header">
+                <span className="kit-chat-avatar" aria-hidden>M</span>
+                <span className="kit-chat-profile">
+                  <strong>{k.chatTitle}</strong>
+                  <small>{k.chatStatus}</small>
+                </span>
+              </header>
+
+              <div ref={chatThreadRef} className="kit-chat-thread" aria-live="polite">
+                <div className="kit-chat-message" data-side="other">
+                  <span>{k.chatGreeting}</span>
+                </div>
+                {chatMessages.map((message) => (
+                  <div key={message.id} className="kit-chat-message" data-side={message.side}>
+                    <span>{message.text}</span>
+                  </div>
+                ))}
+                {pendingReplies > 0 ? (
+                  <div className="kit-chat-message kit-chat-typing" data-side="other">
+                    <span>{k.chatTyping}</span>
+                  </div>
+                ) : null}
+              </div>
+
+              <form className="kit-chat-composer" onSubmit={sendChat}>
+                <Textarea
+                  className="kit-chat-input"
+                  rows={1}
+                  value={chatDraft}
+                  placeholder={k.chatPlaceholder}
+                  aria-label={k.chatPlaceholder}
+                  onChange={(event) => setChatDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      event.currentTarget.form?.requestSubmit();
+                    }
+                  }}
+                />
+                <button type="submit" className="kit-chat-send" disabled={!chatDraft.trim()} aria-label={k.chatSend}>
+                  <SendHorizontal aria-hidden />
+                </button>
+              </form>
+            </article>
+
+            <article className="kit-input-set-card">
+              <header className="kit-input-set-header">
+                <strong>{k.inputSetTitle}</strong>
+              </header>
+
+              <div className="kit-input-set-body">
+                <div className="kit-control-group">
+                  <span className="kit-control-label">{k.searchPlaceholder}</span>
+                  <div
+                    className="kit-search-combobox"
+                    onBlur={(event) => {
+                      if (!event.currentTarget.contains(event.relatedTarget)) setSearchOpen(false);
+                    }}
+                  >
+                    <Search aria-hidden />
+                    <input
+                      role="combobox"
+                      aria-expanded={searchOpen}
+                      aria-controls="kit-search-options"
+                      aria-autocomplete="list"
+                      value={searchQuery}
+                      placeholder={k.searchPlaceholder}
+                      onFocus={() => setSearchOpen(true)}
+                      onChange={(event) => {
+                        setSearchQuery(event.target.value);
+                        setSearchOpen(true);
+                      }}
+                    />
+                    {searchOpen ? (
+                      <div id="kit-search-options" className="kit-search-options" role="listbox">
+                        {filteredSearchOptions.length > 0 ? filteredSearchOptions.map((option) => (
+                          <button
+                            key={option}
+                            type="button"
+                            role="option"
+                            aria-selected={searchQuery === option}
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => {
+                              setSearchQuery(option);
+                              setSearchOpen(false);
+                            }}
+                          >
+                            {option}
+                          </button>
+                        )) : <p>{k.noSearchResults}</p>}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="kit-control-group">
+                  <span className="kit-control-label">{k.quantity}</span>
+                  <div className="kit-quantity-control">
+                    <button
+                      type="button"
+                      aria-label={k.decreaseQuantity}
+                      disabled={quantity <= 0}
+                      onClick={() => setQuantity((value) => Math.max(0, value - 1))}
+                    >
+                      <Minus aria-hidden />
+                    </button>
+                    <input
+                      type="number"
+                      min={0}
+                      value={quantity}
+                      aria-label={k.quantity}
+                      onChange={(event) => setQuantity(Math.max(0, Number(event.target.value) || 0))}
+                    />
+                    <button type="button" aria-label={k.increaseQuantity} onClick={() => setQuantity((value) => value + 1)}>
+                      <Plus aria-hidden />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="kit-control-group">
+                  <span className="kit-control-label">{k.rating}</span>
+                  <div className="kit-rating" aria-label={k.rating}>
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-label={`${value} / 5`}
+                        aria-pressed={rating === value}
+                        data-active={value <= rating || undefined}
+                        onClick={() => setRating(value)}
+                      >
+                        <Star aria-hidden />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="kit-control-group">
+                  <span className="kit-control-label kit-slider-label">
+                    <span>{k.slider}</span>
+                    <span>{sliderValue}</span>
+                  </span>
+                  <Slider
+                    value={[sliderValue]}
+                    onValueChange={(value) => setSliderValue(typeof value === "number" ? value : (value[0] ?? 0))}
+                  />
+                </div>
+              </div>
+            </article>
           </div>
         </section>
 
