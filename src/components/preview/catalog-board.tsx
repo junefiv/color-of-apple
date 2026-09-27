@@ -6,6 +6,7 @@ import { AppleArtwork } from "@/components/flow/apple-artwork";
 import { DataChartShowcase } from "@/components/preview/catalog-charts";
 import { FeedbackShowcase, type AlertTone } from "@/components/preview/catalog-feedback";
 import { SelectableTableShowcase } from "@/components/preview/catalog-table";
+import { CatalogExtendedShowcase } from "@/components/preview/catalog-extended";
 import { useCopy } from "@/hooks/use-copy";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -23,7 +24,6 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 
 const COLOR_TONES = ["neutral", "primary", "secondary", "accent", "info", "success", "warning", "error"] as const;
-const SOFT_TONES = ["default", ...COLOR_TONES.slice(1)] as const;
 
 function ButtonRow({
   look,
@@ -31,7 +31,7 @@ function ButtonRow({
   labels,
   onToneAction,
 }: {
-  look: "solid" | "soft" | "outline" | "dash";
+  look: "solid" | "soft" | "outline";
   tones: readonly string[];
   labels: Record<string, string>;
   onToneAction?: (tone: string) => void;
@@ -184,7 +184,6 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
     chatReplyTimersRef.current.push(timer);
   }
   const labels = {
-    default: b.default,
     neutral: b.neutral,
     primary: b.primary,
     secondary: b.secondary,
@@ -210,7 +209,7 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
             <section className="kit-button-column">
               <h2># {b.soft}</h2>
               <div className="kit-docs-preview">
-                <ButtonRow look="soft" tones={SOFT_TONES} labels={labels} onToneAction={showToneAlert} />
+                <ButtonRow look="soft" tones={COLOR_TONES} labels={labels} onToneAction={showToneAlert} />
               </div>
             </section>
 
@@ -218,13 +217,6 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
               <h2># {b.outline}</h2>
               <div className="kit-docs-preview">
                 <ButtonRow look="outline" tones={COLOR_TONES} labels={labels} onToneAction={showToneAlert} />
-              </div>
-            </section>
-
-            <section className="kit-button-column">
-              <h2># {b.dash}</h2>
-              <div className="kit-docs-preview">
-                <ButtonRow look="dash" tones={COLOR_TONES} labels={labels} onToneAction={showToneAlert} />
               </div>
             </section>
 
@@ -605,6 +597,13 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
                 </div>
               </div>
             </article>
+          </div>
+        </section>
+
+        <section className="kit-docs-section kit-docs-section-wide">
+          <h2># {k.extendedKit.title}</h2>
+          <div className="kit-docs-preview kit-wide-preview">
+            <CatalogExtendedShowcase />
           </div>
         </section>
 

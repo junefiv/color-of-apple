@@ -76,7 +76,7 @@ export function FeedbackShowcase({
             type="button"
             className="kit-btn kit-feedback-action"
             data-look="soft"
-            data-tone="default"
+            data-tone="neutral"
             data-tooltip={action.tooltip || undefined}
             aria-describedby={action.tooltip ? "kit-action-tooltip" : undefined}
             onClick={action.run}

@@ -14,6 +14,8 @@ export function ChromeChip({
   return (
     <button
       type="button"
+      role="radio"
+      aria-checked={active}
       onClick={onClick}
       data-active={active}
       data-matched={matched ? "true" : "false"}
