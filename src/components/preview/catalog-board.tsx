@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Minus, Moon, Plus, Search, SendHorizontal, Star, Sun } from "lucide-react";
+import { Check, ChevronDown, Loader2, Minus, Moon, Plus, Search, SendHorizontal, Star, Sun } from "lucide-react";
 import { AppleArtwork } from "@/components/flow/apple-artwork";
+import { DataChartShowcase } from "@/components/preview/catalog-charts";
+import { FeedbackShowcase, type AlertTone } from "@/components/preview/catalog-feedback";
+import { SelectableTableShowcase } from "@/components/preview/catalog-table";
 import { useCopy } from "@/hooks/use-copy";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -26,15 +29,24 @@ function ButtonRow({
   look,
   tones,
   labels,
+  onToneAction,
 }: {
   look: "solid" | "soft" | "outline" | "dash";
   tones: readonly string[];
   labels: Record<string, string>;
+  onToneAction?: (tone: string) => void;
 }) {
   return (
     <div className="kit-btn-row">
       {tones.map((tone) => (
-        <button key={`${look}-${tone}`} type="button" className="kit-btn" data-look={look} data-tone={tone}>
+        <button
+          key={`${look}-${tone}`}
+          type="button"
+          className="kit-btn"
+          data-look={look}
+          data-tone={tone}
+          onClick={() => onToneAction?.(tone)}
+        >
           {labels[tone]}
         </button>
       ))}
@@ -47,14 +59,16 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
   const b = copy.preview.buttons;
   const k = copy.preview.kit;
   const portalRef = useRef<HTMLDivElement>(null);
-  const [email, setEmail] = useState("");
-  const [emailTouched, setEmailTouched] = useState(false);
-  const [plan, setPlan] = useState<string | null>(null);
-  const [planTouched, setPlanTouched] = useState(false);
-  const [note, setNote] = useState("");
-  const [noteTouched, setNoteTouched] = useState(false);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [loginId, setLoginId] = useState("");
+  const [emailDomain, setEmailDomain] = useState<string | null>("gmail.com");
+  const [customDomain, setCustomDomain] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginIdTouched, setLoginIdTouched] = useState(false);
+  const [domainTouched, setDomainTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
   const [submitState, setSubmitState] = useState<"idle" | "loading" | "sent">("idle");
-  const [requestToastVisible, setRequestToastVisible] = useState(false);
+  const [loginToastVisible, setLoginToastVisible] = useState(false);
   const submitTimerRef = useRef<number | null>(null);
   const toastTimerRef = useRef<number | null>(null);
   const [nightMode, setNightMode] = useState(false);
@@ -66,28 +80,36 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
   const [pendingReplies, setPendingReplies] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [multiSelectOpen, setMultiSelectOpen] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(["design", "development"]);
   const [quantity, setQuantity] = useState(1);
   const [rating, setRating] = useState(3);
   const [sliderValue, setSliderValue] = useState(42);
+  const [feedbackAlert, setFeedbackAlert] = useState<AlertTone | null>(null);
   const chatThreadRef = useRef<HTMLDivElement>(null);
   const chatMessageIdRef = useRef(0);
   const chatReplyIndexRef = useRef(0);
   const chatReplyTimersRef = useRef<number[]>([]);
-  const emailInvalid = emailTouched && !email.trim().includes("@");
-  const planInvalid = planTouched && !plan;
-  const noteInvalid = noteTouched && note.trim().length < 10;
-  const emailHasError = emailInvalid;
-  const planHasError = planInvalid;
-  const noteHasError = noteInvalid;
+  const passwordIsValid = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d\s])\S{8,16}$/.test(password);
+  const loginIdHasError = loginIdTouched && !/^[A-Za-z0-9._-]+$/.test(loginId.trim());
+  const domainHasError = domainTouched && (
+    !emailDomain || (emailDomain === "custom" && !/^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(customDomain.trim()))
+  );
+  const passwordHasError = passwordTouched && !passwordIsValid;
   const formLocked = submitState !== "idle";
-  const planLabels: Record<string, string> = {
-    general: k.requestGeneral,
-    planning: k.requestPlanning,
-    partnership: k.requestPartnership,
-  };
   const filteredSearchOptions = k.searchOptions.filter((option) =>
     option.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase()),
   );
+  const multiSelectOptions = [
+    { value: "design", label: k.multiSelectDesign },
+    { value: "development", label: k.multiSelectDevelopment },
+    { value: "marketing", label: k.multiSelectMarketing },
+    { value: "research", label: k.multiSelectResearch },
+  ];
+  function showToneAlert(tone: string) {
+    if (tone === "error") setFeedbackAlert("danger");
+    else if (tone === "info" || tone === "success" || tone === "warning") setFeedbackAlert(tone);
+  }
 
   useEffect(() => {
     return () => {
@@ -102,39 +124,43 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
     if (thread) thread.scrollTop = thread.scrollHeight;
   }, [chatMessages, pendingReplies]);
 
-  function sendRequest(event: React.FormEvent<HTMLFormElement>) {
+  function login(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setEmailTouched(true);
-    setPlanTouched(true);
-    setNoteTouched(true);
+    setLoginIdTouched(true);
+    setDomainTouched(true);
+    setPasswordTouched(true);
 
-    if (!email.trim().includes("@") || !plan || note.trim().length < 10) return;
+    const domainIsValid = emailDomain && (
+      emailDomain !== "custom" || /^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(customDomain.trim())
+    );
+    if (!/^[A-Za-z0-9._-]+$/.test(loginId.trim()) || !domainIsValid || !passwordIsValid) return;
 
     setSubmitState("loading");
     submitTimerRef.current = window.setTimeout(() => {
       setSubmitState("sent");
       submitTimerRef.current = null;
-      setRequestToastVisible(true);
+      setLoginToastVisible(true);
       toastTimerRef.current = window.setTimeout(() => {
-        setRequestToastVisible(false);
+        setLoginToastVisible(false);
         toastTimerRef.current = null;
-      }, 5000);
-    }, 5000);
+      }, 3000);
+    }, 900);
   }
 
-  function resetRequest() {
+  function resetLogin() {
     if (submitTimerRef.current !== null) window.clearTimeout(submitTimerRef.current);
     if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
     submitTimerRef.current = null;
     toastTimerRef.current = null;
-    setEmail("");
-    setPlan(null);
-    setNote("");
-    setEmailTouched(false);
-    setPlanTouched(false);
-    setNoteTouched(false);
+    setLoginId("");
+    setEmailDomain("gmail.com");
+    setCustomDomain("");
+    setPassword("");
+    setLoginIdTouched(false);
+    setDomainTouched(false);
+    setPasswordTouched(false);
     setSubmitState("idle");
-    setRequestToastVisible(false);
+    setLoginToastVisible(false);
   }
 
   function sendChat(event: React.FormEvent<HTMLFormElement>) {
@@ -170,109 +196,141 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
   };
 
   return (
-    <div className="preview-viewport">
+    <div ref={viewportRef} className="preview-viewport">
       <div ref={portalRef} className="preview-scroll kit-docs" data-platform={platform}>
-        <section className="kit-docs-section">
-          <h2># {b.color}</h2>
-          <div className="kit-docs-preview">
-            <ButtonRow look="solid" tones={COLOR_TONES} labels={labels} />
-          </div>
-        </section>
+        <section className="kit-docs-section kit-docs-section-wide kit-button-showcase">
+          <div className="kit-button-sections">
+            <section className="kit-button-column">
+              <h2># {b.color}</h2>
+              <div className="kit-docs-preview">
+                <ButtonRow look="solid" tones={COLOR_TONES} labels={labels} onToneAction={showToneAlert} />
+              </div>
+            </section>
 
-        <section className="kit-docs-section">
-          <h2># {b.soft}</h2>
-          <div className="kit-docs-preview">
-            <ButtonRow look="soft" tones={SOFT_TONES} labels={labels} />
-          </div>
-        </section>
+            <section className="kit-button-column">
+              <h2># {b.soft}</h2>
+              <div className="kit-docs-preview">
+                <ButtonRow look="soft" tones={SOFT_TONES} labels={labels} onToneAction={showToneAlert} />
+              </div>
+            </section>
 
-        <section className="kit-docs-section">
-          <h2># {b.outline}</h2>
-          <div className="kit-docs-preview">
-            <ButtonRow look="outline" tones={COLOR_TONES} labels={labels} />
-          </div>
-        </section>
+            <section className="kit-button-column">
+              <h2># {b.outline}</h2>
+              <div className="kit-docs-preview">
+                <ButtonRow look="outline" tones={COLOR_TONES} labels={labels} onToneAction={showToneAlert} />
+              </div>
+            </section>
 
-        <section className="kit-docs-section">
-          <h2># {b.dash}</h2>
-          <div className="kit-docs-preview">
-            <ButtonRow look="dash" tones={COLOR_TONES} labels={labels} />
+            <section className="kit-button-column">
+              <h2># {b.dash}</h2>
+              <div className="kit-docs-preview">
+                <ButtonRow look="dash" tones={COLOR_TONES} labels={labels} onToneAction={showToneAlert} />
+              </div>
+            </section>
+
+            <section className="kit-button-column kit-feedback-column">
+              <h2># {k.feedbackActions}</h2>
+              <div className="kit-docs-preview">
+                <FeedbackShowcase
+                  viewportRef={viewportRef}
+                  alert={feedbackAlert}
+                  onDismissAlert={() => setFeedbackAlert(null)}
+                />
+              </div>
+            </section>
           </div>
         </section>
 
         <section className="kit-docs-section kit-docs-section-wide">
           <h2># {k.formControls}</h2>
           <div className="kit-docs-preview kit-component-row">
-            <form className="kit-request-card" onSubmit={sendRequest}>
+            <form className="kit-login-card" onSubmit={login}>
+              <header className="kit-login-header">
+                <strong>{k.loginTitle}</strong>
+                <small>{k.loginDescription}</small>
+              </header>
               <div className="kit-field-grid">
-              <div className="kit-field-group">
-                <Label htmlFor="kit-email">{k.email}</Label>
-                <Input
-                  id="kit-email"
-                  className="kit-field"
-                  type="email"
-                  value={email}
-                  placeholder={k.emailPlaceholder}
-                  disabled={formLocked}
-                  aria-invalid={emailHasError}
-                  aria-describedby="kit-email-help"
-                  onChange={(event) => setEmail(event.target.value)}
-                  onBlur={() => setEmailTouched(true)}
-                />
-                <p id="kit-email-help" className="kit-field-help" data-error={emailHasError || undefined}>
-                  {emailHasError ? k.emailError : k.focusHint}
-                </p>
-              </div>
-
-              <div className="kit-field-group">
-                <Label htmlFor="kit-plan">{k.requestType}</Label>
-                <Select value={plan} onValueChange={setPlan} disabled={formLocked}>
-                  <SelectTrigger
-                    id="kit-plan"
-                    className="kit-field kit-select-trigger"
-                    aria-invalid={planHasError}
-                    aria-describedby="kit-plan-help"
-                    onBlur={() => setPlanTouched(true)}
-                  >
-                    <SelectValue placeholder={k.requestTypePlaceholder}>
-                      {plan ? planLabels[plan] : k.requestTypePlaceholder}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent portalContainer={portalRef} className="kit-select-content">
-                    <SelectItem value="general">{k.requestGeneral}</SelectItem>
-                    <SelectItem value="planning">{k.requestPlanning}</SelectItem>
-                    <SelectItem value="partnership">{k.requestPartnership}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p id="kit-plan-help" className="kit-field-help" data-error={planHasError || undefined}>
-                  {planHasError ? k.requestTypeError : k.requestTypeHint}
-                </p>
-              </div>
-
-              <div className="kit-field-group kit-field-group-wide">
-                <div className="kit-field-label-row">
-                  <Label htmlFor="kit-note">{k.requestMessage}</Label>
-                  <span>{note.length}/120</span>
+                <div className="kit-field-group">
+                  <Label htmlFor="kit-login-id">{k.loginEmail}</Label>
+                  <div className="kit-email-composer">
+                    <Input
+                      id="kit-login-id"
+                      className="kit-field"
+                      value={loginId}
+                      placeholder={k.loginIdPlaceholder}
+                      disabled={formLocked}
+                      aria-invalid={loginIdHasError}
+                      aria-describedby="kit-login-email-help"
+                      autoComplete="username"
+                      onChange={(event) => setLoginId(event.target.value)}
+                      onBlur={() => setLoginIdTouched(true)}
+                    />
+                    <span aria-hidden>@</span>
+                    <Select
+                      value={emailDomain}
+                      onValueChange={(value) => {
+                        setEmailDomain(value);
+                        setDomainTouched(false);
+                      }}
+                      disabled={formLocked}
+                    >
+                      <SelectTrigger
+                        className="kit-field kit-select-trigger kit-domain-trigger"
+                        aria-label={k.emailDomain}
+                        aria-invalid={domainHasError}
+                        onBlur={() => setDomainTouched(true)}
+                      >
+                        <SelectValue placeholder={k.emailDomain} />
+                      </SelectTrigger>
+                      <SelectContent portalContainer={portalRef} className="kit-select-content">
+                        <SelectItem value="gmail.com">gmail.com</SelectItem>
+                        <SelectItem value="naver.com">naver.com</SelectItem>
+                        <SelectItem value="daum.net">daum.net</SelectItem>
+                        <SelectItem value="custom">{k.domainCustom}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {emailDomain === "custom" ? (
+                    <Input
+                      className="kit-field kit-custom-domain"
+                      value={customDomain}
+                      placeholder={k.customDomainPlaceholder}
+                      disabled={formLocked}
+                      aria-label={k.customDomainPlaceholder}
+                      aria-invalid={domainHasError}
+                      aria-describedby="kit-login-email-help"
+                      inputMode="email"
+                      onChange={(event) => setCustomDomain(event.target.value)}
+                      onBlur={() => setDomainTouched(true)}
+                    />
+                  ) : null}
+                  <p id="kit-login-email-help" className="kit-field-help" data-error={(loginIdHasError || domainHasError) || undefined}>
+                    {loginIdHasError ? k.loginIdError : domainHasError ? k.emailDomainError : k.loginEmailHint}
+                  </p>
                 </div>
-                <Textarea
-                  id="kit-note"
-                  className="kit-field kit-textarea"
-                  value={note}
-                  maxLength={120}
-                  placeholder={k.requestMessagePlaceholder}
-                  disabled={formLocked}
-                  aria-invalid={noteHasError}
-                  aria-describedby="kit-note-help"
-                  onChange={(event) => setNote(event.target.value)}
-                  onBlur={() => setNoteTouched(true)}
-                />
-                <p id="kit-note-help" className="kit-field-help" data-error={noteHasError || undefined}>
-                  {noteHasError ? k.requestMessageError : k.requestMessageHint}
-                </p>
-              </div>
+
+                <div className="kit-field-group">
+                  <Label htmlFor="kit-login-password">{k.loginPassword}</Label>
+                  <Input
+                    id="kit-login-password"
+                    className="kit-field"
+                    type="password"
+                    value={password}
+                    placeholder={k.passwordPlaceholder}
+                    disabled={formLocked}
+                    aria-invalid={passwordHasError}
+                    aria-describedby="kit-login-password-help"
+                    autoComplete="current-password"
+                    onChange={(event) => setPassword(event.target.value)}
+                    onBlur={() => setPasswordTouched(true)}
+                  />
+                  <p id="kit-login-password-help" className="kit-field-help" data-error={passwordHasError || undefined}>
+                    {passwordHasError ? k.passwordError : k.passwordRule}
+                  </p>
+                </div>
               </div>
 
-              <div className="kit-request-actions">
+              <div className="kit-login-actions">
                 <button
                   type="submit"
                   className="kit-btn"
@@ -281,11 +339,11 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
                   disabled={formLocked}
                 >
                   {submitState === "loading" ? <Loader2 className="kit-send-spinner" aria-hidden /> : null}
-                  {submitState === "loading" ? "SENDING" : submitState === "sent" ? "SENT" : "SEND"}
+                  {submitState === "loading" ? k.loggingIn : submitState === "sent" ? k.loggedIn : k.login}
                 </button>
                 {submitState === "sent" ? (
-                  <button type="button" className="kit-btn" data-look="outline" data-tone="neutral" onClick={resetRequest}>
-                    {k.writeAgain}
+                  <button type="button" className="kit-btn" data-look="outline" data-tone="neutral" onClick={resetLogin}>
+                    {k.loginReset}
                   </button>
                 ) : null}
               </div>
@@ -398,10 +456,6 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
             </article>
 
             <article className="kit-input-set-card">
-              <header className="kit-input-set-header">
-                <strong>{k.inputSetTitle}</strong>
-              </header>
-
               <div className="kit-input-set-body">
                 <div className="kit-control-group">
                   <span className="kit-control-label">{k.searchPlaceholder}</span>
@@ -442,6 +496,56 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
                             {option}
                           </button>
                         )) : <p>{k.noSearchResults}</p>}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="kit-control-group">
+                  <span className="kit-control-label">{k.multiSelect}</span>
+                  <div
+                    className="kit-multi-select"
+                    onBlur={(event) => {
+                      if (!event.currentTarget.contains(event.relatedTarget)) setMultiSelectOpen(false);
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="kit-multi-select-trigger"
+                      aria-expanded={multiSelectOpen}
+                      aria-controls="kit-multi-select-options"
+                      onClick={() => setMultiSelectOpen((value) => !value)}
+                    >
+                      <span>
+                        {selectedCategories.length > 0
+                          ? k.multiSelectCount.replace("{n}", String(selectedCategories.length))
+                          : k.multiSelectPlaceholder}
+                      </span>
+                      <ChevronDown aria-hidden />
+                    </button>
+                    {multiSelectOpen ? (
+                      <div id="kit-multi-select-options" className="kit-multi-select-options" role="listbox" aria-multiselectable="true">
+                        {multiSelectOptions.map((option) => {
+                          const selected = selectedCategories.includes(option.value);
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              role="option"
+                              aria-selected={selected}
+                              onClick={() => setSelectedCategories((current) => (
+                                selected
+                                  ? current.filter((value) => value !== option.value)
+                                  : [...current, option.value]
+                              ))}
+                            >
+                              <span className="kit-multi-select-check" data-selected={selected || undefined}>
+                                {selected ? <Check aria-hidden /> : null}
+                              </span>
+                              <span>{option.label}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     ) : null}
                   </div>
@@ -504,9 +608,23 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
           </div>
         </section>
 
-        {requestToastVisible ? (
-          <div className="kit-request-toast" role="status" aria-live="polite">
-            {k.requestSent}
+        <section className="kit-docs-section kit-docs-section-wide">
+          <h2># {k.dataCharts}</h2>
+          <div className="kit-docs-preview kit-wide-preview">
+            <DataChartShowcase />
+          </div>
+        </section>
+
+        <section className="kit-docs-section kit-docs-section-wide">
+          <h2># {k.selectableTable}</h2>
+          <div className="kit-docs-preview kit-wide-preview">
+            <SelectableTableShowcase />
+          </div>
+        </section>
+
+        {loginToastVisible ? (
+          <div className="kit-login-toast" role="status" aria-live="polite">
+            {k.loginSuccess}
           </div>
         ) : null}
       </div>
