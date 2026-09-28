@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useRef, useState, type CSSProperties } from "react";
-import { Copy, RotateCcw } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Copy, Download, RotateCcw, Undo2 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import {
   CORE_TOKENS,
   flattenObject,
   getToken,
+  neutralAliasForValue,
   TOKEN_USES,
   type ColorSystemResult,
   type GenerateInput,
@@ -21,15 +22,25 @@ export function TokenPanel({
   input,
   overrides,
   onTokenChange,
+  onTokenEditStart,
+  onTokenPreview,
   onTokenReset,
   onResetAll,
+  canUndo,
+  onUndo,
+  onTokenFocus,
 }: {
   result: ColorSystemResult;
   input: GenerateInput;
   overrides: Record<string, string>;
   onTokenChange: (path: string, value: string) => void;
+  onTokenEditStart: () => void;
+  onTokenPreview: (path: string, value: string) => void;
   onTokenReset: (path: string) => void;
   onResetAll: () => void;
+  canUndo: boolean;
+  onUndo: () => void;
+  onTokenFocus: (role: TokenFocusRole | null) => void;
 }) {
   const copy = useCopy();
   const viewAll = useMatchuStore((state) => state.viewAllTokens);
@@ -38,8 +49,10 @@ export function TokenPanel({
   const [format, setFormat] = useState<ExportFormat>("css");
   const tokens = result.semantic.light;
   const report = result.accessibility.light;
-  const exportResult = useMemo(() => applyOverrides(result, overrides), [result, overrides]);
-  const file = useMemo(() => formatExport(format, exportResult, input), [format, exportResult, input]);
+  const file = useMemo(() => {
+    if (panel !== "export") return null;
+    return formatExport(format, applyOverrides(result, overrides), input);
+  }, [panel, format, result, overrides, input]);
 
   const grouped = CORE_TOKENS.reduce<Record<string, typeof CORE_TOKENS>>((acc, token) => {
     acc[token.group] = acc[token.group] ?? [];
@@ -48,12 +61,26 @@ export function TokenPanel({
   }, {});
 
   async function copyCode() {
+    if (!file) return;
     try {
       await navigator.clipboard.writeText(file.code);
       toast.success(copy.result.copied);
     } catch {
       toast.error(copy.result.copyFailed);
     }
+  }
+
+  function downloadFile() {
+    if (!file) return;
+    const blob = new Blob([file.code], {
+      type: file.language === "json" ? "application/json;charset=utf-8" : "text/plain;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = file.filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -72,9 +99,14 @@ export function TokenPanel({
             <button type="button" role="radio" aria-checked={!viewAll} onClick={() => setViewAll(false)}>{copy.tokens.viewCore}</button>
             <button type="button" role="radio" aria-checked={viewAll} onClick={() => setViewAll(true)}>{copy.tokens.viewAll}</button>
           </div>
-          <button type="button" className="token-reset-all" disabled={Object.keys(overrides).length === 0} onClick={onResetAll}>
-            <RotateCcw aria-hidden />{copy.tokens.resetAll}
-          </button>
+          <div className="token-history-actions">
+            <button type="button" disabled={!canUndo} onClick={onUndo}>
+              <Undo2 aria-hidden />{copy.tokens.undo}
+            </button>
+            <button type="button" disabled={Object.keys(overrides).length === 0} onClick={onResetAll}>
+              <RotateCcw aria-hidden />{copy.tokens.resetAll}
+            </button>
+          </div>
           <div className="token-panel-list">
             {viewAll ? (
               <div className="space-y-1">
@@ -85,11 +117,15 @@ export function TokenPanel({
                     group={copy.tokens.groups.all}
                     label={entry.path}
                     hex={overrides[entry.path] ?? entry.value}
+                    neutralAlias={neutralAliasForValue(entry.path, overrides[entry.path] ?? entry.value, result.primitive.neutral)}
                     role={TOKEN_USES[entry.path]}
                     usesLabel={copy.tokens.usesLabel}
                     edited={Boolean(overrides[entry.path])}
                     onChange={onTokenChange}
+                    onEditStart={onTokenEditStart}
+                    onPreview={onTokenPreview}
                     onReset={onTokenReset}
+                    onFocusToken={onTokenFocus}
                   />
                 ))}
               </div>
@@ -114,7 +150,10 @@ export function TokenPanel({
                           usesLabel={copy.tokens.usesLabel}
                           edited={Boolean(overrides[token.path])}
                           onChange={onTokenChange}
+                          onEditStart={onTokenEditStart}
+                          onPreview={onTokenPreview}
                           onReset={onTokenReset}
+                          onFocusToken={onTokenFocus}
                         />
                       );
                     })}
@@ -133,13 +172,14 @@ export function TokenPanel({
           <div className="token-export-formats" role="radiogroup" aria-label={copy.export.title}>
             {([[
               "css", copy.export.css,
-            ], ["tailwind", copy.export.tailwind], ["react-native", copy.export.reactNative], ["json", copy.export.json]] as const).map(([key, label]) => (
+            ], ["tailwind", copy.export.tailwind], ["react-native", copy.export.reactNative], ["json", copy.export.json], ["figma", copy.export.figma]] as const).map(([key, label]) => (
               <button key={key} type="button" role="radio" aria-checked={format === key} onClick={() => setFormat(key)}>{label}</button>
             ))}
           </div>
-          <pre>{file.code}</pre>
+          <pre>{file?.code}</pre>
           <div className="token-export-actions">
-            <button type="button" data-primary onClick={copyCode}><Copy aria-hidden />{copy.export.copy}</button>
+            <button type="button" onClick={copyCode}><Copy aria-hidden />{copy.export.copy}</button>
+            <button type="button" data-primary onClick={downloadFile}><Download aria-hidden />{copy.export.download}</button>
           </div>
         </div>
       )}
@@ -156,8 +196,12 @@ function TokenRow({
   uses,
   usesLabel,
   edited,
+  neutralAlias,
   onChange,
+  onEditStart,
+  onPreview,
   onReset,
+  onFocusToken,
 }: {
   path: string;
   group: string;
@@ -167,12 +211,30 @@ function TokenRow({
   uses?: string;
   usesLabel: string;
   edited: boolean;
+  neutralAlias?: string | null;
   onChange: (path: string, value: string) => void;
+  onEditStart: () => void;
+  onPreview: (path: string, value: string) => void;
   onReset: (path: string) => void;
+  onFocusToken: (role: TokenFocusRole | null) => void;
 }) {
   const rowRef = useRef<HTMLDivElement>(null);
+  const colorInputRef = useRef<HTMLInputElement>(null);
+  const commitRef = useRef<(value: string) => void>(() => undefined);
   const [tipStyle, setTipStyle] = useState<CSSProperties | null>(null);
   const colorValue = /^#[0-9a-f]{6}$/i.test(hex) ? hex : "#000000";
+
+  useEffect(() => {
+    commitRef.current = (value: string) => onChange(path, value);
+  }, [onChange, path]);
+
+  useEffect(() => {
+    const input = colorInputRef.current;
+    if (!input) return;
+    const commitNativeChange = () => commitRef.current(input.value.toUpperCase());
+    input.addEventListener("change", commitNativeChange);
+    return () => input.removeEventListener("change", commitNativeChange);
+  }, []);
 
   const hideTip = () => setTipStyle(null);
   const showTip = () => {
@@ -190,18 +252,36 @@ function TokenRow({
       ref={rowRef}
       className="token-row"
       tabIndex={role ? 0 : undefined}
-      onMouseEnter={showTip}
-      onMouseLeave={hideTip}
-      onFocus={showTip}
-      onBlur={hideTip}
+      onMouseEnter={() => { showTip(); onFocusToken(tokenFocusFromPath(path)); }}
+      onMouseLeave={() => {
+        hideTip();
+        if (!rowRef.current?.contains(document.activeElement)) onFocusToken(null);
+      }}
+      onFocus={() => { showTip(); onFocusToken(tokenFocusFromPath(path)); }}
+      onBlur={(event) => {
+        hideTip();
+        if (!event.currentTarget.contains(event.relatedTarget)) onFocusToken(null);
+      }}
     >
       <label className="token-color-picker" title={label}>
-        <input type="color" value={colorValue} aria-label={`${label} ${hex}`} onChange={(event) => onChange(path, event.target.value.toUpperCase())} />
+        <input
+          ref={colorInputRef}
+          type="color"
+          value={colorValue}
+          aria-label={`${label} ${hex}`}
+          onPointerDown={onEditStart}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") onEditStart();
+          }}
+          onInput={(event) => onPreview(path, event.currentTarget.value.toUpperCase())}
+        />
         <span style={{ background: hex }} />
       </label>
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13px] font-semibold">{label}</p>
-        <p className="token-name text-[var(--text-tertiary)]">{hex.toUpperCase()}</p>
+        <p className="token-name text-[var(--text-tertiary)]">
+          {hex.toUpperCase()}{neutralAlias ? <span className="token-neutral-alias"> ({neutralAlias})</span> : null}
+        </p>
       </div>
       {edited ? <button type="button" className="token-reset" aria-label="Reset color" onClick={() => onReset(path)}><RotateCcw aria-hidden /></button> : null}
       {role && tipStyle
@@ -217,6 +297,17 @@ function TokenRow({
         : null}
     </div>
   );
+}
+
+export type TokenFocusRole = "primary" | "secondary" | "accent" | "surface" | "background" | "text";
+
+function tokenFocusFromPath(path: string): TokenFocusRole | null {
+  const root = path.split(".")[0]?.toLowerCase();
+  if (root === "primary" || root === "secondary" || root === "accent" || root === "surface" || root === "background" || root === "text") {
+    return root;
+  }
+  if (root?.startsWith("on")) return "text";
+  return null;
 }
 
 function applyOverrides(result: ColorSystemResult, overrides: Record<string, string>) {

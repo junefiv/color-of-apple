@@ -36,6 +36,7 @@ export function FeedbackShowcase({
   const [drawer, setDrawer] = useState(false);
   const [popover, setPopover] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState<{ left: number; top: number } | null>(null);
   const loadingTimerRef = useRef<number | null>(null);
 
   useEffect(() => () => {
@@ -49,6 +50,25 @@ export function FeedbackShowcase({
       setLoading(false);
       loadingTimerRef.current = null;
     }, 1400);
+  }
+
+  function showTooltip(button: HTMLButtonElement) {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const buttonRect = button.getBoundingClientRect();
+    const viewportRect = viewport.getBoundingClientRect();
+    const tooltipHalfWidth = 84;
+    const edgePadding = 8;
+    const centeredLeft = buttonRect.left - viewportRect.left + buttonRect.width / 2;
+
+    setTooltipPosition({
+      left: Math.min(
+        viewportRect.width - tooltipHalfWidth - edgePadding,
+        Math.max(tooltipHalfWidth + edgePadding, centeredLeft),
+      ),
+      top: buttonRect.bottom - viewportRect.top + 6,
+    });
   }
 
   const actions = [
@@ -77,9 +97,12 @@ export function FeedbackShowcase({
             className="kit-btn kit-feedback-action"
             data-look="soft"
             data-tone="neutral"
-            data-tooltip={action.tooltip || undefined}
             aria-describedby={action.tooltip ? "kit-action-tooltip" : undefined}
             onClick={action.run}
+            onMouseEnter={action.tooltip ? (event) => showTooltip(event.currentTarget) : undefined}
+            onMouseLeave={action.tooltip ? () => setTooltipPosition(null) : undefined}
+            onFocus={action.tooltip ? (event) => showTooltip(event.currentTarget) : undefined}
+            onBlur={action.tooltip ? () => setTooltipPosition(null) : undefined}
           >
             {action.label}
           </button>
@@ -98,6 +121,16 @@ export function FeedbackShowcase({
 
       {viewportRef.current ? createPortal(
         <>
+          {tooltipPosition ? (
+            <div
+              className="kit-feedback-tooltip"
+              aria-hidden="true"
+              style={{ left: tooltipPosition.left, top: tooltipPosition.top }}
+            >
+              {k.tooltipBody}
+            </div>
+          ) : null}
+
           {alert && alertCopy && AlertIcon ? (
             <div className="kit-feedback-alert kit-global-alert" data-tone={alert} role="alert">
               <AlertIcon aria-hidden />

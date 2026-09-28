@@ -26,6 +26,8 @@ export type {
 } from "./core-palette";
 export { CORE_TOKENS, TOKEN_USES } from "./core-tokens";
 export { flattenObject, primitivesToCssVars, semanticToCssVars, tokenPathToCssVar } from "./flatten";
+export { deriveBrandTokenOverrides } from "./brand-token-overrides";
+export { neutralAliasForValue, semanticNeutralAliases } from "./neutral-alias";
 export {
   chooseOnColor,
   contrastRatio,

@@ -1,7 +1,7 @@
 "use client";
 
 import { Wordmark } from "@/components/brand/wordmark";
-import { useMatchuStore } from "@/lib/store";
+import { LocaleToggle } from "@/components/brand/locale-toggle";
 
 export function SiteHeader({
   children,
@@ -12,9 +12,6 @@ export function SiteHeader({
   endAction?: React.ReactNode;
   remakeWordmark?: boolean;
 }) {
-  const locale = useMatchuStore((state) => state.locale);
-  const setLocale = useMatchuStore((state) => state.setLocale);
-
   return (
     <header
       className={
@@ -24,17 +21,8 @@ export function SiteHeader({
       }
     >
       <Wordmark remake={remakeWordmark} />
-      {children ? <div className="flex min-w-0 flex-1 items-center gap-2 overflow-visible">{children}</div> : null}
-      {endAction ?? (
-        <button
-          type="button"
-          data-testid="locale-toggle"
-          className="shrink-0 rounded-full border border-[var(--border-default)] px-2.5 py-1 text-[11px] text-[var(--text-secondary)]"
-          onClick={() => setLocale(locale === "ko" ? "en" : "ko")}
-        >
-          {locale === "ko" ? "EN" : "한"}
-        </button>
-      )}
+      {children ? <div className="studio-gnb-center flex min-w-0 flex-1 items-center gap-2 overflow-visible">{children}</div> : null}
+      {endAction ?? <LocaleToggle />}
     </header>
   );
 }

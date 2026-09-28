@@ -7,24 +7,18 @@ import { SiteHeader } from "@/components/brand/site-header";
 import { Button } from "@/components/ui/button";
 import { useCopy } from "@/hooks/use-copy";
 import { decodeShare } from "@/lib/share/encode";
-import { useMatchuStore } from "@/lib/store";
 
 function ThemeRestore() {
   const copy = useCopy();
   const router = useRouter();
   const params = useSearchParams();
-  const replaceInput = useMatchuStore((state) => state.replaceInput);
-  const setSkipLoader = useMatchuStore((state) => state.setSkipLoader);
   const payload = params.get("d");
   const decoded = payload ? decodeShare(payload) : null;
 
   useEffect(() => {
     if (!decoded) return;
-    replaceInput(decoded);
-    useMatchuStore.getState().resetMatch();
-    setSkipLoader(false);
-    router.replace("/result");
-  }, [decoded, replaceInput, router, setSkipLoader]);
+    router.replace(`/result?d=${payload}`);
+  }, [decoded, payload, router]);
 
   if (decoded) {
     return null;

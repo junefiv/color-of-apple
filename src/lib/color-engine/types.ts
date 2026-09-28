@@ -117,6 +117,7 @@ export type SemanticTokens = {
     default: string;
     hover: string;
     pressed: string;
+    selected: string;
     subtle: string;
     border: string;
     text: string;
@@ -124,7 +125,11 @@ export type SemanticTokens = {
   };
   accent: {
     default: string;
+    hover: string;
+    pressed: string;
+    selected: string;
     subtle: string;
+    border: string;
     text: string;
     onAccent: string;
   };

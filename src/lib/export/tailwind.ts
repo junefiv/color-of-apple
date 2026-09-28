@@ -1,4 +1,4 @@
-import { flattenObject, type ColorSystemResult } from "@/lib/color-engine";
+import { flattenObject, semanticNeutralAliases, type ColorSystemResult } from "@/lib/color-engine";
 
 function nest(entries: Array<{ path: string; value: string }>) {
   const tree: Record<string, unknown> = {};
@@ -30,5 +30,13 @@ export function exportTailwind(result: ColorSystemResult) {
     },
   };
 
-  return `/** MATCHU Tailwind v3 theme extension */\nmodule.exports = ${JSON.stringify(config, null, 2)}\n`;
+  return `/** MATCHU Tailwind v3 theme extension */\n${aliasComment(result)}module.exports = ${JSON.stringify(config, null, 2)}\n`;
+}
+
+function aliasComment(result: ColorSystemResult) {
+  const entries = (["light", "dark"] as const).flatMap((mode) =>
+    Object.entries(semanticNeutralAliases(result.semantic[mode], result.primitive.neutral))
+      .map(([path, alias]) => ` * ${mode}.${path}: ${alias}`),
+  );
+  return entries.length ? `/** Neutral aliases\n${entries.join("\n")}\n */\n` : "";
 }

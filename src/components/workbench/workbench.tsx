@@ -1,27 +1,27 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
-import { Palette, Share2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { SiteHeader } from "@/components/brand/site-header";
+import { LocaleToggle } from "@/components/brand/locale-toggle";
 import { ChromeChip } from "@/components/chrome/chrome-chip";
 import { PalettePicker } from "@/components/flow/palette-picker";
 import { PreviewCanvas } from "@/components/preview/preview-canvas";
 import { ThemeScope } from "@/components/preview/theme-scope";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { useColorSystem } from "@/hooks/use-color-system";
 import { useCopy } from "@/hooks/use-copy";
-import { chooseOnColor, tokenPathToCssVar } from "@/lib/color-engine";
+import { chooseOnColor, deriveBrandTokenOverrides, getToken, tokenPathToCssVar } from "@/lib/color-engine";
 import { encodeShare } from "@/lib/share/encode";
 import { useMatchuStore } from "@/lib/store";
-import { TokenPanel } from "./token-panel";
+import { TokenPanel, type TokenFocusRole } from "./token-panel";
 
-export function Workbench() {
+function sameOverrides(left: Record<string, string>, right: Record<string, string>) {
+  const entries = Object.entries(left);
+  return entries.length === Object.keys(right).length && entries.every(([key, value]) => right[key] === value);
+}
+
+export function Workbench({ initialTokenOverrides = {} }: { initialTokenOverrides?: Record<string, string> }) {
   const copy = useCopy();
   const input = useMatchuStore((state) => state.input);
   const hasMatched = useMatchuStore((state) => state.hasMatched);
@@ -31,11 +31,15 @@ export function Workbench() {
   const setPreviewTab = useMatchuStore((state) => state.setPreviewTab);
   const matchStage = useMatchuStore((state) => state.matchStage);
   const selectedPaletteId = useMatchuStore((state) => state.selectedPaletteId);
-  const setViewAllTokens = useMatchuStore((state) => state.setViewAllTokens);
-  const locale = useMatchuStore((state) => state.locale);
-  const setLocale = useMatchuStore((state) => state.setLocale);
-  const [tokensOpen, setTokensOpen] = useState(false);
-  const [tokenOverridesByPalette, setTokenOverridesByPalette] = useState<Record<string, Record<string, string>>>({});
+  const [tokenOverridesByPalette, setTokenOverridesByPalette] = useState<Record<string, Record<string, string>>>(() => (
+    Object.keys(initialTokenOverrides).length > 0
+      ? { [selectedPaletteId]: { ...initialTokenOverrides } }
+      : {}
+  ));
+  const [tokenHistoryByPalette, setTokenHistoryByPalette] = useState<Record<string, Array<Record<string, string>>>>({});
+  const [tokenFocus, setTokenFocus] = useState<TokenFocusRole | null>(null);
+  const activeTokenEdit = useRef<{ paletteId: string; before: Record<string, string> } | null>(null);
+  const tokenOverridesRef = useRef<Record<string, string>>({});
 
   const result = useColorSystem(input, selectedPaletteId);
   const stage = hasMatched ? "done" : matchStage;
@@ -45,9 +49,75 @@ export function Workbench() {
     Object.entries(tokenOverrides).map(([path, value]) => [tokenPathToCssVar(path), value]),
   ), [tokenOverrides]);
   const effectivePrimary = tokenOverrides["primary.default"] ?? result.semantic.light.primary.default;
+  const tokenHistory = tokenHistoryByPalette[selectedPaletteId] ?? [];
+
+  tokenOverridesRef.current = tokenOverrides;
+
+  useEffect(() => setTokenFocus(null), [selectedPaletteId, platform, previewTab]);
+
+  function commitTokenOverrides(next: Record<string, string>) {
+    activeTokenEdit.current = null;
+    if (sameOverrides(tokenOverrides, next)) return;
+    setTokenHistoryByPalette((current) => ({
+      ...current,
+      [selectedPaletteId]: [...(current[selectedPaletteId] ?? []), { ...tokenOverrides }],
+    }));
+    setTokenOverridesByPalette((current) => ({ ...current, [selectedPaletteId]: next }));
+  }
+
+  function nextTokenOverrides(path: string, value: string) {
+    return {
+      ...tokenOverridesRef.current,
+      ...deriveBrandTokenOverrides(result.semantic.light, path, value),
+    };
+  }
+
+  function beginTokenEdit() {
+    activeTokenEdit.current = {
+      paletteId: selectedPaletteId,
+      before: { ...tokenOverridesRef.current },
+    };
+  }
+
+  function previewTokenEdit(path: string, value: string) {
+    if (activeTokenEdit.current?.paletteId !== selectedPaletteId) beginTokenEdit();
+    const next = nextTokenOverrides(path, value);
+    tokenOverridesRef.current = next;
+    setTokenOverridesByPalette((current) => ({ ...current, [selectedPaletteId]: next }));
+  }
+
+  function finishTokenEdit(path: string, value: string) {
+    const edit = activeTokenEdit.current;
+    const next = nextTokenOverrides(path, value);
+    tokenOverridesRef.current = next;
+    setTokenOverridesByPalette((current) => ({ ...current, [selectedPaletteId]: next }));
+
+    if (edit?.paletteId === selectedPaletteId && !sameOverrides(edit.before, next)) {
+      setTokenHistoryByPalette((current) => ({
+        ...current,
+        [selectedPaletteId]: [...(current[selectedPaletteId] ?? []), edit.before],
+      }));
+    }
+    activeTokenEdit.current = null;
+  }
+
+  function undoTokenChange() {
+    activeTokenEdit.current = null;
+    const previous = tokenHistory.at(-1);
+    if (!previous) return;
+    setTokenOverridesByPalette((current) => ({ ...current, [selectedPaletteId]: previous }));
+    setTokenHistoryByPalette((current) => ({
+      ...current,
+      [selectedPaletteId]: (current[selectedPaletteId] ?? []).slice(0, -1),
+    }));
+  }
 
   async function share() {
-    const url = `${window.location.origin}/theme?d=${encodeShare(input)}`;
+    const url = `${window.location.origin}/result?d=${encodeShare({
+      input,
+      selectedPaletteId,
+      overrides: tokenOverrides,
+    })}`;
     try {
       await navigator.clipboard.writeText(url);
       toast.success(copy.result.shared);
@@ -62,22 +132,11 @@ export function Workbench() {
         remakeWordmark
         endAction={
           <div className="studio-gnb-actions">
-            <button type="button" className="studio-gnb-action" onClick={() => { setViewAllTokens(false); setTokensOpen(true); }}>
-              <Palette aria-hidden />
-              <span>{copy.result.tokens}</span>
-            </button>
             <button type="button" className="studio-gnb-action" onClick={share}>
               <Share2 aria-hidden />
               <span>{copy.result.share}</span>
             </button>
-            <button
-              type="button"
-              className="studio-locale-action"
-              aria-label={locale === "ko" ? copy.otherLocaleName : copy.localeName}
-              onClick={() => setLocale(locale === "ko" ? "en" : "ko")}
-            >
-              {locale === "ko" ? "EN" : "한"}
-            </button>
+            <LocaleToggle />
           </div>
         }
       >
@@ -119,43 +178,49 @@ export function Workbench() {
         </div>
       </SiteHeader>
 
-      <div className="match-transition relative flex min-h-0 flex-1 flex-col" data-stage={stage}>
-        <ThemeScope result={result} extraVars={overrideVars} className="flex h-full min-h-0 flex-col bg-transparent p-2">
-          <div className="min-h-0 flex-1">
-            <PreviewCanvas platform={platform} tab={previewTab} />
-          </div>
-        </ThemeScope>
-      </div>
+      <div
+        className="workbench-main match-transition relative min-h-0 flex-1"
+        data-stage={stage}
+        data-token-panel="open"
+      >
+        <div className="workbench-preview min-h-0 min-w-0" data-token-focus={tokenFocus ?? undefined}>
+          <ThemeScope result={result} extraVars={overrideVars} className="flex h-full min-h-0 flex-col bg-transparent p-2">
+            <div className="min-h-0 flex-1">
+              <PreviewCanvas platform={platform} tab={previewTab} />
+            </div>
+          </ThemeScope>
+        </div>
 
-      <Sheet open={tokensOpen} onOpenChange={setTokensOpen}>
-        <SheetContent
-          side="right"
-          className="w-[min(100vw,30rem)] p-0 sm:max-w-[30rem]"
+        <aside
+          className="token-inspector"
+          aria-label={copy.tokens.title}
           style={{
             "--token-accent": effectivePrimary,
             "--token-accent-on": chooseOnColor(effectivePrimary),
           } as CSSProperties}
         >
-          <SheetHeader className="sr-only">
-            <SheetTitle>{copy.result.tokens}</SheetTitle>
-          </SheetHeader>
           <TokenPanel
             result={result}
             input={input}
             overrides={tokenOverrides}
-            onTokenChange={(path, value) => setTokenOverridesByPalette((current) => ({
-              ...current,
-              [selectedPaletteId]: { ...(current[selectedPaletteId] ?? {}), [path]: value },
-            }))}
-            onTokenReset={(path) => setTokenOverridesByPalette((current) => {
-              const paletteOverrides = { ...(current[selectedPaletteId] ?? {}) };
-              delete paletteOverrides[path];
-              return { ...current, [selectedPaletteId]: paletteOverrides };
-            })}
-            onResetAll={() => setTokenOverridesByPalette((current) => ({ ...current, [selectedPaletteId]: {} }))}
+            canUndo={tokenHistory.length > 0}
+            onUndo={undoTokenChange}
+            onTokenFocus={setTokenFocus}
+            onTokenEditStart={beginTokenEdit}
+            onTokenPreview={previewTokenEdit}
+            onTokenChange={finishTokenEdit}
+            onTokenReset={(path) => {
+              const next = { ...tokenOverrides };
+              const resetPaths = Object.keys(
+                deriveBrandTokenOverrides(result.semantic.light, path, getToken(result.semantic.light, path)),
+              );
+              for (const resetPath of resetPaths) delete next[resetPath];
+              commitTokenOverrides(next);
+            }}
+            onResetAll={() => commitTokenOverrides({})}
           />
-        </SheetContent>
-      </Sheet>
+        </aside>
+      </div>
     </div>
   );
 }

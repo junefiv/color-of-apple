@@ -1,4 +1,4 @@
-import { flattenObject, type ColorSystemResult } from "@/lib/color-engine";
+import { flattenObject, semanticNeutralAliases, type ColorSystemResult } from "@/lib/color-engine";
 
 function camel(path: string) {
   return path
@@ -21,5 +21,13 @@ export function exportReactNative(result: ColorSystemResult) {
     dark: flattenMode(result.semantic.dark),
   };
 
-  return `export const theme = ${JSON.stringify(theme, null, 2)} as const;\n`;
+  return `${aliasComment(result)}export const theme = ${JSON.stringify(theme, null, 2)} as const;\n`;
+}
+
+function aliasComment(result: ColorSystemResult) {
+  const entries = (["light", "dark"] as const).flatMap((mode) =>
+    Object.entries(semanticNeutralAliases(result.semantic[mode], result.primitive.neutral))
+      .map(([path, alias]) => ` * ${mode}.${path}: ${alias}`),
+  );
+  return entries.length ? `/** Neutral aliases\n${entries.join("\n")}\n */\n` : "";
 }
