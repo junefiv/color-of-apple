@@ -17,6 +17,7 @@ function ResultContent() {
   const router = useRouter();
   const params = useSearchParams();
   const payload = params.get("d");
+  const projectId = params.get("p");
   const decoded = useMemo(() => payload ? decodeShare(payload) : null, [payload]);
   const skipLoader = useMatchuStore((state) => state.skipLoader);
   const matchNonce = useMatchuStore((state) => state.matchNonce);
@@ -87,7 +88,7 @@ function ResultContent() {
 
   return (
     <div className="color-bleed-root" data-pending-bleed={pendingBleed ? "true" : "false"}>
-      <Workbench key={payload ?? "local"} initialTokenOverrides={decoded?.overrides} />
+      <Workbench key={payload ?? "local"} projectId={projectId} initialTokenOverrides={decoded?.overrides} />
       {pendingBleed ? (
         <ColorBleed key={bleedKey} hex={hex} play onDone={finishBleed} />
       ) : null}

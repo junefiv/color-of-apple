@@ -3,16 +3,17 @@
 import type { Copy } from "@/lib/copy";
 
 function withBrandAccent(text: string, color?: string | null) {
-  if (!color || !text.includes("MATCHU")) {
+  const brand = "Color of Apple";
+  if (!color || !text.includes(brand)) {
     return text;
   }
-  const parts = text.split("MATCHU");
+  const parts = text.split(brand);
   return parts.map((part, index) => (
     <span key={`${part}-${index}`}>
       {part}
       {index < parts.length - 1 ? (
         <span style={{ color }} className="match-transition">
-          MATCHU
+          {brand}
         </span>
       ) : null}
     </span>

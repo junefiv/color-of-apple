@@ -52,7 +52,7 @@ export function Wordmark({
             </span>
           ) : null}
         </button>
-        <span className="logo text-[var(--text-primary)]">MATCHU</span>
+        <span className="logo text-[var(--text-primary)]">Color of Apple</span>
       </div>
     );
   }
@@ -64,7 +64,7 @@ export function Wordmark({
       onClick={() => resetSession()}
     >
       <LogoApple hex={appleHex} />
-      <span>MATCHU</span>
+      <span>Color of Apple</span>
     </Link>
   );
 }

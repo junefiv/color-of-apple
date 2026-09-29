@@ -10,7 +10,7 @@ const mono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MATCHU — 색 하나만 골라. 나머지는 MATCHU가 맞춰줄게.",
+  title: "Color of Apple — 색 하나로 완성하는 UI 컬러 시스템",
   description: "기준색 하나를 넣으면 UI 전체가 그 색에 맞춰 완성됩니다.",
 };
 

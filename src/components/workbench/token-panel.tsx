@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Copy, Download, RotateCcw, Undo2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { toast } from "sonner";
+import { useAuth } from "@/components/auth/auth-provider";
+import { uiToast } from "@/components/ui/toast";
 import {
   CORE_TOKENS,
   flattenObject,
@@ -15,6 +17,8 @@ import {
 } from "@/lib/color-engine";
 import { formatExport, type ExportFormat } from "@/lib/export";
 import { useCopy } from "@/hooks/use-copy";
+import { preventProtectedCopy, preventProtectedCopyShortcut } from "@/lib/copy-protection";
+import { consumeQuota, isPlanRequiredError, quotaErrorMessage } from "@/lib/firebase/data";
 import { useMatchuStore } from "@/lib/store";
 
 export function TokenPanel({
@@ -43,6 +47,9 @@ export function TokenPanel({
   onTokenFocus: (role: TokenFocusRole | null) => void;
 }) {
   const copy = useCopy();
+  const router = useRouter();
+  const { user, signIn } = useAuth();
+  const locale = useMatchuStore((state) => state.locale);
   const viewAll = useMatchuStore((state) => state.viewAllTokens);
   const setViewAll = useMatchuStore((state) => state.setViewAllTokens);
   const [panel, setPanel] = useState<"tokens" | "export">("tokens");
@@ -63,28 +70,57 @@ export function TokenPanel({
   async function copyCode() {
     if (!file) return;
     try {
+      const currentUser = user ?? await signIn();
+      await consumeQuota(currentUser.uid, "export");
       await navigator.clipboard.writeText(file.code);
-      toast.success(copy.result.copied);
-    } catch {
-      toast.error(copy.result.copyFailed);
+      uiToast.success(copy.result.copied, locale);
+    } catch (error) {
+      if (isPlanRequiredError(error)) {
+        uiToast.info(
+          locale === "ko" ? "무료 내보내기 한도를 모두 사용했어요. Pro 플랜은 곧 제공됩니다." : "You reached the free export limit. Pro is coming soon.",
+          locale,
+        );
+        router.push("/coming-soon");
+        return;
+      }
+      uiToast.error(error instanceof Error && error.name === "QuotaLimitError" ? quotaErrorMessage(error, locale) : copy.result.copyFailed, locale);
     }
   }
 
-  function downloadFile() {
+  async function downloadFile() {
     if (!file) return;
-    const blob = new Blob([file.code], {
-      type: file.language === "json" ? "application/json;charset=utf-8" : "text/plain;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = file.filename;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    try {
+      const currentUser = user ?? await signIn();
+      await consumeQuota(currentUser.uid, "export");
+      const blob = new Blob([file.code], {
+        type: file.language === "json" ? "application/json;charset=utf-8" : "text/plain;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = file.filename;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      uiToast.success(copy.result.downloaded, locale);
+    } catch (error) {
+      if (isPlanRequiredError(error)) {
+        uiToast.info(
+          locale === "ko" ? "무료 내보내기 한도를 모두 사용했어요. Pro 플랜은 곧 제공됩니다." : "You reached the free export limit. Pro is coming soon.",
+          locale,
+        );
+        router.push("/coming-soon");
+        return;
+      }
+      uiToast.error(quotaErrorMessage(error, locale), locale);
+    }
   }
 
   return (
-    <aside className="token-panel-shell">
+    <aside
+      className="token-panel-shell copy-protected"
+      onCopyCapture={preventProtectedCopy}
+      onKeyDownCapture={preventProtectedCopyShortcut}
+    >
       <header className="token-panel-header">
         <p className="ui-label text-[var(--text-tertiary)]">{copy.tokens.title}</p>
         <div className="token-panel-tabs" role="tablist">

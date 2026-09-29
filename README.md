@@ -1,8 +1,8 @@
-# MATCHU
+# Color of Apple
 
-색 하나만 골라. 나머지는 MATCHU가 맞춰줄게.
+색 하나만 골라. 나머지는 Color of Apple이 맞춰줄게.
 
-MATCHU는 기준색 하나를 역할이 부여된 UI 컬러 시스템으로 바꿉니다. 작업대는 끝까지 무채색이고, 색은 MATCH를 누른 뒤에 미리보기와 핵심 CTA에만 퍼집니다. 로그인이나 서버 DB는 없습니다.
+Color of Apple은 기준색 하나를 역할이 부여된 UI 컬러 시스템으로 바꿉니다. 작업대는 끝까지 무채색이고, 색은 Generate를 누른 뒤에 미리보기와 핵심 CTA에만 퍼집니다. Google 로그인과 Cloud Firestore를 사용해 프로젝트와 무료 사용량을 관리합니다.
 
 ## Windows (C: / Documents)
 
@@ -51,6 +51,21 @@ npm test
 npm run build
 ```
 
+## Firebase 설정
+
+Firebase 프로젝트는 `matchu-a1fbb`를 사용합니다.
+
+1. Firebase Authentication에서 Google 로그인 제공업체를 활성화합니다.
+2. Cloud Firestore 데이터베이스를 생성합니다.
+3. Firebase CLI에 로그인하고 보안 규칙을 배포합니다.
+
+```bash
+npx firebase-tools login
+npx firebase-tools deploy --only firestore --project matchu-a1fbb
+```
+
+무료 플랜은 UTC 00:00–12:00 / 12:00–24:00 구간마다 팔레트 생성 5회와 내보내기 5회를 제공합니다. 저장 프로젝트는 `slot-1`부터 `slot-5`까지 최대 5개입니다. Firestore 콘솔 또는 신뢰할 수 있는 서버에서 사용자 문서의 `plan`을 `pro`로 설정하면 제한이 해제됩니다. 클라이언트에서는 `plan`을 변경할 수 없습니다.
+
 ## 쓰는 법
 
 1. 무채색 작업대에서 HEX 하나를 고릅니다. MATCH 버튼만 그 색으로 바뀝니다.
@@ -65,7 +80,7 @@ Color is the result, not the decoration.
 
 - 편집 도구 영역은 차가운 뉴트럴을 유지합니다.
 - 결과 미리보기와 MATCH 버튼에만 생성된 색을 씁니다.
-- 로고는 MATCHU 옆에 작은 점만 Primary로 바뀝니다.
+- 로고는 Color of Apple 옆에 작은 사과 심볼을 사용합니다.
 - 폰트는 Paperlogy(헤드라인) + SUIT Variable(UI) + Geist Mono(HEX)입니다.
 
 ## 컬러 엔진

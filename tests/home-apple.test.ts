@@ -12,6 +12,14 @@ import { useMatchuStore } from "@/lib/store";
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+vi.mock("@/components/auth/auth-provider", () => ({
+  useAuth: () => ({ user: { uid: "test-user" }, signIn: vi.fn() }),
+}));
+vi.mock("@/lib/firebase/data", () => ({
+  consumeQuota: vi.fn().mockResolvedValue({ used: 1, limit: 5 }),
+  isPlanRequiredError: () => false,
+  quotaErrorMessage: () => "quota error",
+}));
 vi.mock("react-colorful", () => ({
   HexColorPicker: ({ onChange }: { onChange: (hex: string) => void }) =>
     createElement("button", { onClick: () => onChange("#3388FF"), "data-testid": "pick-blue" }, "Blue"),
@@ -65,7 +73,10 @@ describe("home apple", () => {
     await act(() => root.render(createElement(Hero)));
     expect(appleColor()).toBe(APPLE_HEX);
     await chooseBlue();
-    await act(() => container.querySelector<HTMLButtonElement>(".match-button")!.click());
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>(".match-button")!.click();
+      await Promise.resolve();
+    });
     expect(push).toHaveBeenCalledWith("/result");
     expect(useMatchuStore.getState().input.hex).toBe("#3388FF");
   });

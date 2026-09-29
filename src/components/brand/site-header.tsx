@@ -2,6 +2,7 @@
 
 import { Wordmark } from "@/components/brand/wordmark";
 import { LocaleToggle } from "@/components/brand/locale-toggle";
+import { AccountButton } from "@/components/auth/account-sheet";
 
 export function SiteHeader({
   children,
@@ -22,7 +23,12 @@ export function SiteHeader({
     >
       <Wordmark remake={remakeWordmark} />
       {children ? <div className="studio-gnb-center flex min-w-0 flex-1 items-center gap-2 overflow-visible">{children}</div> : null}
-      {endAction ?? <LocaleToggle />}
+      {endAction ?? (
+        <div className="studio-gnb-actions">
+          <AccountButton />
+          <LocaleToggle />
+        </div>
+      )}
     </header>
   );
 }

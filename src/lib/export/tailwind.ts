@@ -30,7 +30,7 @@ export function exportTailwind(result: ColorSystemResult) {
     },
   };
 
-  return `/** MATCHU Tailwind v3 theme extension */\n${aliasComment(result)}module.exports = ${JSON.stringify(config, null, 2)}\n`;
+  return `/** Color of Apple Tailwind v3 theme extension */\n${aliasComment(result)}module.exports = ${JSON.stringify(config, null, 2)}\n`;
 }
 
 function aliasComment(result: ColorSystemResult) {

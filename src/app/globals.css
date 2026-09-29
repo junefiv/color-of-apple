@@ -107,6 +107,15 @@
   --action-primary-hover: #25252b;
   --action-primary-text: #ffffff;
   --focus-ring: #a4a4ad;
+  --color-success-default: #16834d;
+  --color-success-surface: #eaf8f0;
+  --color-success-text: #12633c;
+  --color-danger-default: #d13c46;
+  --color-danger-surface: #fff0f1;
+  --color-danger-text: #a92731;
+  --color-info-default: #3478db;
+  --color-info-surface: #eef5ff;
+  --color-info-text: #245ca8;
 
   --foreground: #161619;
   --card: #ffffff;
@@ -677,6 +686,98 @@
 .apple-eye {
   transform-box: fill-box;
   transform-origin: center;
+}
+
+.ui-toaster [data-sonner-toast].ui-toast {
+  min-width: min(22rem, calc(100vw - 2rem));
+  padding: 0.85rem 0.95rem;
+  gap: 0.75rem;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 0.9rem;
+  font-family: var(--font-ui);
+  box-shadow: 0 14px 36px rgb(22 22 25 / 14%);
+}
+
+.ui-toaster [data-sonner-toast].ui-toast[data-type="success"] {
+  border-color: color-mix(in srgb, var(--color-success-default) 28%, transparent);
+  background: var(--color-success-surface);
+  color: var(--color-success-text);
+}
+
+.ui-toaster [data-sonner-toast].ui-toast[data-type="error"] {
+  border-color: color-mix(in srgb, var(--color-danger-default) 28%, transparent);
+  background: var(--color-danger-surface);
+  color: var(--color-danger-text);
+}
+
+.ui-toaster [data-sonner-toast].ui-toast[data-type="info"] {
+  border-color: color-mix(in srgb, var(--color-info-default) 28%, transparent);
+  background: var(--color-info-surface);
+  color: var(--color-info-text);
+}
+
+.ui-toaster .ui-toast-title {
+  color: currentColor;
+  font-size: 0.84rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.ui-toaster .ui-toast-description {
+  margin-top: 0.15rem;
+  color: currentColor;
+  font-size: 0.78rem;
+  font-weight: 520;
+  line-height: 1.45;
+  opacity: 0.88;
+}
+
+.ui-toaster .ui-toast-icon {
+  align-self: flex-start;
+  margin-top: 0.05rem;
+  color: currentColor;
+}
+
+.coming-soon-character {
+  margin-top: 2.5rem;
+}
+
+.coming-soon-bubble {
+  display: block;
+  min-width: 9.5rem;
+  animation: coming-soon-bubble-float 2.8s ease-in-out infinite;
+}
+
+.coming-soon-bubble p {
+  font-size: 1.05rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.coming-soon-apple {
+  cursor: default;
+}
+
+.coming-soon-apple .apple-eye {
+  animation: coming-soon-apple-blink 4.2s ease-in-out infinite;
+}
+
+@keyframes coming-soon-apple-blink {
+  0%, 42%, 47%, 74%, 79%, 100% { transform: scaleY(1); }
+  44%, 45%, 76%, 77% { transform: scaleY(0.06); }
+}
+
+@keyframes coming-soon-bubble-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coming-soon-apple .apple-eye,
+  .coming-soon-bubble {
+    animation: none;
+  }
 }
 
 .hero-generate .match-button {
@@ -1282,6 +1383,43 @@
   gap: 0.4rem;
 }
 
+.gnb-usage {
+  display: grid;
+  min-width: 8.75rem;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(3, auto);
+  flex-shrink: 0;
+  gap: 0.08rem;
+  padding: 0.25rem 0.6rem;
+  border-left: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+}
+
+.gnb-usage-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.75rem;
+  font-size: 10px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.gnb-usage-row span {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-weight: 540;
+  text-overflow: ellipsis;
+}
+
+.gnb-usage-row strong {
+  color: var(--text-primary);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 760;
+}
+
 .studio-gnb-action,
 .locale-toggle {
   display: inline-flex;
@@ -1747,6 +1885,18 @@
   .studio-gnb-action span {
     display: none;
   }
+
+  .studio-gnb-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .studio-gnb-actions .gnb-usage {
+    order: 10;
+    min-width: 7.5rem;
+    flex-basis: 100%;
+    padding-right: 0;
+  }
 }
 
 .token-panel-header {
@@ -1921,6 +2071,11 @@
 
 .token-reset:hover { background: var(--neutral-100); }
 .token-reset svg { width: 0.75rem; height: 0.75rem; }
+
+.copy-protected {
+  -webkit-user-select: none;
+  user-select: none;
+}
 
 .token-export-panel {
   display: flex;

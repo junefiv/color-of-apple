@@ -10,7 +10,7 @@ export function HomePageFallback() {
       <header className="flex items-center justify-between gap-4 px-5 py-4 md:px-8">
         <span className="logo inline-flex items-center gap-2 text-[var(--text-primary)]">
           <LogoAppleStatic hex={APPLE_HEX} />
-          <span>MATCHU</span>
+          <span>Color of Apple</span>
         </span>
         <span className="shrink-0 rounded-full border border-[var(--border-default)] px-2.5 py-1 text-[11px] text-[var(--text-secondary)]">
           EN

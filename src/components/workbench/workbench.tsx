@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Share2 } from "lucide-react";
-import { toast } from "sonner";
+import { Save, Share2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AccountButton } from "@/components/auth/account-sheet";
+import { useAuth } from "@/components/auth/auth-provider";
 import { SiteHeader } from "@/components/brand/site-header";
 import { LocaleToggle } from "@/components/brand/locale-toggle";
 import { ChromeChip } from "@/components/chrome/chrome-chip";
+import { uiToast } from "@/components/ui/toast";
 import { PalettePicker } from "@/components/flow/palette-picker";
 import { PreviewCanvas } from "@/components/preview/preview-canvas";
 import { ThemeScope } from "@/components/preview/theme-scope";
@@ -13,6 +16,7 @@ import { useColorSystem } from "@/hooks/use-color-system";
 import { useCopy } from "@/hooks/use-copy";
 import { chooseOnColor, deriveBrandTokenOverrides, getToken, tokenPathToCssVar } from "@/lib/color-engine";
 import { encodeShare } from "@/lib/share/encode";
+import { isPlanRequiredError, quotaErrorMessage, saveProject } from "@/lib/firebase/data";
 import { useMatchuStore } from "@/lib/store";
 import { TokenPanel, type TokenFocusRole } from "./token-panel";
 
@@ -21,8 +25,17 @@ function sameOverrides(left: Record<string, string>, right: Record<string, strin
   return entries.length === Object.keys(right).length && entries.every(([key, value]) => right[key] === value);
 }
 
-export function Workbench({ initialTokenOverrides = {} }: { initialTokenOverrides?: Record<string, string> }) {
+export function Workbench({
+  initialTokenOverrides = {},
+  projectId = null,
+}: {
+  initialTokenOverrides?: Record<string, string>;
+  projectId?: string | null;
+}) {
   const copy = useCopy();
+  const router = useRouter();
+  const { user, signIn } = useAuth();
+  const locale = useMatchuStore((state) => state.locale);
   const input = useMatchuStore((state) => state.input);
   const hasMatched = useMatchuStore((state) => state.hasMatched);
   const platform = useMatchuStore((state) => state.platform);
@@ -38,6 +51,8 @@ export function Workbench({ initialTokenOverrides = {} }: { initialTokenOverride
   ));
   const [tokenHistoryByPalette, setTokenHistoryByPalette] = useState<Record<string, Array<Record<string, string>>>>({});
   const [tokenFocus, setTokenFocus] = useState<TokenFocusRole | null>(null);
+  const [savedProjectId, setSavedProjectId] = useState<string | null>(projectId);
+  const [saving, setSaving] = useState(false);
   const activeTokenEdit = useRef<{ paletteId: string; before: Record<string, string> } | null>(null);
   const tokenOverridesRef = useRef<Record<string, string>>({});
 
@@ -119,10 +134,40 @@ export function Workbench({ initialTokenOverrides = {} }: { initialTokenOverride
       overrides: tokenOverrides,
     })}`;
     try {
+      if (!user) await signIn();
       await navigator.clipboard.writeText(url);
-      toast.success(copy.result.shared);
+      uiToast.success(copy.result.shared, locale);
     } catch {
-      toast.error(copy.result.shareFailed);
+      uiToast.error(copy.result.shareFailed, locale);
+    }
+  }
+
+  async function save() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const currentUser = user ?? await signIn();
+      const nextProjectId = await saveProject({
+        uid: currentUser.uid,
+        projectId: savedProjectId,
+        input,
+        selectedPaletteId,
+        overrides: tokenOverrides,
+      });
+      setSavedProjectId(nextProjectId);
+      uiToast.success(copy.result.saved, locale);
+    } catch (error) {
+      if (isPlanRequiredError(error)) {
+        uiToast.info(
+          locale === "ko" ? "무료 한도를 모두 사용했어요. Pro 플랜은 곧 제공됩니다." : "You reached the free limit. Pro is coming soon.",
+          locale,
+        );
+        router.push("/coming-soon");
+        return;
+      }
+      uiToast.error(quotaErrorMessage(error, locale), locale);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -132,10 +177,15 @@ export function Workbench({ initialTokenOverrides = {} }: { initialTokenOverride
         remakeWordmark
         endAction={
           <div className="studio-gnb-actions">
+            <button type="button" className="studio-gnb-action" disabled={saving} onClick={save}>
+              <Save aria-hidden />
+              <span>{copy.result.save}</span>
+            </button>
             <button type="button" className="studio-gnb-action" onClick={share}>
               <Share2 aria-hidden />
               <span>{copy.result.share}</span>
             </button>
+            <AccountButton />
             <LocaleToggle />
           </div>
         }
