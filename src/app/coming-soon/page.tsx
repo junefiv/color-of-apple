@@ -28,8 +28,8 @@ export default function ComingSoonPage() {
         </h1>
         <p className="mt-3 max-w-sm text-sm leading-6 text-[var(--text-secondary)]">
           {isKo
-            ? "월 990원 Pro 플랜과 결제 기능을 준비하고 있어요. 프로젝트·생성·내보내기 무제한과 광고 제거 기능으로 곧 만나요."
-            : "The ₩990/month Pro plan is on its way with unlimited projects, generations, exports, and no ads."}
+            ? "월 990원 Pro 플랜과 결제 기능을 준비하고 있어요. 프로젝트 무제한과 광고 제거 기능으로 곧 만나요."
+            : "The ₩990/month Pro plan is on its way with unlimited projects and no ads."}
         </p>
         <Button variant="outline" className="mt-7" onClick={goBack}>
           <ArrowLeft aria-hidden />{isKo ? "뒤로가기" : "Go back"}

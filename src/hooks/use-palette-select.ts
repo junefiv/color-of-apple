@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { prefersReducedMotion } from "@/lib/match-reveal";
 import { getSpacePalette, resolvePaletteId, type SpacePaletteId } from "@/lib/space-palettes";
 import { useMatchuStore } from "@/lib/store";
+import { trackProductEvent } from "@/lib/analytics";
 
 export type PaletteWashState = {
   id: SpacePaletteId;
@@ -20,6 +21,7 @@ export function usePaletteSelect(hex: string) {
       const resolvedId = resolvePaletteId(id);
       if (resolvedId === selectedPaletteId || wash) return;
       const palette = getSpacePalette(hex, resolvedId);
+      void trackProductEvent("palette_changed", { palette_id: palette.id });
       if (prefersReducedMotion()) {
         setSelectedPaletteId(palette.id);
         return;

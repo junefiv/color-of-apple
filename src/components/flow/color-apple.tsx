@@ -8,6 +8,7 @@ import { HexColorPicker } from "react-colorful";
 import { useAppleHop } from "@/hooks/use-apple-hop";
 import { useCopy } from "@/hooks/use-copy";
 import { APPLE_HEX, isHexColor, normalizeHex } from "@/lib/picked-color";
+import { trackProductEvent } from "@/lib/analytics";
 
 const TIP_WIDTH = 232;
 const TIP_HEIGHT = 228;
@@ -45,6 +46,7 @@ export function ColorApple({
   const copy = useCopy();
   const appleRef = useRef<HTMLButtonElement>(null);
   const tipRef = useRef<HTMLDivElement>(null);
+  const trackedSelectionRef = useRef(false);
   const { look, leftEyeRef, rightEyeRef } = useAppleEyeLook();
   const [open, setOpen] = useState(false);
   const [tip, setTip] = useState({ top: 0, left: 0, place: "right" as "right" | "left" | "bottom" });
@@ -52,6 +54,10 @@ export function ColorApple({
   const fill = isHexColor(hex) ? normalizeHex(hex) : APPLE_HEX;
 
   function commit(next: string) {
+    if (!trackedSelectionRef.current) {
+      trackedSelectionRef.current = true;
+      void trackProductEvent("color_picked", { source: "apple_picker" });
+    }
     onChange(next.toUpperCase());
   }
 
@@ -113,7 +119,10 @@ export function ColorApple({
         aria-label={copy.hero.appleLabel}
         aria-expanded={open}
         aria-haspopup="dialog"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => setOpen((value) => {
+          if (!value) trackedSelectionRef.current = false;
+          return !value;
+        })}
         style={{ "--apple": fill } as React.CSSProperties}
       >
         <AppleArtwork look={look} leftEyeRef={leftEyeRef} rightEyeRef={rightEyeRef} />

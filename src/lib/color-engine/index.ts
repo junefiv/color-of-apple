@@ -38,4 +38,4 @@ export {
 } from "./color-utils";
 export { filledScaleStates, pickOnNeutral } from "./on-ink";
 export { previewComponentVars } from "./preview-component-vars";
-export { getToken, validateTheme, fixContrastFailures } from "./contrast";
+export { getToken, setToken, validateTheme, fixContrastFailures } from "./contrast";

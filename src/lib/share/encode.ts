@@ -4,6 +4,7 @@ import {
 } from "lz-string";
 import { DEFAULT_INPUT, ENGINE_VERSION, type GenerateInput } from "@/lib/color-engine";
 import { DEFAULT_PALETTE_ID, resolvePaletteId } from "@/lib/space-palettes";
+import type { PlatformView, PreviewTab } from "@/lib/store";
 
 const KEYS: Array<keyof GenerateInput> = [
   "hex",
@@ -20,10 +21,14 @@ export type SharePayload = {
   input: GenerateInput;
   selectedPaletteId: string;
   overrides: Record<string, string>;
+  tokenSnapshot: Record<string, string>;
+  platform: PlatformView;
+  previewTab: PreviewTab;
+  projectTitle?: string;
   engineVersion: string;
 };
 
-export function encodeShare(data: Omit<SharePayload, "engineVersion"> & { engineVersion?: string }) {
+export function encodeShare(data: Pick<SharePayload, "input" | "selectedPaletteId" | "overrides"> & Partial<Omit<SharePayload, "input" | "selectedPaletteId" | "overrides">>) {
   return compressToEncodedURIComponent(JSON.stringify({
     ...data,
     engineVersion: data.engineVersion ?? ENGINE_VERSION,
@@ -54,6 +59,8 @@ function restoreOverrides(value: unknown) {
   );
 }
 
+const restoreSnapshot = restoreOverrides;
+
 export function decodeShare(payload: string): SharePayload | null {
   try {
     const raw = decompressFromEncodedURIComponent(payload);
@@ -68,6 +75,10 @@ export function decodeShare(payload: string): SharePayload | null {
       input,
       selectedPaletteId: resolvePaletteId(parsed.selectedPaletteId ?? DEFAULT_PALETTE_ID),
       overrides: restoreOverrides(parsed.overrides),
+      tokenSnapshot: restoreSnapshot(parsed.tokenSnapshot),
+      platform: parsed.platform === "app" ? "app" : "web",
+      previewTab: parsed.previewTab === "components" ? "components" : "overview",
+      projectTitle: typeof parsed.projectTitle === "string" ? parsed.projectTitle.trim().slice(0, 60) : undefined,
       engineVersion: typeof parsed.engineVersion === "string" ? parsed.engineVersion : ENGINE_VERSION,
     };
   } catch {

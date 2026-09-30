@@ -7,7 +7,7 @@ export function primaryButtonTokens(
   mode: ThemeMode,
 ) {
   if (mode === "light") {
-    return filledScaleStates(scale, neutral, 500);
+    return filledScaleStates(scale, neutral, 600);
   }
   return filledScaleStates(scale, neutral, 400);
 }

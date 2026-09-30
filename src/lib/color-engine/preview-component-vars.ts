@@ -1,5 +1,5 @@
 import { filledScaleStates, pickOnNeutral, TRANSPARENT } from "./on-ink";
-import type { PrimitiveScales, SemanticTokens } from "./types";
+import type { PrimaryStep, PrimitiveScales, SemanticTokens } from "./types";
 
 type Triple = { bg: string; fg: string; border: string };
 
@@ -20,8 +20,9 @@ function filledSet(
   scale: PrimitiveScales["primary"],
   neutral: PrimitiveScales["neutral"],
   focus: string,
+  baseStep: PrimaryStep = 500,
 ) {
-  const filled = filledScaleStates(scale, neutral);
+  const filled = filledScaleStates(scale, neutral, baseStep);
   const on = filled.on;
   set(vars, prefix, "default", { bg: filled.default, fg: on, border: TRANSPARENT });
   set(vars, prefix, "hover", { bg: filled.hover, fg: on, border: TRANSPARENT });
@@ -113,9 +114,10 @@ export function previewComponentVars(
   const focus = semantic.border.focus;
   const vars: Record<string, string> = {};
 
-  const primaryFilled = filledSet(vars, "--btn-primary", p, n, focus);
+  const primaryFilled = filledSet(vars, "--btn-primary", p, n, focus, 600);
   const onP = primaryFilled.on;
-  filledSet(vars, "--btn-secondary", s, n, focus);
+  const onS = pickOnNeutral(s[500], n);
+  tonalPrimarySet(vars, "--btn-secondary", s, onS, n, focus);
   filledSet(vars, "--btn-cta", a, n, focus);
   filledSet(vars, "--btn-destructive", er, n, focus);
 
@@ -211,21 +213,21 @@ export function previewComponentVars(
   vars["--alert-info-fg"] = infoScale[900];
   vars["--alert-info-border"] = infoScale[300];
 
-  vars["--action-primary-default"] = p[500];
-  vars["--action-primary-hover"] = primaryFilled.hover;
-  vars["--action-primary-pressed"] = primaryFilled.pressed;
-  vars["--action-on-primary"] = onP;
+  vars["--action-primary-default"] = semantic.primary.default;
+  vars["--action-primary-hover"] = semantic.primary.hover;
+  vars["--action-primary-pressed"] = semantic.primary.pressed;
+  vars["--action-on-primary"] = semantic.primary.onPrimary;
 
-  vars["--color-primary-default"] = p[500];
-  vars["--color-primary-hover"] = primaryFilled.hover;
-  vars["--color-primary-pressed"] = primaryFilled.pressed;
-  vars["--color-primary-on"] = onP;
+  vars["--color-primary-default"] = semantic.primary.default;
+  vars["--color-primary-hover"] = semantic.primary.hover;
+  vars["--color-primary-pressed"] = semantic.primary.pressed;
+  vars["--color-primary-on"] = semantic.primary.onPrimary;
   vars["--color-primary-subtle"] = p[50];
   vars["--color-primary-text"] = semantic.primary.text;
   vars["--color-primary-border"] = p[200];
 
-  vars["--color-secondary-default"] = s[500];
-  vars["--color-secondary-on"] = pickOnNeutral(s[500], n);
+  vars["--color-secondary-default"] = semantic.secondary.default;
+  vars["--color-secondary-on"] = semantic.secondary.onSecondary;
   vars["--color-accent-default"] = a[500];
   vars["--color-accent-on"] = pickOnNeutral(a[500], n);
   vars["--color-accent-subtle"] = a[50];

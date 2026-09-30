@@ -8,47 +8,30 @@ import { FALLBACK_HEX } from "@/lib/picked-color";
 import { DEFAULT_PALETTE_ID, resolvePaletteId } from "@/lib/space-palettes";
 
 export type PreviewTab = "overview" | "components";
-export type PreviewKind =
-  | "work"
-  | "shop"
-  | "finance"
-  | "travel"
-  | "community"
-  | "education"
-  | "health"
-  | "media"
-  | "food";
 export type PlatformView = "web" | "app";
-
-export const PREVIEW_KINDS: PreviewKind[] = [
-  "work",
-  "shop",
-  "finance",
-  "travel",
-  "community",
-  "education",
-  "health",
-  "media",
-  "food",
-];
-
-export function normalizePreviewKind(value?: string): PreviewKind {
-  return PREVIEW_KINDS.includes(value as PreviewKind) ? (value as PreviewKind) : "work";
-}
 
 type Persisted = {
   locale: Locale;
-  input: GenerateInput;
   platform: PlatformView;
   previewTab: PreviewTab;
-  previewKind: PreviewKind;
+};
+
+type HydrationInput = Partial<Persisted> & {
+  // Accepted only so older callers/drafts remain type-compatible. Palette
+  // data is deliberately ignored and is no longer written to localStorage.
+  input?: GenerateInput;
+  hasMatched?: boolean;
+  matchedHex?: string | null;
+  selectedPaletteId?: string;
+  palettesRevealed?: boolean;
+};
+
+type MatchuState = Persisted & {
+  input: GenerateInput;
   hasMatched: boolean;
   matchedHex: string | null;
   selectedPaletteId: string;
   palettesRevealed: boolean;
-};
-
-type MatchuState = Persisted & {
   hydrated: boolean;
   skipLoader: boolean;
   pendingBleed: boolean;
@@ -61,7 +44,6 @@ type MatchuState = Persisted & {
   replaceInput: (input: GenerateInput) => void;
   setPlatform: (platform: PlatformView) => void;
   setPreviewTab: (tab: PreviewTab) => void;
-  setPreviewKind: (kind: PreviewKind) => void;
   setViewAllTokens: (value: boolean) => void;
   setSkipLoader: (value: boolean) => void;
   setPendingBleed: (value: boolean) => void;
@@ -71,7 +53,7 @@ type MatchuState = Persisted & {
   completeMatch: (hex: string) => void;
   resetMatch: () => void;
   resetSession: () => void;
-  hydrate: (value: Partial<Persisted>) => void;
+  hydrate: (value: HydrationInput) => void;
 };
 
 const STORAGE_KEY = "matchu:draft";
@@ -87,7 +69,6 @@ export const useMatchuStore = create<MatchuState>((set) => ({
   input: EMPTY_INPUT,
   platform: "web",
   previewTab: "overview",
-  previewKind: "work",
   viewAllTokens: false,
   hydrated: false,
   skipLoader: false,
@@ -107,7 +88,6 @@ export const useMatchuStore = create<MatchuState>((set) => ({
   replaceInput: (input) => set({ input }),
   setPlatform: (platform) => set({ platform }),
   setPreviewTab: (previewTab) => set({ previewTab }),
-  setPreviewKind: (previewKind) => set({ previewKind }),
   setViewAllTokens: (viewAllTokens) => set({ viewAllTokens }),
   setSkipLoader: (skipLoader) => set({ skipLoader }),
   setPendingBleed: (pendingBleed) => set({ pendingBleed }),
@@ -138,7 +118,6 @@ export const useMatchuStore = create<MatchuState>((set) => ({
       input: EMPTY_INPUT,
       platform: "web",
       previewTab: "overview",
-      previewKind: "work",
       viewAllTokens: false,
       skipLoader: false,
       pendingBleed: false,
@@ -152,24 +131,17 @@ export const useMatchuStore = create<MatchuState>((set) => ({
   hydrate: (value) =>
     set((state) => ({
       locale: value.locale ?? state.locale,
-      input: value.input ? { ...state.input, ...value.input } : state.input,
       platform: value.platform ?? state.platform,
       previewTab: value.previewTab === "components" ? "components" : state.previewTab,
-      previewKind: normalizePreviewKind(value.previewKind ?? state.previewKind),
-      hasMatched: Boolean(value.hasMatched),
-      matchedHex: value.matchedHex ?? null,
-      matchStage: value.hasMatched ? "done" : "idle",
-      selectedPaletteId: resolvePaletteId(value.selectedPaletteId ?? DEFAULT_PALETTE_ID),
-      palettesRevealed: Boolean(value.palettesRevealed),
       hydrated: true,
     })),
 }));
 
-export function readDraft(): Partial<Persisted> | null {
+export function readDraft(): HydrationInput | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Partial<Persisted>) : null;
+    return raw ? (JSON.parse(raw) as HydrationInput) : null;
   } catch {
     return null;
   }
@@ -179,14 +151,8 @@ export function writeDraft(state: MatchuState) {
   if (typeof window === "undefined") return;
   const draft: Persisted = {
     locale: state.locale,
-    input: state.input,
     platform: state.platform,
     previewTab: state.previewTab,
-    previewKind: state.previewKind,
-    hasMatched: state.hasMatched,
-    matchedHex: state.matchedHex,
-    selectedPaletteId: state.selectedPaletteId,
-    palettesRevealed: state.palettesRevealed,
   };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
 }

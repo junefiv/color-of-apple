@@ -2,22 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import { useLayoutEffect, useState } from "react";
-import { useAuth } from "@/components/auth/auth-provider";
 import { ColorApple } from "@/components/flow/color-apple";
 import { MatchButton } from "@/components/flow/match-button";
-import { uiToast } from "@/components/ui/toast";
 import { useCopy } from "@/hooks/use-copy";
 import { parseToOklch } from "@/lib/color-engine";
 import { APPLE_HEX } from "@/lib/picked-color";
 import { DEFAULT_PALETTE_ID } from "@/lib/space-palettes";
-import { consumeQuota, isPlanRequiredError, quotaErrorMessage } from "@/lib/firebase/data";
 import { useMatchuStore } from "@/lib/store";
+import { trackProductEvent } from "@/lib/analytics";
 
 export function Hero() {
   const copy = useCopy();
-  const { user, signIn } = useAuth();
   const router = useRouter();
-  const locale = useMatchuStore((state) => state.locale);
   const setInput = useMatchuStore((state) => state.setInput);
   const setSkipLoader = useMatchuStore((state) => state.setSkipLoader);
   const setPlatform = useMatchuStore((state) => state.setPlatform);
@@ -40,7 +36,7 @@ export function Hero() {
     return () => window.removeEventListener("pageshow", resetApple);
   }, []);
 
-  async function generate() {
+  function generate() {
     try {
       parseToOklch(hex);
     } catch {
@@ -48,30 +44,16 @@ export function Hero() {
       return;
     }
 
-    try {
-      setPressed(true);
-      const currentUser = user ?? await signIn();
-      await consumeQuota(currentUser.uid, "generation");
-      setInput({ hex, previewTarget: "both" });
-      setPlatform("web");
-      setError(null);
-      resetMatch();
-      setSelectedPaletteId(DEFAULT_PALETTE_ID);
-      setSkipLoader(false);
-      router.push("/result");
-      window.setTimeout(() => setPressed(false), 1600);
-    } catch (error) {
-      setPressed(false);
-      if (isPlanRequiredError(error)) {
-        uiToast.info(
-          locale === "ko" ? "무료 생성 한도를 모두 사용했어요. Pro 플랜은 곧 제공됩니다." : "You reached the free generation limit. Pro is coming soon.",
-          locale,
-        );
-        router.push("/coming-soon");
-        return;
-      }
-      uiToast.error(quotaErrorMessage(error, locale), locale);
-    }
+    setPressed(true);
+    setInput({ hex, previewTarget: "both" });
+    setPlatform("web");
+    setError(null);
+    resetMatch();
+    setSelectedPaletteId(DEFAULT_PALETTE_ID);
+    setSkipLoader(false);
+    void trackProductEvent("generate", { source: "hero" });
+    router.push("/result");
+    window.setTimeout(() => setPressed(false), 1600);
   }
 
   return (

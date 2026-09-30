@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowDownLeft, ArrowUpRight, Bell, Check, ChevronRight, Coffee, CreditCard, Download, Ellipsis, Home, LayoutGrid, PieChart, Plus, Search, ShoppingBag, SlidersHorizontal, Sparkles, Target, TrainFront, Utensils, Wallet, X } from "lucide-react";
 import { IntroPhone, IntroViewport } from "./kinds/shared";
 import { AccountsView, AlertsView, AnalysisView, ExportView, MoreSheet, SetupView, TidyView } from "./budget-views";
+import { useMatchuStore } from "@/lib/store";
 import "./budget-preview.css";
 
 type Category = "식비" | "쇼핑" | "교통" | "생활";
@@ -47,7 +48,17 @@ const COPY: Record<View, { title: string; body: string }> = {
   analysis: { title: "어디에 얼마나 썼을까요", body: "기간과 차트 종류를 바꿔 가며 조합을 봐요." },
   export: { title: "기록을 밖으로 옮겨요", body: "형식과 포함 항목을 고른 뒤 파일을 만들어요." },
 };
-const money = (amount: number) => `${Math.round(amount).toLocaleString("ko-KR")}원`;
+const COPY_EN: Record<View, { title: string; body: string }> = {
+  overview: { title: "Small records, a better tomorrow", body: "See where your money goes and prepare for what comes next." },
+  tidy: { title: "Keep only the records you need", body: "Search, select, and organize transactions in bulk." },
+  setup: { title: "Set your budget rules", body: "Manage totals, allocation, and category limits in one place." },
+  alerts: { title: "Never miss a spending signal", body: "Fine-tune alerts by channel, schedule, and threshold." },
+  accounts: { title: "Your connected money routes", body: "Manage primary accounts, balances, and connection status." },
+  analysis: { title: "Where did your money go?", body: "Change the period and chart to explore your spending mix." },
+  export: { title: "Take your records with you", body: "Choose a format and the fields to include." },
+};
+const VIEW_EN: Record<View, string> = { overview: "Overview", tidy: "Transactions", setup: "Budget", alerts: "Alerts", accounts: "Accounts", analysis: "Analysis", export: "Export" };
+const CATEGORY_EN: Record<Category, string> = { 식비: "Food", 쇼핑: "Shopping", 교통: "Transit", 생활: "Living" };
 
 function Modal({ title, close, children }: { title: string; close: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -83,6 +94,13 @@ function Modal({ title, close, children }: { title: string; close: () => void; c
 }
 
 function BudgetPreview({ mobile = false }: { mobile?: boolean }) {
+  const locale = useMatchuStore((state) => state.locale);
+  const isKo = locale === "ko";
+  const t = (ko: string, en: string) => isKo ? ko : en;
+  const money = (amount: number) => isKo
+    ? `${Math.round(amount).toLocaleString("ko-KR")}원`
+    : new Intl.NumberFormat("en-US", { style: "currency", currency: "KRW", maximumFractionDigits: 0 }).format(Math.round(amount));
+  const categoryLabel = (item: Category) => isKo ? item : CATEGORY_EN[item];
   const [view, setView] = useState<View>("overview");
   const [entries, setEntries] = useState(INITIAL);
   const [budget, setBudget] = useState(1800000);
@@ -99,7 +117,7 @@ function BudgetPreview({ mobile = false }: { mobile?: boolean }) {
   const [notice, setNotice] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
-  const navItems = mobile ? APP_NAV : WEB_NAV;
+  const navItems = (mobile ? APP_NAV : WEB_NAV).map((item) => ({ ...item, title: isKo ? item.title : VIEW_EN[item.id] }));
   const total = entries.reduce((sum, entry) => sum + entry.amount, 0);
   const remaining = budget - total;
   const visible = entries.filter(entry => (filter === "전체" || entry.category === filter) && `${entry.name} ${entry.memo}`.includes(query.trim()));
@@ -110,11 +128,11 @@ function BudgetPreview({ mobile = false }: { mobile?: boolean }) {
   function openAdd() { setAmount(""); setName(""); setMemo(""); setCategory("식비"); showPanel("add"); }
   function openBudget() { setAmount(String(budget)); showPanel("budget"); }
   function close() { setPanel(null); setConfirmDelete(false); requestAnimationFrame(() => opener.current?.focus()); }
-  const navigation = <nav className="ledger-nav" aria-label="가계부 메뉴">{navItems.map(({ id, title, icon: Icon }) => <button key={id} aria-current={view === id ? "page" : undefined} onClick={() => setView(id)}>
+  const navigation = <nav className="ledger-nav" aria-label={t("가계부 메뉴", "Budget menu")}>{navItems.map(({ id, title, icon: Icon }) => <button key={id} aria-current={view === id ? "page" : undefined} onClick={() => setView(id)}>
     <Icon size={19} />
     <span>{title}</span>{!mobile && view === id && <span className="ledger-nav-dot" />}</button>)}{mobile && <button aria-current={view === "alerts" || view === "accounts" || view === "export" ? "page" : undefined} onClick={() => setMoreOpen(true)}>
     <Ellipsis size={19} />
-    <span>더보기</span>
+    <span>{t("더보기", "More")}</span>
   </button>}</nav>;
   const categoryCards = <div className="ledger-budgets">{CATEGORIES.map((item) => {
     const spent = categoryTotal(item);
@@ -125,8 +143,8 @@ function BudgetPreview({ mobile = false }: { mobile?: boolean }) {
     return <div className="ledger-budget-item" key={item}>
       <div className="ledger-between">
         <span className="ledger-inline">
-          <Icon size={16} />{item}</span>
-        <span className={`ledger-status ledger-${tone}`}>{ratio > 1 ? "예산 초과" : ratio >= 0.8 ? "한도 임박" : "여유 있어요"}</span>
+          <Icon size={16} />{categoryLabel(item)}</span>
+        <span className={`ledger-status ledger-${tone}`}>{ratio > 1 ? t("예산 초과", "Over budget") : ratio >= 0.8 ? t("한도 임박", "Near limit") : t("여유 있어요", "On track")}</span>
       </div>
       <div className="ledger-budget-values">
         <strong>{money(spent)}</strong>
@@ -141,12 +159,12 @@ function BudgetPreview({ mobile = false }: { mobile?: boolean }) {
     <div className="ledger-section-head">
       <div>
         <span className="ledger-eyebrow">YOUR ACTIVITY</span>
-        <h2>최근 거래</h2>
-      </div><button className="ledger-link" onClick={() => setView("tidy")}>전체 보기 <ChevronRight size={14} />
+        <h2>{t("최근 거래", "Recent transactions")}</h2>
+      </div><button className="ledger-link" onClick={() => setView("tidy")}>{t("전체 보기", "View all")} <ChevronRight size={14} />
       </button></div>
     <label className="ledger-search">
       <Search size={16} />
-      <input aria-label="거래 검색" placeholder="거래 이름이나 메모 검색" value={query} onChange={e => setQuery(e.target.value)} />
+      <input aria-label={t("거래 검색", "Search transactions")} placeholder={t("거래 이름이나 메모 검색", "Search by name or memo")} value={query} onChange={e => setQuery(e.target.value)} />
     </label>
     <div className="ledger-filters" aria-label="거래 카테고리">{["전체", ...CATEGORIES].map(item => <button key={item} aria-pressed={filter === item} onClick={() => setFilter(item)}>{item}</button>)}</div>
     <div className="ledger-entry-list">{visible.slice(0, 4).map(entry => {
@@ -157,15 +175,15 @@ function BudgetPreview({ mobile = false }: { mobile?: boolean }) {
         </span>
         <span className="ledger-entry-copy">
           <strong>{entry.name}</strong>
-          <small>{entry.category} · {entry.date}</small>
+          <small>{categoryLabel(entry.category)} · {isKo ? entry.date : entry.date.replace("9월 ", "Sep ").replace("일", "")}</small>
         </span>
         <strong className="ledger-amount">−{money(entry.amount)}</strong>
         <ChevronRight size={14} className="ledger-entry-arrow" />
       </button>;
     })}{visible.length === 0 && <div className="ledger-empty">
       <Search size={24} />
-      <p>일치하는 거래가 없어요.</p>
-      <button className="ledger-link" onClick={() => { setQuery(""); setFilter("전체"); }}>필터 초기화</button>
+      <p>{t("일치하는 거래가 없어요.", "No matching transactions.")}</p>
+      <button className="ledger-link" onClick={() => { setQuery(""); setFilter("전체"); }}>{t("필터 초기화", "Reset filters")}</button>
     </div>}</div>
   </section>;
   const content = <div className="ledger-content" inert={panel !== null}>
@@ -176,8 +194,8 @@ function BudgetPreview({ mobile = false }: { mobile?: boolean }) {
         </span>pocket<span className="ledger-brand-dot">.</span>
       </span> : <span className="ledger-breadcrumb">내 가계부 <ChevronRight size={13} /> {WEB_NAV.find(item => item.id === view)?.title}</span>}</div>
       <div className="ledger-inline">
-        <span className="ledger-month">2026년 9월</span>
-        <button className="ledger-icon-btn ledger-bell" aria-label="알림 보기" onClick={() => showPanel("notifications")}>
+        <span className="ledger-month">{t("2026년 9월", "September 2026")}</span>
+        <button className="ledger-icon-btn ledger-bell" aria-label={t("알림 보기", "View alerts")} onClick={() => showPanel("notifications")}>
           <Bell size={19} />
           <i />
         </button>
@@ -188,22 +206,22 @@ function BudgetPreview({ mobile = false }: { mobile?: boolean }) {
       <div className="ledger-heading">
         <div>
           <span className="ledger-eyebrow">MY MONEY, MY PACE</span>
-          <h1>{COPY[view].title}</h1>
-          <p>{COPY[view].body}</p>
+          <h1>{(isKo ? COPY : COPY_EN)[view].title}</h1>
+          <p>{(isKo ? COPY : COPY_EN)[view].body}</p>
         </div>{!mobile && <button className="ledger-btn ledger-primary" onClick={openAdd}>
-          <Plus size={17} />지출 기록</button>}</div>
+          <Plus size={17} />{t("지출 기록", "Add expense")}</button>}</div>
       {view === "overview" && <>
         <div className="ledger-summary-grid">
           <section className="ledger-balance">
             <div className="ledger-between">
-              <span>이번 달 남은 예산</span>
+              <span>{t("이번 달 남은 예산", "Remaining this month")}</span>
               <Wallet size={20} />
             </div>
             <strong>{money(remaining)}</strong>
             <div className="ledger-balance-bottom">
               <span>
-                <span className="ledger-balance-dot" />{Math.round(total / budget * 100)}% 사용했어요</span>
-              <button onClick={openBudget} aria-label="전체 예산 수정">
+                <span className="ledger-balance-dot" />{Math.round(total / budget * 100)}% {t("사용했어요", "used")}</span>
+              <button onClick={openBudget} aria-label={t("전체 예산 수정", "Edit total budget")}>
                 <SlidersHorizontal size={16} />
               </button>
             </div>
@@ -215,17 +233,17 @@ function BudgetPreview({ mobile = false }: { mobile?: boolean }) {
             <span className="ledger-stat-icon">
               <ArrowUpRight size={20} />
             </span>
-            <span className="ledger-muted">이번 달 지출</span>
+            <span className="ledger-muted">{t("이번 달 지출", "Spent this month")}</span>
             <strong>{money(total)}</strong>
-            <small>총 {entries.length}건의 소중한 기록</small>
+            <small>{t(`총 ${entries.length}건의 소중한 기록`, `${entries.length} recorded transactions`)}</small>
           </section>
           <section className="ledger-card ledger-stat">
             <span className="ledger-stat-icon secondary">
               <ArrowDownLeft size={20} />
             </span>
-            <span className="ledger-muted">이번 달 수입</span>
+            <span className="ledger-muted">{t("이번 달 수입", "Income this month")}</span>
             <strong>3,200,000원</strong>
-            <small>9월 급여 · 입금 완료</small>
+            <small>{t("9월 급여 · 입금 완료", "September salary · Deposited")}</small>
           </section>
         </div>
         <div className="ledger-middle-grid">
@@ -233,21 +251,21 @@ function BudgetPreview({ mobile = false }: { mobile?: boolean }) {
             <div className="ledger-section-head">
               <div>
                 <span className="ledger-eyebrow">SPENDING MIX</span>
-                <h2>어디에 썼을까요?</h2>
+                <h2>{t("어디에 썼을까요?", "Where did it go?")}</h2>
               </div>
-              <span className="ledger-chip">이번 달</span>
+              <span className="ledger-chip">{t("이번 달", "This month")}</span>
             </div>
             <div className="ledger-chart-content">
               <div className="ledger-donut" role="img" aria-label={CATEGORIES.map(item => `${item} ${money(categoryTotal(item))}`).join(", ")} style={{ background: `conic-gradient(var(--color-primary-default) 0% ${categoryTotal("식비") / Math.max(total, 1) * 100}%, var(--color-secondary-default) ${categoryTotal("식비") / Math.max(total, 1) * 100}% ${(categoryTotal("식비") + categoryTotal("쇼핑")) / Math.max(total, 1) * 100}%, var(--color-accent-default) ${(categoryTotal("식비") + categoryTotal("쇼핑")) / Math.max(total, 1) * 100}% ${(total - categoryTotal("생활")) / Math.max(total, 1) * 100}%, var(--color-border-default) ${(total - categoryTotal("생활")) / Math.max(total, 1) * 100}% 100%)` }}>
                 <div>
-                  <small>총 지출</small>
+                  <small>{t("총 지출", "Total spent")}</small>
                   <strong>{Math.round(total / 10000)}<small>만원</small>
                   </strong>
                 </div>
               </div>
               <div className="ledger-legend">{CATEGORIES.map((item, index) => <div key={item}>
                 <i className={`ledger-category-${index}`} />
-                <span>{item}</span>
+                <span>{categoryLabel(item)}</span>
                 <strong>{Math.round(categoryTotal(item) / Math.max(total, 1) * 100)}%</strong>
               </div>)}</div>
             </div>
@@ -259,8 +277,8 @@ function BudgetPreview({ mobile = false }: { mobile?: boolean }) {
               </span>
               <span className="ledger-accent-tag">차곡차곡</span>
             </div>
-            <h2>다음 여행을 위한<br /> 작은 준비</h2>
-            <p>나를 위한 여행 적금</p>
+            <h2>{t("다음 여행을 위한 작은 준비", "A little fund for your next trip")}</h2>
+            <p>{t("나를 위한 여행 적금", "My travel savings")}</p>
             <div className="ledger-goal-total">
               <strong>{money(saved)}</strong>
               <small>/ 1,000,000원</small>
@@ -269,7 +287,7 @@ function BudgetPreview({ mobile = false }: { mobile?: boolean }) {
               <span style={{ width: `${Math.min(saved / 1000000 * 100, 100)}%` }} />
             </div>
             <button className="ledger-btn ledger-secondary" disabled={saved >= 1000000} onClick={() => { setSaved(value => Math.min(1000000, value + 50000)); setNotice("여행 목표에 50,000원을 더했어요."); }}>
-              <Plus size={15} />{saved >= 1000000 ? "목표를 달성했어요" : "5만원 저축하기"}</button>
+              <Plus size={15} />{saved >= 1000000 ? t("목표를 달성했어요", "Goal reached") : t("5만원 저축하기", "Save ₩50,000")}</button>
           </section>
         </div>
       </>}
@@ -277,14 +295,14 @@ function BudgetPreview({ mobile = false }: { mobile?: boolean }) {
         <div className="ledger-section-head">
           <div>
             <span className="ledger-eyebrow">STAY ON TRACK</span>
-            <h2>카테고리 예산</h2>
+            <h2>{t("카테고리 예산", "Category budgets")}</h2>
           </div>
           <button className="ledger-icon-btn" onClick={() => setView("setup")} aria-label="카테고리 예산 설정">
             <SlidersHorizontal size={17} />
           </button>
         </div>{categoryCards}<div className="ledger-info-note">
           <Bell size={15} />
-          <span>정기 구독 14,900원 결제가 3일 남았어요.</span>
+          <span>{t("정기 구독 14,900원 결제가 3일 남았어요.", "A ₩14,900 subscription is due in 3 days.")}</span>
         </div>
       </section></div>}
       {view === "tidy" && <TidyView mobile={mobile} entries={entries} onOpen={(entry) => { setConfirmDelete(false); showPanel(entry); }} onNotice={setNotice} />}
@@ -295,8 +313,8 @@ function BudgetPreview({ mobile = false }: { mobile?: boolean }) {
       {view === "export" && <ExportView onNotice={setNotice} />}
       <footer className="ledger-footer">
         <span>
-          <Check size={13} />기록은 이 프리뷰 안에서만 저장돼요</span>
-        <span>작은 습관이 만드는 변화</span>
+          <Check size={13} />{t("기록은 이 프리뷰 안에서만 저장돼요", "Records stay inside this preview")}</span>
+        <span>{t("작은 습관이 만드는 변화", "Small habits make a difference")}</span>
       </footer>
     </main>
   </div>;

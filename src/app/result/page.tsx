@@ -35,6 +35,8 @@ function ResultContent() {
     useMatchuStore.setState({
       input: decoded.input,
       selectedPaletteId: decoded.selectedPaletteId,
+      platform: decoded.platform,
+      previewTab: decoded.previewTab,
       hasMatched: true,
       matchedHex: decoded.input.hex,
       matchStage: "done",
@@ -88,7 +90,13 @@ function ResultContent() {
 
   return (
     <div className="color-bleed-root" data-pending-bleed={pendingBleed ? "true" : "false"}>
-      <Workbench key={payload ?? "local"} projectId={projectId} initialTokenOverrides={decoded?.overrides} />
+      <Workbench
+        key={payload ?? "local"}
+        projectId={projectId}
+        initialTokenOverrides={decoded?.overrides}
+        initialTokenSnapshot={decoded?.tokenSnapshot}
+        initialProjectTitle={decoded?.projectTitle}
+      />
       {pendingBleed ? (
         <ColorBleed key={bleedKey} hex={hex} play onDone={finishBleed} />
       ) : null}

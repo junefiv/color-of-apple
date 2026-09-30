@@ -30,12 +30,23 @@ service cloud.firestore {
 
     function validProject() {
       return request.resource.data.keys().hasOnly([
-        "title", "input", "selectedPaletteId", "overrides", "createdAt", "updatedAt"
+        "title", "input", "selectedPaletteId", "overrides", "tokenSnapshot", "colorHistory", "createdAt", "updatedAt"
       ])
         && request.resource.data.title is string
+        && request.resource.data.title.size() >= 1
+        && request.resource.data.title.size() <= 60
+        && request.resource.data.title.size() >= 1
+        && request.resource.data.title.size() <= 60
+        && request.resource.data.title.size() >= 1
+        && request.resource.data.title.size() <= 60
+        && request.resource.data.title.size() >= 1
+        && request.resource.data.title.size() <= 60
         && request.resource.data.input is map
         && request.resource.data.selectedPaletteId is string
         && request.resource.data.overrides is map
+        && request.resource.data.tokenSnapshot is map
+        && request.resource.data.colorHistory is list
+        && request.resource.data.colorHistory.size() <= 500
         && request.resource.data.createdAt is timestamp
         && request.resource.data.updatedAt == request.time;
     }
@@ -46,44 +57,6 @@ service cloud.firestore {
         || projectId == "slot-3"
         || projectId == "slot-4"
         || projectId == "slot-5";
-    }
-
-    function validCurrentWindow(slotId) {
-      return request.resource.data.keys().hasOnly([
-        "year", "month", "day", "slot", "generationCount", "exportCount", "updatedAt"
-      ])
-        && request.resource.data.year == request.time.year()
-        && request.resource.data.month == request.time.month()
-        && request.resource.data.day == request.time.day()
-        && request.resource.data.slot == (request.time.hours() < 12 ? 0 : 12)
-        && ((slotId == "0" && request.resource.data.slot == 0)
-          || (slotId == "12" && request.resource.data.slot == 12))
-        && request.resource.data.generationCount is int
-        && request.resource.data.exportCount is int
-        && request.resource.data.generationCount >= 0
-        && request.resource.data.exportCount >= 0
-        && request.resource.data.generationCount <= 5
-        && request.resource.data.exportCount <= 5
-        && request.resource.data.updatedAt == request.time;
-    }
-
-    function firstUseInWindow() {
-      return (request.resource.data.generationCount == 1 && request.resource.data.exportCount == 0)
-        || (request.resource.data.generationCount == 0 && request.resource.data.exportCount == 1);
-    }
-
-    function sameStoredWindow() {
-      return resource.data.year == request.time.year()
-        && resource.data.month == request.time.month()
-        && resource.data.day == request.time.day()
-        && resource.data.slot == (request.time.hours() < 12 ? 0 : 12);
-    }
-
-    function incrementsOneCounter() {
-      return (request.resource.data.generationCount == resource.data.generationCount + 1
-          && request.resource.data.exportCount == resource.data.exportCount)
-        || (request.resource.data.generationCount == resource.data.generationCount
-          && request.resource.data.exportCount == resource.data.exportCount + 1);
     }
 
     match /users/{uid} {
@@ -102,15 +75,6 @@ service cloud.firestore {
           && validProject()
           && request.resource.data.createdAt == resource.data.createdAt;
         allow delete: if owns(uid);
-      }
-
-      match /usage/{slotId} {
-        allow read: if owns(uid);
-        allow create: if owns(uid) && validCurrentWindow(slotId) && firstUseInWindow();
-        allow update: if owns(uid)
-          && validCurrentWindow(slotId)
-          && (sameStoredWindow() ? incrementsOneCounter() : firstUseInWindow());
-        allow delete: if false;
       }
     }
   }

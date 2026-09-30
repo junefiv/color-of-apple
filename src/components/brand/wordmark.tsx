@@ -11,9 +11,11 @@ import { useMatchuStore } from "@/lib/store";
 export function Wordmark({
   href = "/",
   remake = false,
+  onRemake,
 }: {
   href?: string;
   remake?: boolean;
+  onRemake?: () => void;
 }) {
   const copy = useCopy();
   const router = useRouter();
@@ -30,6 +32,10 @@ export function Wordmark({
       : resolvePickedHex(inputHex);
 
   function goRemake() {
+    if (onRemake) {
+      onRemake();
+      return;
+    }
     resetSession();
     router.push("/");
   }

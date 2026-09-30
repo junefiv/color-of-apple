@@ -21,11 +21,15 @@ export function filledScaleStates(
   neutral: ColorScale<NeutralStep>,
   baseStep: PrimaryStep = 500,
 ) {
+  const steps: PrimaryStep[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
   const defaultFill = scale[baseStep];
   const on = pickOnNeutral(defaultFill, neutral);
   const lightOn = isLightOnInk(on, neutral);
-  const hover = lightOn ? scale[600] : scale[400];
-  const pressed = lightOn ? scale[700] : scale[300];
+  const baseIndex = steps.indexOf(baseStep);
+  const hoverIndex = Math.max(0, Math.min(steps.length - 1, baseIndex + (lightOn ? 1 : -1)));
+  const pressedIndex = Math.max(0, Math.min(steps.length - 1, baseIndex + (lightOn ? 2 : -2)));
+  const hover = scale[steps[hoverIndex]];
+  const pressed = scale[steps[pressedIndex]];
 
   return {
     default: defaultFill,

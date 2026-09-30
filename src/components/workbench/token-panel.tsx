@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Copy, Download, RotateCcw, Undo2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Download, FolderOpen, RotateCcw, Save, Share2, Undo2 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/auth/auth-provider";
 import { uiToast } from "@/components/ui/toast";
@@ -18,13 +17,19 @@ import {
 import { formatExport, type ExportFormat } from "@/lib/export";
 import { useCopy } from "@/hooks/use-copy";
 import { preventProtectedCopy, preventProtectedCopyShortcut } from "@/lib/copy-protection";
-import { consumeQuota, isPlanRequiredError, quotaErrorMessage } from "@/lib/firebase/data";
 import { useMatchuStore } from "@/lib/store";
+import { trackProductEvent } from "@/lib/analytics";
 
 export function TokenPanel({
   result,
   input,
   overrides,
+  saving,
+  projectTitle,
+  savedProject,
+  onOpenProjects,
+  onSave,
+  onShare,
   onTokenChange,
   onTokenEditStart,
   onTokenPreview,
@@ -37,6 +42,12 @@ export function TokenPanel({
   result: ColorSystemResult;
   input: GenerateInput;
   overrides: Record<string, string>;
+  saving: boolean;
+  projectTitle: string | null;
+  savedProject: boolean;
+  onOpenProjects: () => void;
+  onSave: () => void;
+  onShare: () => void;
   onTokenChange: (path: string, value: string) => void;
   onTokenEditStart: () => void;
   onTokenPreview: (path: string, value: string) => void;
@@ -47,7 +58,6 @@ export function TokenPanel({
   onTokenFocus: (role: TokenFocusRole | null) => void;
 }) {
   const copy = useCopy();
-  const router = useRouter();
   const { user, signIn } = useAuth();
   const locale = useMatchuStore((state) => state.locale);
   const viewAll = useMatchuStore((state) => state.viewAllTokens);
@@ -67,31 +77,13 @@ export function TokenPanel({
     return acc;
   }, {});
 
-  async function copyCode() {
-    if (!file) return;
-    try {
-      const currentUser = user ?? await signIn();
-      await consumeQuota(currentUser.uid, "export");
-      await navigator.clipboard.writeText(file.code);
-      uiToast.success(copy.result.copied, locale);
-    } catch (error) {
-      if (isPlanRequiredError(error)) {
-        uiToast.info(
-          locale === "ko" ? "무료 내보내기 한도를 모두 사용했어요. Pro 플랜은 곧 제공됩니다." : "You reached the free export limit. Pro is coming soon.",
-          locale,
-        );
-        router.push("/coming-soon");
-        return;
-      }
-      uiToast.error(error instanceof Error && error.name === "QuotaLimitError" ? quotaErrorMessage(error, locale) : copy.result.copyFailed, locale);
-    }
-  }
-
   async function downloadFile() {
     if (!file) return;
     try {
-      const currentUser = user ?? await signIn();
-      await consumeQuota(currentUser.uid, "export");
+      if (!user) {
+        await signIn();
+        void trackProductEvent("user_login", { source: "export_download" });
+      }
       const blob = new Blob([file.code], {
         type: file.language === "json" ? "application/json;charset=utf-8" : "text/plain;charset=utf-8",
       });
@@ -102,16 +94,9 @@ export function TokenPanel({
       anchor.click();
       URL.revokeObjectURL(url);
       uiToast.success(copy.result.downloaded, locale);
-    } catch (error) {
-      if (isPlanRequiredError(error)) {
-        uiToast.info(
-          locale === "ko" ? "무료 내보내기 한도를 모두 사용했어요. Pro 플랜은 곧 제공됩니다." : "You reached the free export limit. Pro is coming soon.",
-          locale,
-        );
-        router.push("/coming-soon");
-        return;
-      }
-      uiToast.error(quotaErrorMessage(error, locale), locale);
+      void trackProductEvent("export_downloaded", { format });
+    } catch {
+      uiToast.error(locale === "ko" ? "파일을 다운로드하지 못했습니다." : "Could not download the file.", locale);
     }
   }
 
@@ -122,10 +107,46 @@ export function TokenPanel({
       onKeyDownCapture={preventProtectedCopyShortcut}
     >
       <header className="token-panel-header">
-        <p className="ui-label text-[var(--text-tertiary)]">{copy.tokens.title}</p>
+        <div className="token-panel-header-top">
+          <div className="token-panel-project-heading">
+            <p className="ui-label text-[var(--text-tertiary)]">{projectTitle ?? copy.tokens.title}</p>
+            {savedProject ? (
+              <span className="token-panel-saved-badge">
+                {locale === "ko" ? "저장된 프로젝트" : "Saved project"}
+              </span>
+            ) : null}
+          </div>
+          <div className="token-panel-project-actions">
+            <button
+              type="button"
+              className="token-panel-project-folder"
+              aria-label={locale === "ko" ? "내 프로젝트 열기" : "Open my projects"}
+              title={locale === "ko" ? "내 프로젝트" : "My projects"}
+              onClick={onOpenProjects}
+            >
+              <FolderOpen aria-hidden />
+              <span className="sr-only">{locale === "ko" ? "내 프로젝트" : "My projects"}</span>
+            </button>
+            <button type="button" disabled={saving} onClick={onSave}>
+              <Save aria-hidden />
+              <span>{saving
+                ? (locale === "ko" ? "저장 중…" : "Saving…")
+                : savedProject
+                  ? copy.result.save
+                  : (locale === "ko" ? "프로젝트 추가" : "Add project")}</span>
+            </button>
+            <button type="button" onClick={onShare}>
+              <Share2 aria-hidden />
+              <span>{copy.result.share}</span>
+            </button>
+          </div>
+        </div>
         <div className="token-panel-tabs" role="tablist">
           <button type="button" role="tab" aria-selected={panel === "tokens"} onClick={() => setPanel("tokens")}>{copy.result.tokens}</button>
-          <button type="button" role="tab" aria-selected={panel === "export"} onClick={() => setPanel("export")}>{copy.export.title}</button>
+          <button type="button" role="tab" aria-selected={panel === "export"} onClick={() => {
+            setPanel("export");
+            void trackProductEvent("export_opened");
+          }}>{copy.export.title}</button>
         </div>
       </header>
 
@@ -209,12 +230,14 @@ export function TokenPanel({
             {([[
               "css", copy.export.css,
             ], ["tailwind", copy.export.tailwind], ["react-native", copy.export.reactNative], ["json", copy.export.json], ["figma", copy.export.figma]] as const).map(([key, label]) => (
-              <button key={key} type="button" role="radio" aria-checked={format === key} onClick={() => setFormat(key)}>{label}</button>
+              <button key={key} type="button" role="radio" aria-checked={format === key} onClick={() => {
+                setFormat(key);
+                void trackProductEvent("export_format_selected", { format: key });
+              }}>{label}</button>
             ))}
           </div>
           <pre>{file?.code}</pre>
           <div className="token-export-actions">
-            <button type="button" onClick={copyCode}><Copy aria-hidden />{copy.export.copy}</button>
             <button type="button" data-primary onClick={downloadFile}><Download aria-hidden />{copy.export.download}</button>
           </div>
         </div>

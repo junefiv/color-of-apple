@@ -16,7 +16,6 @@ vi.mock("@/components/auth/auth-provider", () => ({
   useAuth: () => ({ user: { uid: "test-user" }, signIn: vi.fn() }),
 }));
 vi.mock("@/lib/firebase/data", () => ({
-  consumeQuota: vi.fn().mockResolvedValue({ used: 1, limit: 5 }),
   isPlanRequiredError: () => false,
   quotaErrorMessage: () => "quota error",
 }));

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="14 12 140 140">
+  <path
+    d="M 81 53 C 81 44 78 38 74 36 C 71 34 74 31 77 31 C 82 31 85 42 86 52 Z"
+    fill="#79513A"
+  />
+  <path
+    d="M 87 49 C 84 40 89 29 98 26 C 105 22 114 24 121 25 C 117 38 110 49 96 50 C 92 51 89 50 87 49 Z"
+    fill="#BECB60"
+  />
+  <path
+    d="M 89 48 C 93 40 99 35 106 32"
+    fill="none"
+    stroke="#F6F5DB"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+  <path
+    d="M 83 51 C 74 48 68 46 59 48 C 40 49 30 64 30 82 C 28 101 37 125 50 138 C 60 148 69 144 79 142 C 86 140 92 145 101 144 C 116 143 125 124 132 105 C 138 87 139 71 131 60 C 124 49 115 47 105 49 C 96 50 91 53 83 51 Z"
+    fill="#F15C5C"
+  />
+  <g transform="translate(66.5 92)">
+    <ellipse rx="14.5" ry="19.5" fill="#FFFEF8" transform="rotate(-3)" />
+    <ellipse rx="8.2" ry="10.7" fill="#302623" transform="translate(3.5 -2.5) rotate(-8)" />
+  </g>
+  <g transform="translate(100.5 92)">
+    <ellipse rx="14.5" ry="19.5" fill="#FFFEF8" transform="rotate(2)" />
+    <ellipse rx="8.2" ry="10.7" fill="#302623" transform="translate(3.5 -2.5) rotate(-5)" />
+  </g>
+</svg>

@@ -12,6 +12,13 @@ describe("share payload", () => {
         "primary.default": "#336699",
         "primary.onPrimary": "#FFFFFF",
       },
+      tokenSnapshot: {
+        "primary.default": "#336699",
+        "text.primary": "#111111",
+      },
+      platform: "app",
+      previewTab: "components",
+      projectTitle: "Brand colors",
     });
 
     const decoded = decodeShare(encoded);
@@ -21,6 +28,13 @@ describe("share payload", () => {
       "primary.default": "#336699",
       "primary.onPrimary": "#FFFFFF",
     });
+    expect(decoded?.tokenSnapshot).toEqual({
+      "primary.default": "#336699",
+      "text.primary": "#111111",
+    });
+    expect(decoded?.platform).toBe("app");
+    expect(decoded?.previewTab).toBe("components");
+    expect(decoded?.projectTitle).toBe("Brand colors");
   });
 
   it("keeps legacy input-only links working", () => {

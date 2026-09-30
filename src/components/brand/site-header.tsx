@@ -8,10 +8,12 @@ export function SiteHeader({
   children,
   endAction,
   remakeWordmark = false,
+  onRemake,
 }: {
   children?: React.ReactNode;
   endAction?: React.ReactNode;
   remakeWordmark?: boolean;
+  onRemake?: () => void;
 }) {
   return (
     <header
@@ -21,7 +23,7 @@ export function SiteHeader({
           : "flex items-center justify-between gap-4 px-5 py-4 md:px-8"
       }
     >
-      <Wordmark remake={remakeWordmark} />
+      <Wordmark remake={remakeWordmark} onRemake={onRemake} />
       {children ? <div className="studio-gnb-center flex min-w-0 flex-1 items-center gap-2 overflow-visible">{children}</div> : null}
       {endAction ?? (
         <div className="studio-gnb-actions">
