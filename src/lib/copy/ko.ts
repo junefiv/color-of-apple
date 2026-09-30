@@ -25,7 +25,7 @@ export const ko = {
     chips: "웹 · 앱 · 접근성 검사 · 코드 내보내기",
     hexLabel: "Main Color",
     pickHint: "저를 클릭해서 색을 선택하세요!",
-    generate: "Generate",
+    generate: "Generate Color Palette",
     appleLabel: "색을 고를 사과",
   },
   features: {
@@ -101,7 +101,7 @@ export const ko = {
     export: "내보내기",
     save: "저장",
     share: "공유",
-    saved: "프로젝트에 저장했어요",
+    saved: "컬러를 저장했어요",
     copied: "컬러 토큰을 복사했어요.",
     downloaded: "파일을 다운로드했어요.",
     shared: "이 컬러, 같이 볼까요?",

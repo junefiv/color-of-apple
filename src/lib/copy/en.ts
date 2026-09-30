@@ -27,7 +27,7 @@ export const en: Copy = {
     chips: "Web · App · Accessibility · Code export",
     hexLabel: "Main Color",
     pickHint: "Click me to pick a color!",
-    generate: "Generate",
+    generate: "Generate Color Palette",
     appleLabel: "Apple color picker",
   },
   features: {

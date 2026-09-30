@@ -110,7 +110,7 @@ export function Workbench({
       void trackProductEvent("project_library_opened");
       setProjectLibraryOpen(true);
     } catch {
-      uiToast.error(locale === "ko" ? "프로젝트를 불러오려면 로그인이 필요합니다." : "Sign in to open your projects.", locale);
+      uiToast.error(locale === "ko" ? "저장한 컬러를 보려면 로그인이 필요합니다." : "Sign in to view your saved colors.", locale);
     }
   }
 
@@ -469,14 +469,11 @@ export function Workbench({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>
-              {locale === "ko" ? "현재 화면 유지" : "Stay here"}
-            </DialogClose>
             <Button variant="outline" onClick={() => { setLeaveDialogOpen(false); startNewPalette(); }}>
-              {locale === "ko" ? "저장 안 하고 새 컬러 선택" : "Discard and choose"}
+              {locale === "ko" ? "저장하지 않고 선택하러 가기" : "Choose without saving"}
             </Button>
             <Button disabled={saving} onClick={() => { void saveAndStartNew(); }}>
-              {locale === "ko" ? "저장하고 새 컬러 선택" : "Save and choose"}
+              {locale === "ko" ? "저장하고 선택하러 가기" : "Save and choose"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -490,21 +487,21 @@ export function Workbench({
           <DialogHeader>
             <DialogTitle>
               {savedProjectId
-                ? (locale === "ko" ? "프로젝트 저장" : "Save project")
-                : (locale === "ko" ? "프로젝트 추가" : "Add project")}
+                ? (locale === "ko" ? "저장한 컬러 수정" : "Update saved colors")
+                : (locale === "ko" ? "현재 컬러 저장" : "Save current colors")}
             </DialogTitle>
             <DialogDescription>
               {savedProjectId
                 ? (locale === "ko"
-                    ? "현재 컬러와 변경 이력을 이 프로젝트에 덮어씁니다. 프로젝트 이름도 변경할 수 있습니다."
-                    : "This overwrites the project with the current colors and history. You can also rename it.")
+                    ? "현재 컬러와 변경 이력을 저장된 내용에 반영합니다. 이름도 변경할 수 있습니다."
+                    : "Update the saved colors and history. You can also rename them.")
                 : (locale === "ko"
-                    ? "컬러 팔레트를 구분할 프로젝트 이름을 입력해 주세요."
-                    : "Enter a name that will help you identify this palette.")}
+                    ? "나중에 알아보기 쉬운 저장 이름을 입력해 주세요."
+                    : "Enter a name that will help you identify these colors later.")}
             </DialogDescription>
           </DialogHeader>
           <label className="grid gap-2 text-sm font-medium">
-            {locale === "ko" ? "프로젝트 이름" : "Project name"}
+            {locale === "ko" ? "저장 이름" : "Saved color name"}
             <Input
               autoFocus
               value={projectNameDraft}
@@ -536,8 +533,8 @@ export function Workbench({
               {saving
                 ? (locale === "ko" ? "저장 중…" : "Saving…")
                 : savedProjectId
-                  ? (locale === "ko" ? "덮어쓰기 저장" : "Overwrite project")
-                  : (locale === "ko" ? "프로젝트 추가" : "Add project")}
+                  ? (locale === "ko" ? "변경 내용 저장" : "Save changes")
+                  : (locale === "ko" ? "저장" : "Save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -552,11 +549,11 @@ export function Workbench({
       <Dialog open={projectLimitOpen} onOpenChange={setProjectLimitOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{locale === "ko" ? "무료 프로젝트 5개를 모두 사용했어요" : "All 5 free project slots are in use"}</DialogTitle>
+            <DialogTitle>{locale === "ko" ? "무료 저장 공간 5개를 모두 사용했어요" : "All 5 free saved-color slots are in use"}</DialogTitle>
             <DialogDescription>
               {locale === "ko"
-                ? "기존 프로젝트를 하나 삭제하고 다시 저장하거나 Pro 플랜을 확인해 주세요."
-                : "Delete an existing project and save again, or review the Pro plan."}
+                ? "저장한 컬러를 하나 삭제하고 다시 저장하거나 Pro 플랜을 확인해 주세요."
+                : "Delete a saved color set and try again, or review the Pro plan."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -564,7 +561,7 @@ export function Workbench({
               setProjectLimitOpen(false);
               void openProjectLibrary();
             }}>
-              {locale === "ko" ? "기존 프로젝트 관리" : "Manage projects"}
+              {locale === "ko" ? "저장한 컬러 관리" : "Manage saved colors"}
             </Button>
             <Button onClick={() => router.push("/coming-soon")}>
               {locale === "ko" ? "Pro 플랜 보기" : "View Pro plan"}

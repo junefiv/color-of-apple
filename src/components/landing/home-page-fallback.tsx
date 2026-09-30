@@ -18,7 +18,10 @@ export function HomePageFallback() {
       <main className="mx-auto flex min-h-[calc(100dvh-5.5rem)] w-full max-w-xl flex-1 flex-col items-center justify-center px-5 py-10">
         <div className="color-apple">
           <div className="apple-bubble" role="note"><p>{ko.hero.pickHint}</p></div>
-          <div className="apple-hit" style={{ "--apple": APPLE_HEX } as CSSProperties} aria-hidden><AppleArtwork /></div>
+          <div className="apple-hit" style={{ "--apple": APPLE_HEX, "--apple-ink": "#111111" } as CSSProperties} aria-hidden>
+            <AppleArtwork />
+            <span className="apple-hex">{APPLE_HEX}</span>
+          </div>
         </div>
         <div className="hero-generate mt-8 flex w-full max-w-xs flex-col items-center">
           <span className="match-button has-color inline-flex w-full min-w-[12rem] items-center justify-center rounded-full px-6 py-4 text-base font-semibold" style={{ "--match-fill": APPLE_HEX, "--match-opacity": 1, color: "#111111" } as CSSProperties}>{ko.hero.generate}</span>

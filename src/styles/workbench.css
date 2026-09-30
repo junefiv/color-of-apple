@@ -605,6 +605,7 @@
 }
 
 .workbench-main {
+  --token-inspector-width: clamp(17.5rem, 34vw, 20rem);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
@@ -622,7 +623,7 @@
   right: 0;
   bottom: 0;
   min-height: 0;
-  width: clamp(20rem, 42vw, 24rem);
+  width: var(--token-inspector-width);
   height: auto;
   overflow: hidden;
   border-left: 1px solid var(--border-default);
@@ -661,7 +662,7 @@
 }
 
 .workbench-main[data-token-panel="open"] .token-inspector-bookmark {
-  right: clamp(20rem, 42vw, 24rem);
+  right: var(--token-inspector-width);
 }
 
 .token-inspector-bookmark svg {
@@ -697,7 +698,8 @@
 
 @media (min-width: 1200px) {
   .workbench-main {
-    grid-template-columns: minmax(0, 1fr) clamp(20rem, 26vw, 24rem);
+    --token-inspector-width: clamp(18rem, 20vw, 20rem);
+    grid-template-columns: minmax(0, 1fr) var(--token-inspector-width);
     grid-template-rows: minmax(0, 1fr);
   }
 
@@ -754,12 +756,16 @@
 }
 
 @media (max-width: 720px) {
+  .workbench-main {
+    --token-inspector-width: min(82vw, 18rem);
+  }
+
   .token-inspector {
-    width: min(88vw, 24rem);
+    width: var(--token-inspector-width);
   }
 
   .workbench-main[data-token-panel="open"] .token-inspector-bookmark {
-    right: min(88vw, 24rem);
+    right: var(--token-inspector-width);
   }
 
   .studio-gnb {
@@ -865,16 +871,17 @@
 .token-panel-header-top {
   display: flex;
   min-width: 0;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   gap: 0.6rem;
 }
 
 .token-panel-project-heading {
   display: flex;
   min-width: 0;
-  flex-direction: column;
-  gap: 0.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .token-panel-project-heading .ui-label {
@@ -898,18 +905,23 @@
 }
 
 .token-panel-project-actions {
+  position: relative;
   display: flex;
+  width: 100%;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.3rem;
 }
 
 .token-panel-project-actions button {
+  position: static;
   display: inline-flex;
+  width: 2rem;
   height: 1.9rem;
+  flex: 0 0 2rem;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
-  padding: 0 0.55rem;
+  padding: 0;
   border: 1px solid var(--border-default);
   border-radius: 0.55rem;
   background: var(--surface);
@@ -917,19 +929,30 @@
   font-family: var(--font-ui);
   font-size: 11px;
   font-weight: 650;
+  white-space: nowrap;
   cursor: pointer;
 }
 
 .token-panel-project-actions .token-panel-project-folder {
-  width: 1.9rem;
-  flex: 0 0 1.9rem;
-  padding: 0;
+  color: var(--text-primary);
+}
+
+.token-panel-project-actions .token-panel-project-save {
+  border-color: var(--token-accent, var(--text-primary));
+  background: var(--token-accent, var(--text-primary));
+  color: var(--token-accent-on, var(--surface));
 }
 
 .token-panel-project-actions button:hover:not(:disabled) {
   border-color: var(--token-accent, var(--border-strong));
   background: color-mix(in oklab, var(--token-accent, var(--text-primary)) 8%, var(--surface));
   color: var(--text-primary);
+}
+
+.token-panel-project-actions .token-panel-project-save:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--token-accent, var(--text-primary)) 82%, black);
+  background: color-mix(in oklab, var(--token-accent, var(--text-primary)) 88%, black);
+  color: var(--token-accent-on, var(--surface));
 }
 
 .token-panel-project-actions button:disabled {
@@ -940,6 +963,53 @@
 .token-panel-project-actions svg {
   width: 0.8rem;
   height: 0.8rem;
+}
+
+.token-action-tooltip {
+  position: absolute;
+  z-index: 12;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  width: max-content;
+  max-width: min(12rem, 100%);
+  box-sizing: border-box;
+  padding: 0.42rem 0.58rem;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 0.48rem;
+  background: var(--neutral-900);
+  color: var(--neutral-0, #fff);
+  box-shadow: 0 6px 18px rgb(22 22 25 / 22%);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-0.2rem);
+  transition: opacity 140ms ease, transform 140ms ease;
+  white-space: normal;
+}
+
+.token-action-tooltip::before {
+  position: absolute;
+  top: -4px;
+  right: 0.75rem;
+  width: 7px;
+  height: 7px;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+  border-left: 1px solid rgb(255 255 255 / 12%);
+  background: var(--neutral-900);
+  content: "";
+  transform: rotate(45deg);
+}
+
+.token-panel-project-actions button:nth-child(1) .token-action-tooltip { right: 4.6rem; }
+.token-panel-project-actions button:nth-child(2) .token-action-tooltip { right: 2.3rem; }
+
+.token-panel-project-actions button:hover .token-action-tooltip,
+.token-panel-project-actions button:focus-visible .token-action-tooltip {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .token-panel-tabs {

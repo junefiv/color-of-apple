@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { HexColorPicker } from "react-colorful";
 import { useAppleHop } from "@/hooks/use-apple-hop";
 import { useCopy } from "@/hooks/use-copy";
+import { chooseOnColor } from "@/lib/color-engine";
 import { APPLE_HEX, isHexColor, normalizeHex } from "@/lib/picked-color";
 import { trackProductEvent } from "@/lib/analytics";
 
@@ -123,9 +124,10 @@ export function ColorApple({
           if (!value) trackedSelectionRef.current = false;
           return !value;
         })}
-        style={{ "--apple": fill } as React.CSSProperties}
+        style={{ "--apple": fill, "--apple-ink": chooseOnColor(fill) } as React.CSSProperties}
       >
         <AppleArtwork look={look} leftEyeRef={leftEyeRef} rightEyeRef={rightEyeRef} />
+        <span className="apple-hex" aria-hidden>{fill.toUpperCase()}</span>
       </button>
 
       {open

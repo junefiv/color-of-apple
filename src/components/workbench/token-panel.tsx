@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Download, FolderOpen, RotateCcw, Save, Share2, Undo2 } from "lucide-react";
+import { Download, Library, RotateCcw, Save, Share2, Undo2 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/auth/auth-provider";
 import { uiToast } from "@/components/ui/toast";
@@ -112,7 +112,7 @@ export function TokenPanel({
             <p className="ui-label text-[var(--text-tertiary)]">{projectTitle ?? copy.tokens.title}</p>
             {savedProject ? (
               <span className="token-panel-saved-badge">
-                {locale === "ko" ? "저장된 프로젝트" : "Saved project"}
+                {locale === "ko" ? "저장된 컬러" : "Saved color"}
               </span>
             ) : null}
           </div>
@@ -120,24 +120,46 @@ export function TokenPanel({
             <button
               type="button"
               className="token-panel-project-folder"
-              aria-label={locale === "ko" ? "내 프로젝트 열기" : "Open my projects"}
-              title={locale === "ko" ? "내 프로젝트" : "My projects"}
+              aria-label={locale === "ko" ? "저장한 컬러 보기" : "View saved colors"}
               onClick={onOpenProjects}
             >
-              <FolderOpen aria-hidden />
-              <span className="sr-only">{locale === "ko" ? "내 프로젝트" : "My projects"}</span>
+              <Library aria-hidden />
+              <span className="sr-only">{locale === "ko" ? "저장한 컬러 보기" : "View saved colors"}</span>
+              <span className="token-action-tooltip" role="tooltip" aria-hidden="true">
+                {locale === "ko" ? "저장한 컬러 보기" : "View saved colors"}
+              </span>
             </button>
-            <button type="button" disabled={saving} onClick={onSave}>
+            <button
+              type="button"
+              className="token-panel-project-save"
+              disabled={saving}
+              aria-label={savedProject
+                ? (locale === "ko" ? "변경 내용 저장" : "Save changes")
+                : (locale === "ko" ? "현재 컬러 저장" : "Save current colors")}
+              onClick={onSave}
+            >
               <Save aria-hidden />
-              <span>{saving
+              <span className="sr-only">{saving
                 ? (locale === "ko" ? "저장 중…" : "Saving…")
-                : savedProject
-                  ? copy.result.save
-                  : (locale === "ko" ? "프로젝트 추가" : "Add project")}</span>
+                : copy.result.save}</span>
+              <span className="token-action-tooltip" role="tooltip" aria-hidden="true">
+                {saving
+                  ? (locale === "ko" ? "저장 중…" : "Saving…")
+                  : savedProject
+                    ? (locale === "ko" ? "변경 사항 저장" : "Save changes")
+                    : (locale === "ko" ? "현재 컬러 저장" : "Save current colors")}
+              </span>
             </button>
-            <button type="button" onClick={onShare}>
+            <button
+              type="button"
+              aria-label={locale === "ko" ? "공유 링크 만들기" : "Create share link"}
+              onClick={onShare}
+            >
               <Share2 aria-hidden />
-              <span>{copy.result.share}</span>
+              <span className="sr-only">{copy.result.share}</span>
+              <span className="token-action-tooltip" role="tooltip" aria-hidden="true">
+                {locale === "ko" ? "공유 링크 만들기" : "Create share link"}
+              </span>
             </button>
           </div>
         </div>

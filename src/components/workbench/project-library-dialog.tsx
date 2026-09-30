@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Clock3, FolderOpen, Trash2 } from "lucide-react";
+import { Clock3, Library, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -74,10 +74,10 @@ export function ProjectLibraryDialog({
     try {
       await deleteProject(user.uid, project.id);
       setProjectToDelete(null);
-      uiToast.success(isKo ? "프로젝트를 삭제했어요." : "Project deleted.", locale);
+      uiToast.success(isKo ? "저장한 컬러를 삭제했어요." : "Saved colors deleted.", locale);
       if (project.id === currentProjectId) router.replace("/result");
     } catch {
-      uiToast.error(isKo ? "프로젝트를 삭제하지 못했습니다." : "Could not delete the project.", locale);
+      uiToast.error(isKo ? "저장한 컬러를 삭제하지 못했습니다." : "Could not delete the saved colors.", locale);
     }
   }
 
@@ -87,23 +87,23 @@ export function ProjectLibraryDialog({
         <DialogContent className="max-h-[88dvh] overflow-hidden sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FolderOpen className="size-4" aria-hidden />
-              {isKo ? "내 프로젝트" : "My projects"}
+              <Library className="size-4" aria-hidden />
+              {isKo ? "저장한 컬러" : "Saved colors"}
             </DialogTitle>
             <DialogDescription>
-              {isKo ? "저장한 컬러 프로젝트를 선택해 현재 작업 화면에서 엽니다." : "Choose a saved color project to open in the current workspace."}
+              {isKo ? "저장한 컬러를 선택해 현재 작업 화면에서 엽니다." : "Choose saved colors to open in the current workspace."}
             </DialogDescription>
           </DialogHeader>
 
           <div className="min-h-36 overflow-y-auto pr-1">
             {loading ? (
-              <p className="grid min-h-36 place-items-center text-sm text-muted-foreground">{isKo ? "프로젝트를 불러오는 중…" : "Loading projects…"}</p>
+              <p className="grid min-h-36 place-items-center text-sm text-muted-foreground">{isKo ? "저장한 컬러를 불러오는 중…" : "Loading saved colors…"}</p>
             ) : projects.length === 0 ? (
               <div className="grid min-h-36 place-items-center rounded-xl border border-dashed p-5 text-center">
                 <div>
-                  <FolderOpen className="mx-auto mb-2 size-6 text-muted-foreground" aria-hidden />
-                  <p className="font-medium">{isKo ? "저장한 프로젝트가 없습니다." : "No saved projects yet."}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{isKo ? "현재 팔레트를 프로젝트로 추가하면 여기에 표시됩니다." : "Add the current palette as a project and it will appear here."}</p>
+                  <Library className="mx-auto mb-2 size-6 text-muted-foreground" aria-hidden />
+                  <p className="font-medium">{isKo ? "저장한 컬러가 없습니다." : "No saved colors yet."}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{isKo ? "현재 컬러를 저장하면 여기에 표시됩니다." : "Save the current colors and they will appear here."}</p>
                 </div>
               </div>
             ) : (
@@ -117,7 +117,7 @@ export function ProjectLibraryDialog({
                         <button type="button" className="min-w-0 flex-1 text-left" onClick={() => isCurrent ? onOpenChange(false) : openProject(project)}>
                           <span className="flex items-center gap-2">
                             <strong className="truncate text-sm">{project.title}</strong>
-                            {isCurrent ? <span className="shrink-0 rounded-full bg-background px-2 py-0.5 text-[9px] font-semibold">{isKo ? "현재 프로젝트" : "Current"}</span> : null}
+                            {isCurrent ? <span className="shrink-0 rounded-full bg-background px-2 py-0.5 text-[9px] font-semibold">{isKo ? "현재 컬러" : "Current"}</span> : null}
                           </span>
                           <span className="mt-2 flex flex-col gap-1.5">
                             <ProjectColorChip label="P" value={colors.primary} />
@@ -129,7 +129,7 @@ export function ProjectLibraryDialog({
                             {isKo ? "마지막 수정" : "Updated"} · {formatProjectDate(project.updatedAt?.toDate(), locale)}
                           </span>
                         </button>
-                        <Button size="icon-sm" variant="ghost" aria-label={isKo ? "프로젝트 삭제" : "Delete project"} onClick={() => setProjectToDelete(project)}>
+                        <Button size="icon-sm" variant="ghost" aria-label={isKo ? "저장한 컬러 삭제" : "Delete saved colors"} onClick={() => setProjectToDelete(project)}>
                           <Trash2 aria-hidden />
                         </Button>
                       </div>
@@ -138,7 +138,7 @@ export function ProjectLibraryDialog({
                           {isKo ? `변경 이력${project.colorHistory.length ? ` ${project.colorHistory.length}` : ""}` : `History${project.colorHistory.length ? ` ${project.colorHistory.length}` : ""}`}
                         </Button>
                         <Button size="sm" className="flex-1" disabled={isCurrent} onClick={() => openProject(project)}>
-                          <FolderOpen aria-hidden />{isCurrent ? (isKo ? "열려 있음" : "Open") : (isKo ? "열기" : "Open")}
+                          <Library aria-hidden />{isCurrent ? (isKo ? "열려 있음" : "Open") : (isKo ? "열기" : "Open")}
                         </Button>
                       </div>
                     </article>
@@ -176,9 +176,9 @@ export function ProjectLibraryDialog({
       <Dialog open={Boolean(projectToDelete)} onOpenChange={(next) => { if (!next) setProjectToDelete(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{isKo ? "프로젝트를 삭제할까요?" : "Delete this project?"}</DialogTitle>
+            <DialogTitle>{isKo ? "저장한 컬러를 삭제할까요?" : "Delete these saved colors?"}</DialogTitle>
             <DialogDescription>{isKo
-              ? `“${projectToDelete?.title ?? ""}” 프로젝트와 변경 이력이 영구적으로 삭제됩니다.`
+              ? `“${projectToDelete?.title ?? ""}” 컬러와 변경 이력이 영구적으로 삭제됩니다.`
               : `“${projectToDelete?.title ?? ""}” and its color history will be permanently deleted.`}</DialogDescription>
           </DialogHeader>
           <DialogFooter>

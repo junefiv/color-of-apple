@@ -196,8 +196,8 @@ export async function deleteProject(uid: string, projectId: string) {
 export function quotaErrorMessage(error: unknown, locale: Locale) {
   if (error instanceof ProjectLimitError) {
     return locale === "ko"
-      ? "무료 프로젝트 5개를 모두 사용했어요. 기존 프로젝트를 삭제하거나 Pro로 업그레이드하세요."
-      : "All 5 free project slots are in use. Delete one or upgrade to Pro.";
+      ? "무료 저장 공간 5개를 모두 사용했어요. 저장한 컬러를 삭제하거나 Pro로 업그레이드하세요."
+      : "All 5 free saved-color slots are in use. Delete one or upgrade to Pro.";
   }
   return locale === "ko" ? "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요." : "Something went wrong. Please try again.";
 }
