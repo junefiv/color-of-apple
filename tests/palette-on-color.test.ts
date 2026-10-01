@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseToOklch } from "@/lib/color-engine/color-utils";
+import { contrastRatio, parseToOklch } from "@/lib/color-engine/color-utils";
 import { extractOnColor, generatePaletteTokens, getAdaptiveThreshold } from "@/lib/palette";
 
 describe("extractOnColor", () => {
@@ -17,18 +17,16 @@ describe("extractOnColor", () => {
     expect(result.oklch.c).toBe(0);
   });
 
-  it("puts tinted light ink on magenta", () => {
+  it("corrects magenta ink for readable contrast while retaining its hue", () => {
     const result = extractOnColor("#d43cc1");
-    expect(result.mode).toBe("light");
-    expect(result.oklch.l).toBeCloseTo(0.98, 5);
+    expect(contrastRatio(result.hex, "#d43cc1")).toBeGreaterThanOrEqual(4.5);
     expect(result.oklch.c).toBeCloseTo(0.015, 5);
     expect(result.oklch.h).toBeCloseTo(parseToOklch("#d43cc1").h, 0);
   });
 
-  it("puts tinted light ink on cobalt blue", () => {
+  it("corrects cobalt ink for readable contrast while retaining its hue", () => {
     const result = extractOnColor("#3c8aff");
-    expect(result.mode).toBe("light");
-    expect(result.oklch.l).toBeCloseTo(0.98, 5);
+    expect(contrastRatio(result.hex, "#3c8aff")).toBeGreaterThanOrEqual(4.5);
     expect(result.oklch.c).toBeCloseTo(0.015, 5);
     expect(result.oklch.h).toBeCloseTo(parseToOklch("#3c8aff").h, 0);
   });

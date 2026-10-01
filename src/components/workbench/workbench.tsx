@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { uiToast } from "@/components/ui/toast";
-import { PalettePicker } from "@/components/flow/palette-picker";
 import { PreviewCanvas } from "@/components/preview/preview-canvas";
 import { ThemeScope } from "@/components/preview/theme-scope";
 import { useColorSystem } from "@/hooks/use-color-system";
@@ -64,11 +63,9 @@ export function Workbench({
   const [projectTitle, setProjectTitle] = useState(initialProjectTitle?.trim() ?? "");
   const [projectNameDraft, setProjectNameDraft] = useState(initialProjectTitle?.trim() ?? "");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [startNewAfterSave, setStartNewAfterSave] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pendingColorHistory, setPendingColorHistory] = useState<ColorHistoryEntry[]>([]);
   const [savedSignature, setSavedSignature] = useState<string | null>(null);
-  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [projectLimitOpen, setProjectLimitOpen] = useState(false);
   const [projectLibraryOpen, setProjectLibraryOpen] = useState(false);
   const [mobilePreviewOnly, setMobilePreviewOnly] = useState(false);
@@ -79,9 +76,10 @@ export function Workbench({
 
   const generatedResult = useColorSystem(input, selectedPaletteId);
   const [initialPaletteId] = useState(selectedPaletteId);
+  const [useInitialSnapshot, setUseInitialSnapshot] = useState(true);
   const result = useMemo(
-    () => applyTokenSnapshot(generatedResult, selectedPaletteId === initialPaletteId ? initialTokenSnapshot : undefined),
-    [generatedResult, initialPaletteId, initialTokenSnapshot, selectedPaletteId],
+    () => applyTokenSnapshot(generatedResult, useInitialSnapshot && selectedPaletteId === initialPaletteId ? initialTokenSnapshot : undefined),
+    [generatedResult, initialPaletteId, initialTokenSnapshot, selectedPaletteId, useInitialSnapshot],
   );
   const stage = hasMatched ? "done" : matchStage;
   const view = previewTab === "components" ? "components" : platform;
@@ -99,8 +97,6 @@ export function Workbench({
     () => JSON.stringify({ input, selectedPaletteId, tokens: effectiveSnapshot }),
     [effectiveSnapshot, input, selectedPaletteId],
   );
-  const hasUnsavedChanges = savedProjectId === null || savedSignature !== currentSignature;
-
   async function openProjectLibrary() {
     try {
       if (!user) {
@@ -284,7 +280,6 @@ export function Workbench({
           locale === "ko" ? "무료 한도를 모두 사용했어요. Pro 플랜은 곧 제공됩니다." : "You reached the free limit. Pro is coming soon.",
           locale,
         );
-        setLeaveDialogOpen(false);
         setProjectLimitOpen(true);
         void trackProductEvent("limit_reached", { kind: "project" });
         return false;
@@ -302,35 +297,35 @@ export function Workbench({
     router.push("/");
   }
 
-  function requestRemake() {
-    if (hasUnsavedChanges) setLeaveDialogOpen(true);
-    else startNewPalette();
+  function generateFromPrimary(hex: string) {
+    setUseInitialSnapshot(false);
+    setTokenOverridesByPalette({});
+    setTokenHistoryByPalette({});
+    tokenOverridesRef.current = {};
+    activeTokenEdit.current = null;
+    setPendingColorHistory([]);
+    setSavedProjectId(null);
+    setProjectTitle("");
+    setSavedSignature(null);
+    setTokenFocus(null);
+    const store = useMatchuStore.getState();
+    const paletteId = store.selectedPaletteId;
+    store.setInput({ hex });
+    store.resetMatch();
+    store.setSelectedPaletteId(paletteId);
+    // Drop saved/shared payloads so the new run uses the chosen Primary.
+    router.replace("/result");
+    void trackProductEvent("generate", { source: "token_panel" });
   }
 
   function requestProjectSave() {
-    setStartNewAfterSave(false);
     setProjectNameDraft(projectTitle);
     setSaveDialogOpen(true);
   }
 
-  async function saveAndStartNew() {
-    if (!projectTitle) {
-      setLeaveDialogOpen(false);
-      setStartNewAfterSave(true);
-      setProjectNameDraft("");
-      setSaveDialogOpen(true);
-      return;
-    }
-    if (await save()) {
-      setLeaveDialogOpen(false);
-      startNewPalette();
-    }
-  }
-
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-[var(--background)]">
-      <SiteHeader remakeWordmark onRemake={requestRemake}>
-        <PalettePicker hex={input.hex} variant="header" />
+      <SiteHeader remakeWordmark onRemake={startNewPalette}>
         <div
           className="studio-nav"
           role="radiogroup"
@@ -430,6 +425,7 @@ export function Workbench({
           } as CSSProperties}
         >
           <TokenPanel
+            onNewPalette={generateFromPrimary}
             result={result}
             input={input}
             overrides={tokenOverrides}
@@ -458,31 +454,7 @@ export function Workbench({
         </aside>
       </div>
 
-      <Dialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{locale === "ko" ? "새 컬러를 선택할까요?" : "Choose a new color?"}</DialogTitle>
-            <DialogDescription>
-              {locale === "ko"
-                ? "저장하지 않은 컬러 팔레트와 수정 내용은 사라집니다."
-                : "Your unsaved palette and color changes will be lost."}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setLeaveDialogOpen(false); startNewPalette(); }}>
-              {locale === "ko" ? "저장하지 않고 선택하러 가기" : "Choose without saving"}
-            </Button>
-            <Button disabled={saving} onClick={() => { void saveAndStartNew(); }}>
-              {locale === "ko" ? "저장하고 선택하러 가기" : "Save and choose"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={saveDialogOpen} onOpenChange={(open) => {
-        setSaveDialogOpen(open);
-        if (!open) setStartNewAfterSave(false);
-      }}>
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
@@ -514,7 +486,6 @@ export function Workbench({
                 void (async () => {
                   if (await save({ titleOverride: projectNameDraft })) {
                     setSaveDialogOpen(false);
-                    if (startNewAfterSave) startNewPalette();
                   }
                 })();
               }}
@@ -527,7 +498,6 @@ export function Workbench({
             <Button disabled={!projectNameDraft.trim() || saving} onClick={async () => {
               if (await save({ titleOverride: projectNameDraft })) {
                 setSaveDialogOpen(false);
-                if (startNewAfterSave) startNewPalette();
               }
             }}>
               {saving

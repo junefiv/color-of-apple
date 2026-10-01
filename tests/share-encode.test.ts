@@ -23,7 +23,7 @@ describe("share payload", () => {
 
     const decoded = decodeShare(encoded);
     expect(decoded?.input).toEqual(DEFAULT_INPUT);
-    expect(decoded?.selectedPaletteId).toBe("analogous-flow");
+    expect(decoded?.selectedPaletteId).toBe("analog");
     expect(decoded?.overrides).toEqual({
       "primary.default": "#336699",
       "primary.onPrimary": "#FFFFFF",

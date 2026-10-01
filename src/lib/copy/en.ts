@@ -596,8 +596,6 @@ export const en: Copy = {
   },
   tokens: {
     title: "Color tokens",
-    viewAll: "All tokens",
-    viewCore: "Core tokens",
     resetAll: "Cancel all",
     undo: "Undo",
     close: "Close color tokens",

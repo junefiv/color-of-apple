@@ -1,4 +1,4 @@
-import { parseToOklch, toHex } from "@/lib/color-engine/color-utils";
+import { contrastRatio, parseToOklch, toHex } from "@/lib/color-engine/color-utils";
 import type { OklchColor } from "@/lib/color-engine/types";
 
 const ACHROMATIC_CHROMA = 0.015;
@@ -24,7 +24,7 @@ export function extractOnColor(background: string): OnColorToken {
   const hue = bg.h || 0;
   const shouldUseDarkText = bg.l >= getAdaptiveThreshold(hue);
 
-  const oklch: OklchColor = shouldUseDarkText
+  let oklch: OklchColor = shouldUseDarkText
     ? {
         mode: "oklch",
         l: 0.15,
@@ -38,9 +38,18 @@ export function extractOnColor(background: string): OnColorToken {
         h: isAchromatic ? 0 : hue,
       };
 
+  let hex = toHex(oklch);
+  if (contrastRatio(hex, background) < 4.5) {
+    oklch = { ...oklch, l: shouldUseDarkText ? 0.98 : 0.15, c: isAchromatic ? 0 : 0.015 };
+    hex = toHex(oklch);
+    if (contrastRatio(hex, background) < 4.5) {
+      hex = contrastRatio("#000000", background) >= contrastRatio("#ffffff", background) ? "#000000" : "#ffffff";
+      oklch = parseToOklch(hex);
+    }
+  }
   return {
-    mode: shouldUseDarkText ? "dark" : "light",
-    hex: toHex(oklch),
+    mode: oklch.l < 0.5 ? "dark" : "light",
+    hex,
     oklch,
   };
 }

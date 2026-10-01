@@ -51,8 +51,14 @@ export function ColorApple({
   const { look, leftEyeRef, rightEyeRef } = useAppleEyeLook();
   const [open, setOpen] = useState(false);
   const [tip, setTip] = useState({ top: 0, left: 0, place: "right" as "right" | "left" | "bottom" });
-  const { hopping, tip: hopTip } = useAppleHop(!open);
+  const { hopping, hopId, playHop } = useAppleHop(!open);
   const fill = isHexColor(hex) ? normalizeHex(hex) : APPLE_HEX;
+  const lastSettledColor = useRef(fill);
+  useEffect(() => {
+    if (open || fill === lastSettledColor.current) return;
+    lastSettledColor.current = fill;
+    playHop();
+  }, [fill, open, playHop]);
 
   function commit(next: string) {
     if (!trackedSelectionRef.current) {
@@ -105,11 +111,9 @@ export function ColorApple({
 
   return (
     <div className="color-apple">
-      {hopTip ? (
-        <div className="apple-bubble" role="note">
-          <p>{copy.hero.pickHint}</p>
-        </div>
-      ) : null}
+      <div className="apple-bubble" role="note">
+        <p>{copy.hero.pickHint}</p>
+      </div>
 
       <button
         ref={appleRef}
@@ -126,8 +130,7 @@ export function ColorApple({
         })}
         style={{ "--apple": fill, "--apple-ink": chooseOnColor(fill) } as React.CSSProperties}
       >
-        <AppleArtwork look={look} leftEyeRef={leftEyeRef} rightEyeRef={rightEyeRef} />
-        <span className="apple-hex" aria-hidden>{fill.toUpperCase()}</span>
+        <AppleArtwork key={hopId} hex={fill} look={look} leftEyeRef={leftEyeRef} rightEyeRef={rightEyeRef} />
       </button>
 
       {open

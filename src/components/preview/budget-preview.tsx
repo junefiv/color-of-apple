@@ -60,6 +60,17 @@ const COPY_EN: Record<View, { title: string; body: string }> = {
 const VIEW_EN: Record<View, string> = { overview: "Overview", tidy: "Transactions", setup: "Budget", alerts: "Alerts", accounts: "Accounts", analysis: "Analysis", export: "Export" };
 const CATEGORY_EN: Record<Category, string> = { 식비: "Food", 쇼핑: "Shopping", 교통: "Transit", 생활: "Living" };
 
+function categoryDonutGradient(shares: number[]) {
+  let cursor = 0;
+  return shares
+    .map((share, index) => {
+      const start = cursor;
+      cursor += share;
+      return `var(--color-categorical-${index}-fg) ${start}% ${cursor}%`;
+    })
+    .join(", ");
+}
+
 function Modal({ title, close, children }: { title: string; close: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const closeRef = useRef(close);
@@ -253,10 +264,10 @@ function BudgetPreview({ mobile = false }: { mobile?: boolean }) {
                 <span className="ledger-eyebrow">SPENDING MIX</span>
                 <h2>{t("어디에 썼을까요?", "Where did it go?")}</h2>
               </div>
-              <span className="ledger-chip">{t("이번 달", "This month")}</span>
+              <span className="ledger-chip ledger-chip-secondary">{t("이번 달", "This month")}</span>
             </div>
             <div className="ledger-chart-content">
-              <div className="ledger-donut" role="img" aria-label={CATEGORIES.map(item => `${item} ${money(categoryTotal(item))}`).join(", ")} style={{ background: `conic-gradient(var(--color-primary-default) 0% ${categoryTotal("식비") / Math.max(total, 1) * 100}%, var(--color-secondary-default) ${categoryTotal("식비") / Math.max(total, 1) * 100}% ${(categoryTotal("식비") + categoryTotal("쇼핑")) / Math.max(total, 1) * 100}%, var(--color-accent-default) ${(categoryTotal("식비") + categoryTotal("쇼핑")) / Math.max(total, 1) * 100}% ${(total - categoryTotal("생활")) / Math.max(total, 1) * 100}%, var(--color-border-default) ${(total - categoryTotal("생활")) / Math.max(total, 1) * 100}% 100%)` }}>
+              <div className="ledger-donut" role="img" aria-label={CATEGORIES.map(item => `${item} ${money(categoryTotal(item))}`).join(", ")} style={{ background: `conic-gradient(${categoryDonutGradient(CATEGORIES.map(item => categoryTotal(item) / Math.max(total, 1) * 100))})` }}>
                 <div>
                   <small>{t("총 지출", "Total spent")}</small>
                   <strong>{Math.round(total / 10000)}<small>만원</small>

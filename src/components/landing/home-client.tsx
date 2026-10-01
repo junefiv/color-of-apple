@@ -5,9 +5,9 @@ import { Hero } from "@/components/landing/hero";
 
 export default function HomeClient() {
   return (
-    <div className="graph-paper-page flex min-h-dvh flex-col">
+    <div className="home-screen graph-paper-page flex h-dvh flex-col overflow-hidden">
       <SiteHeader />
-      <main className="flex-1">
+      <main className="min-h-0 flex-1">
         <Hero />
       </main>
     </div>

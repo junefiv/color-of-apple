@@ -19,8 +19,7 @@ export function HomePageFallback() {
         <div className="color-apple">
           <div className="apple-bubble" role="note"><p>{ko.hero.pickHint}</p></div>
           <div className="apple-hit" style={{ "--apple": APPLE_HEX, "--apple-ink": "#111111" } as CSSProperties} aria-hidden>
-            <AppleArtwork />
-            <span className="apple-hex">{APPLE_HEX}</span>
+            <AppleArtwork hex={APPLE_HEX} />
           </div>
         </div>
         <div className="hero-generate mt-8 flex w-full max-w-xs flex-col items-center">

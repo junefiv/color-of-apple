@@ -7,10 +7,7 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { uiToast } from "@/components/ui/toast";
 import {
   CORE_TOKENS,
-  flattenObject,
   getToken,
-  neutralAliasForValue,
-  TOKEN_USES,
   type ColorSystemResult,
   type GenerateInput,
 } from "@/lib/color-engine";
@@ -19,6 +16,8 @@ import { useCopy } from "@/hooks/use-copy";
 import { preventProtectedCopy, preventProtectedCopyShortcut } from "@/lib/copy-protection";
 import { useMatchuStore } from "@/lib/store";
 import { trackProductEvent } from "@/lib/analytics";
+import { PrimaryApplePicker } from "./primary-apple-picker";
+import { PalettePicker } from "@/components/flow/palette-picker";
 
 export function TokenPanel({
   result,
@@ -38,6 +37,7 @@ export function TokenPanel({
   canUndo,
   onUndo,
   onTokenFocus,
+  onNewPalette,
 }: {
   result: ColorSystemResult;
   input: GenerateInput;
@@ -56,20 +56,18 @@ export function TokenPanel({
   canUndo: boolean;
   onUndo: () => void;
   onTokenFocus: (role: TokenFocusRole | null) => void;
+  onNewPalette: (hex: string) => void;
 }) {
   const copy = useCopy();
   const { user, signIn } = useAuth();
   const locale = useMatchuStore((state) => state.locale);
-  const viewAll = useMatchuStore((state) => state.viewAllTokens);
-  const setViewAll = useMatchuStore((state) => state.setViewAllTokens);
   const [panel, setPanel] = useState<"tokens" | "export">("tokens");
   const [format, setFormat] = useState<ExportFormat>("css");
   const tokens = result.semantic.light;
   const report = result.accessibility.light;
   const file = useMemo(() => {
-    if (panel !== "export") return null;
     return formatExport(format, applyOverrides(result, overrides), input);
-  }, [panel, format, result, overrides, input]);
+  }, [format, result, overrides, input]);
 
   const grouped = CORE_TOKENS.reduce<Record<string, typeof CORE_TOKENS>>((acc, token) => {
     acc[token.group] = acc[token.group] ?? [];
@@ -107,78 +105,32 @@ export function TokenPanel({
       onKeyDownCapture={preventProtectedCopyShortcut}
     >
       <header className="token-panel-header">
-        <div className="token-panel-header-top">
-          <div className="token-panel-project-heading">
-            <p className="ui-label text-[var(--text-tertiary)]">{projectTitle ?? copy.tokens.title}</p>
-            {savedProject ? (
-              <span className="token-panel-saved-badge">
-                {locale === "ko" ? "저장된 컬러" : "Saved color"}
-              </span>
-            ) : null}
-          </div>
-          <div className="token-panel-project-actions">
-            <button
-              type="button"
-              className="token-panel-project-folder"
-              aria-label={locale === "ko" ? "저장한 컬러 보기" : "View saved colors"}
-              onClick={onOpenProjects}
-            >
-              <Library aria-hidden />
-              <span className="sr-only">{locale === "ko" ? "저장한 컬러 보기" : "View saved colors"}</span>
-              <span className="token-action-tooltip" role="tooltip" aria-hidden="true">
-                {locale === "ko" ? "저장한 컬러 보기" : "View saved colors"}
-              </span>
-            </button>
-            <button
-              type="button"
-              className="token-panel-project-save"
-              disabled={saving}
-              aria-label={savedProject
-                ? (locale === "ko" ? "변경 내용 저장" : "Save changes")
-                : (locale === "ko" ? "현재 컬러 저장" : "Save current colors")}
-              onClick={onSave}
-            >
-              <Save aria-hidden />
-              <span className="sr-only">{saving
-                ? (locale === "ko" ? "저장 중…" : "Saving…")
-                : copy.result.save}</span>
-              <span className="token-action-tooltip" role="tooltip" aria-hidden="true">
-                {saving
-                  ? (locale === "ko" ? "저장 중…" : "Saving…")
-                  : savedProject
-                    ? (locale === "ko" ? "변경 사항 저장" : "Save changes")
-                    : (locale === "ko" ? "현재 컬러 저장" : "Save current colors")}
-              </span>
-            </button>
-            <button
-              type="button"
-              aria-label={locale === "ko" ? "공유 링크 만들기" : "Create share link"}
-              onClick={onShare}
-            >
-              <Share2 aria-hidden />
-              <span className="sr-only">{copy.result.share}</span>
-              <span className="token-action-tooltip" role="tooltip" aria-hidden="true">
-                {locale === "ko" ? "공유 링크 만들기" : "Create share link"}
-              </span>
-            </button>
-          </div>
+        <div className="token-panel-tabs" data-panel={panel} role="tablist" aria-label={copy.tokens.title}>
+          <button type="button" role="tab" aria-selected={panel === "tokens"} onClick={() => setPanel("tokens")}>
+            {copy.result.tokens}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={panel === "export"}
+            onClick={() => {
+              setPanel("export");
+              void trackProductEvent("export_opened");
+            }}
+          >
+            {copy.result.export}
+          </button>
         </div>
-        <div className="token-panel-tabs" role="tablist">
-          <button type="button" role="tab" aria-selected={panel === "tokens"} onClick={() => setPanel("tokens")}>{copy.result.tokens}</button>
-          <button type="button" role="tab" aria-selected={panel === "export"} onClick={() => {
-            setPanel("export");
-            void trackProductEvent("export_opened");
-          }}>{copy.export.title}</button>
+        <div className="token-panel-project-heading">
+          <p className="ui-label text-[var(--text-tertiary)]">{projectTitle ?? copy.tokens.title}</p>
+          {savedProject ? (
+            <span className="token-panel-saved-badge">
+              {locale === "ko" ? "저장된 컬러" : "Saved color"}
+            </span>
+          ) : null}
         </div>
-      </header>
-
-      {panel === "tokens" ? (
-        <>
-          <div className="token-scope-switch" data-view={viewAll ? "all" : "core"} role="radiogroup" aria-label={copy.tokens.title}>
-            <button type="button" role="radio" aria-checked={!viewAll} onClick={() => setViewAll(false)}>{copy.tokens.viewCore}</button>
-            <button type="button" role="radio" aria-checked={viewAll} onClick={() => setViewAll(true)}>{copy.tokens.viewAll}</button>
-          </div>
-          <div className="token-history-actions">
+        {panel === "tokens" ? (
+          <div className="token-history-actions token-panel-toolbar">
             <button type="button" disabled={!canUndo} onClick={onUndo}>
               <Undo2 aria-hidden />{copy.tokens.undo}
             </button>
@@ -186,67 +138,57 @@ export function TokenPanel({
               <RotateCcw aria-hidden />{copy.tokens.resetAll}
             </button>
           </div>
+        ) : null}
+      </header>
+
+      <div className="token-panel-body token-card-viewport">
+        <div className="token-card-track" data-panel={panel}>
+        <div className="token-card-page" aria-hidden={panel !== "tokens"} inert={panel !== "tokens"}>
           <div className="token-panel-list">
-            {viewAll ? (
-              <div className="space-y-1">
-                {flattenObject(tokens).map((entry) => (
-                  <TokenRow
-                    key={entry.path}
-                    path={entry.path}
-                    group={copy.tokens.groups.all}
-                    label={entry.path}
-                    hex={overrides[entry.path] ?? entry.value}
-                    neutralAlias={neutralAliasForValue(entry.path, overrides[entry.path] ?? entry.value, result.primitive.neutral)}
-                    role={TOKEN_USES[entry.path]}
-                    usesLabel={copy.tokens.usesLabel}
-                    edited={Boolean(overrides[entry.path])}
-                    onChange={onTokenChange}
-                    onEditStart={onTokenEditStart}
-                    onPreview={onTokenPreview}
-                    onReset={onTokenReset}
-                    onFocusToken={onTokenFocus}
-                  />
-                ))}
+            <div className="token-palette-setup">
+              <div className="token-apple-row">
+                <PrimaryApplePicker hex={overrides["primary.default"] ?? tokens.primary.default} locale={locale} onGenerate={onNewPalette} />
+                <p className="token-apple-message" role="note">{locale === "ko" ? "저를 클릭해서 새로운 Primary 컬러를 선택하세요!" : "Click me to choose a new Primary color!"}</p>
               </div>
-            ) : (
-              Object.entries(grouped).map(([group, items]) => (
-                <div key={group} className="mb-4">
-                  <p className="mb-1.5 px-1 text-[10px] tracking-wide text-muted-foreground uppercase">
-                    {copy.tokens.groups[group as keyof typeof copy.tokens.groups]}
-                  </p>
-                  <div className="space-y-1">
-                    {items.map((token) => {
-                      const guide = copy.tokens.guides[token.key as keyof typeof copy.tokens.guides];
-                      return (
-                        <TokenRow
-                          key={token.key}
-                          path={token.path}
-                          group={copy.tokens.groups[group as keyof typeof copy.tokens.groups]}
-                          label={copy.tokens.labels[token.key as keyof typeof copy.tokens.labels] ?? token.key}
-                          hex={overrides[token.path] ?? getToken(tokens, token.path)}
-                          role={guide?.role}
-                          uses={guide?.uses}
-                          usesLabel={copy.tokens.usesLabel}
-                          edited={Boolean(overrides[token.path])}
-                          onChange={onTokenChange}
-                          onEditStart={onTokenEditStart}
-                          onPreview={onTokenPreview}
-                          onReset={onTokenReset}
-                          onFocusToken={onTokenFocus}
-                        />
-                      );
-                    })}
-                  </div>
+              <PalettePicker hex={input.hex} variant="panel" />
+            </div>
+            {Object.entries(grouped).map(([group, items]) => (
+              <div key={group} className="mb-4">
+                <p className="mb-1.5 px-1 text-[10px] tracking-wide text-muted-foreground uppercase">
+                  {copy.tokens.groups[group as keyof typeof copy.tokens.groups]}
+                </p>
+                <div className="space-y-1">
+                  {items.map((token) => {
+                    const guide = copy.tokens.guides[token.key as keyof typeof copy.tokens.guides];
+                    return (
+                      <TokenRow
+                        key={token.key}
+                        path={token.path}
+                        group={copy.tokens.groups[group as keyof typeof copy.tokens.groups]}
+                        label={copy.tokens.labels[token.key as keyof typeof copy.tokens.labels] ?? token.key}
+                        hex={overrides[token.path] ?? getToken(tokens, token.path)}
+                        role={guide?.role}
+                        uses={guide?.uses}
+                        usesLabel={copy.tokens.usesLabel}
+                        edited={Boolean(overrides[token.path])}
+                        onChange={onTokenChange}
+                        onEditStart={onTokenEditStart}
+                        onPreview={onTokenPreview}
+                        onReset={onTokenReset}
+                        onFocusToken={onTokenFocus}
+                      />
+                    );
+                  })}
                 </div>
-              ))
-            )}
+              </div>
+            ))}
           </div>
           <div className="token-panel-report">
             <p>{copy.result.contrast.replace("{count}", String(report.failCount))}</p>
             {report.failCount > 0 ? <p className="mt-1">{copy.result.fixContrast}</p> : null}
           </div>
-        </>
-      ) : (
+        </div>
+        <div className="token-card-page" aria-hidden={panel !== "export"} inert={panel !== "export"}>
         <div className="token-export-panel">
           <div className="token-export-formats" role="radiogroup" aria-label={copy.export.title}>
             {([[
@@ -263,7 +205,47 @@ export function TokenPanel({
             <button type="button" data-primary onClick={downloadFile}><Download aria-hidden />{copy.export.download}</button>
           </div>
         </div>
-      )}
+        </div>
+        </div>
+      </div>
+
+      <footer className="token-panel-footer">
+        <div className="token-panel-project-actions">
+          <button
+            type="button"
+            className="token-panel-colorbook-btn"
+            onClick={onOpenProjects}
+          >
+            <Library aria-hidden />
+            <span>{locale === "ko" ? "컬러북 폴더" : "Colorbook folder"}</span>
+          </button>
+          <button
+            type="button"
+            className="token-panel-colorbook-btn"
+            disabled={saving}
+            aria-label={saving
+              ? (locale === "ko" ? "저장 중…" : "Saving…")
+              : (locale === "ko" ? "컬러북 저장" : "Save colorbook")}
+            onClick={onSave}
+          >
+            <Save aria-hidden />
+            <span>
+              {saving
+                ? (locale === "ko" ? "저장 중…" : "Saving…")
+                : (locale === "ko" ? "컬러북 저장" : "Save colorbook")}
+            </span>
+          </button>
+          <button
+            type="button"
+            className="token-panel-share-btn"
+            aria-label={locale === "ko" ? "공유 링크 만들기" : "Create share link"}
+            onClick={onShare}
+          >
+            <Share2 aria-hidden />
+            <span className="sr-only">{copy.result.share}</span>
+          </button>
+        </div>
+      </footer>
     </aside>
   );
 }

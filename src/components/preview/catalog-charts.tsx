@@ -23,7 +23,13 @@ export function DataChartShowcase() {
               type="button"
               aria-label={`${k.chartLabels[index]} ${value}`}
               aria-pressed={selected === index}
-              style={{ "--bar-height": `${value}%`, "--bar-color": `var(--color-chart-${index + 1})` } as React.CSSProperties}
+              style={{
+                "--bar-height": `${value}%`,
+                "--bar-color":
+                  selected === index
+                    ? "var(--color-data-primary)"
+                    : "var(--color-data-comparison-previous)",
+              } as React.CSSProperties}
               onClick={() => setSelected(index)}
             >
               {selected === index ? <span className="kit-chart-tooltip">{k.chartLabels[index]} · {value}</span> : null}

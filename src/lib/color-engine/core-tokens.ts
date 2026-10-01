@@ -49,12 +49,16 @@ export const CORE_TOKENS: CoreToken[] = [
   { key: "focusRing", group: "interaction", path: "interaction.focusRing" },
   { key: "disabledSurface", group: "interaction", path: "interaction.disabledSurface" },
   { key: "disabledBorder", group: "interaction", path: "interaction.disabledBorder" },
+  ...["primary", "secondary", "accent"].flatMap(role => ["onHover", "onPressed", "selectedBorder", "selectedText", "selectedIcon", "disabled", "disabledText"].map(state => ({ key: `${role}${state[0].toUpperCase()}${state.slice(1)}`, group: "interaction", path: `action.${role}.${state}` }))),
+  { key: "accentHover", group: "interaction", path: "accent.hover" },
+  { key: "accentPressed", group: "interaction", path: "accent.pressed" },
+  ...["success", "warning", "danger", "info"].flatMap(role => ["surfaceStrong", "border", "text", "icon", "hover", "pressed", "onHover", "onPressed", "disabled", "disabledText"].map(state => ({ key: `${role}${state[0].toUpperCase()}${state.slice(1)}`, group: "status", path: `status.${role}.${state}` }))),
 ];
 
 export const TOKEN_USES: Record<string, string> = {
-  "primary.default": "Primary button background (Primary 500)",
-  "primary.hover": "Primary button hover (Primary 600)",
-  "primary.pressed": "Primary button pressed (Primary 700)",
+  "primary.default": "Primary button background (input color)",
+  "primary.hover": "Adaptive primary hover",
+  "primary.pressed": "Adaptive primary pressed",
   "primary.onPrimary": "Primary button text (On Primary)",
   "secondary.default": "Secondary button, supporting action",
   "accent.default": "Badge, chart point, small emphasis",

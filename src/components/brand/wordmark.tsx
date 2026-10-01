@@ -21,15 +21,16 @@ export function Wordmark({
   const router = useRouter();
   const resetSession = useMatchuStore((state) => state.resetSession);
   const inputHex = useMatchuStore((state) => state.input.hex);
+  const primaryDraftHex = useMatchuStore((state) => state.primaryDraftHex);
   const matchedHex = useMatchuStore((state) => state.matchedHex);
   const hasMatched = useMatchuStore((state) => state.hasMatched);
   const hydrated = useMatchuStore((state) => state.hydrated);
-  const { hopping, tip } = useAppleHop(remake);
+  const { hopping } = useAppleHop(remake);
 
-  const appleHex =
+  const appleHex = primaryDraftHex ?? (
     hydrated && hasMatched && matchedHex && isHexColor(matchedHex)
       ? normalizeHex(matchedHex)
-      : resolvePickedHex(inputHex);
+      : resolvePickedHex(inputHex));
 
   function goRemake() {
     if (onRemake) {
@@ -47,16 +48,10 @@ export function Wordmark({
           type="button"
           className="studio-apple"
           data-hop={hopping ? "true" : "false"}
-          data-tip={tip ? "true" : "false"}
           aria-label={copy.result.remake}
           onClick={goRemake}
         >
           <LogoApple hex={appleHex} />
-          {tip ? (
-            <span className="studio-apple-tip" role="note">
-              {copy.result.remakeAppleTip}
-            </span>
-          ) : null}
         </button>
         <span className="logo text-[var(--text-primary)]">Color of Apple</span>
       </div>

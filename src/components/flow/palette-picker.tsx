@@ -43,6 +43,7 @@ function PaletteList({
           type="button"
           className="space-palette"
           data-active={palette.id === resolvedSelectedId ? "true" : "false"}
+          aria-pressed={palette.id === resolvedSelectedId}
           onClick={() => onSelect(palette.id)}
         >
           <span className="space-palette-copy">
@@ -64,7 +65,7 @@ export function PalettePicker({
   variant = "inline",
 }: {
   hex: string;
-  variant?: "inline" | "floating" | "header";
+  variant?: "inline" | "floating" | "header" | "panel";
 }) {
   const copy = useCopy();
   const locale = useMatchuStore((state) => state.locale);
@@ -72,7 +73,7 @@ export function PalettePicker({
   const rootRef = useRef<HTMLDivElement>(null);
   const tipRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [tip, setTip] = useState({ top: 0, left: 0, width: TIP_WIDTH });
+  const [tip, setTip] = useState<{ top: number; left: number; width: number; maxHeight?: number }>({ top: 0, left: 0, width: TIP_WIDTH });
   const palettes = useMemo(() => extractUniqueSpacePalettes(hex), [hex]);
   const resolvedSelectedId = resolvePaletteId(selectedPaletteId);
   const selected =
@@ -84,6 +85,14 @@ export function PalettePicker({
     function update() {
       const anchor = rootRef.current?.getBoundingClientRect();
       if (!anchor) return;
+      if (variant === "panel") {
+        const below = window.innerHeight - anchor.bottom - 14;
+        const above = anchor.top - 14;
+        const upward = below < 180 && above > below;
+        const maxHeight = Math.min(360, Math.max(80, upward ? above : below));
+        setTip({ top: upward ? Math.max(8, anchor.top - maxHeight - 6) : anchor.bottom + 6, left: Math.max(8, Math.min(anchor.left, window.innerWidth - anchor.width - 8)), width: Math.min(anchor.width, window.innerWidth - 16), maxHeight });
+        return;
+      }
       setTip(placeTip(anchor));
     }
 
@@ -120,6 +129,23 @@ export function PalettePicker({
   function pick(id: string) {
     selectPalette(id);
     setOpen(false);
+  }
+
+  if (variant === "panel") {
+    return (
+      <section ref={rootRef} className="token-palette-styles" aria-label={locale === "ko" ? "팔레트 스타일" : "Palette style"}>
+        <p className="token-palette-title">{locale === "ko" ? "팔레트 스타일" : "Palette style"}</p>
+        <button type="button" className="token-palette-trigger" aria-expanded={open} onClick={() => setOpen(value => !value)}>
+          <span className="studio-palette-swatches" aria-hidden>
+            {selected.colors.slice(0, 3).map((color, index) => <span key={index} style={{ background: color }} />)}
+          </span>
+          <span>{paletteName(selected.id, locale)}</span>
+          <ChevronDown className="studio-palette-chevron" data-open={open ? "true" : "false"} aria-hidden />
+        </button>
+        {open ? createPortal(<div ref={tipRef} className="token-palette-styles token-palette-options" style={tip} role="dialog" aria-label={copy.result.palettePicker}><PaletteList palettes={palettes} resolvedSelectedId={resolvedSelectedId} locale={locale} onSelect={pick} /></div>, document.body) : null}
+        {wash ? <PaletteWash colors={wash.colors} onDone={finishWash} /> : null}
+      </section>
+    );
   }
 
   const trigger =

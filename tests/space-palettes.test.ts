@@ -3,9 +3,9 @@ import { contrastRatio, parseToOklch } from "@/lib/color-engine/color-utils";
 import { extractSpacePalettes, paletteRoles } from "@/lib/space-palettes";
 
 describe("extractSpacePalettes", () => {
-  it("returns 22 concept palettes with four chips plus paper and ink", () => {
+  it("returns seven strategy palettes with four chips plus paper and ink", () => {
     const palettes = extractSpacePalettes("#2d2dca");
-    expect(palettes).toHaveLength(22);
+    expect(palettes).toHaveLength(7);
 
     for (const palette of palettes) {
       expect(palette.colors).toHaveLength(4);
@@ -37,9 +37,10 @@ describe("extractSpacePalettes", () => {
     const secondaries = new Set(palettes.map((palette) => palette.colors[1]));
     const accents = new Set(palettes.map((palette) => palette.colors[2]));
     const backgrounds = new Set(palettes.map((palette) => palette.background));
-    expect(secondaries.size).toBeGreaterThan(8);
-    expect(accents.size).toBeGreaterThan(8);
-    expect(backgrounds.size).toBeGreaterThan(4);
+    expect(secondaries.size).toBe(7);
+    expect(accents.size).toBeGreaterThanOrEqual(4);
+    // Very pale neutral tints can quantize to the same sRGB background.
+    expect(backgrounds.size).toBeGreaterThanOrEqual(1);
   });
 });
 

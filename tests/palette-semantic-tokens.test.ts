@@ -21,6 +21,10 @@ describe("derivePaletteTokens", () => {
     const result = generateColorSystem({ ...DEFAULT_INPUT, hex: "#f15c5c" }, "balance");
     const vars = paletteTokensToCssVariables(result.derived.light);
     expect(vars["--color-primary-subtle"]).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    expect(vars["--color-secondary-subtle"]).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    expect(vars["--color-secondary-text"]).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    expect(vars["--color-series-primary"]).toBe(result.derived.light.core.primary);
+    expect(vars["--color-series-secondary"]).toBe(result.derived.light.core.secondary);
     expect(vars["--color-interaction-hover"]).toMatch(/^#[0-9A-Fa-f]{6}$/);
     expect(result.derived.light.core.primary).toBe("#f15c5c");
   });
@@ -32,12 +36,10 @@ describe("derivePaletteTokens", () => {
     const editorial = generatePaletteTokens(hex, "editorial");
 
     expect(balance.core.primary).toBe(natural.core.primary);
-    expect(balance.interaction.neutralHover).not.toBe(natural.interaction.neutralHover);
+    expect(balance.system.character).not.toEqual(natural.system.character);
     expect(balance.status.success).not.toBe(natural.status.success);
     expect(balance.core.primarySubtle).not.toBe(editorial.core.primarySubtle);
-    expect(balance.border.default).not.toBe(natural.border.default);
-    expect(balance.backgroundAndSurface.subtleBackground).not.toBe(
-      natural.backgroundAndSurface.subtleBackground,
-    );
+    expect(balance.system.primitives.secondary).not.toEqual(natural.system.primitives.secondary);
+    expect(balance.system.analysis.color).toEqual(natural.system.analysis.color);
   });
 });

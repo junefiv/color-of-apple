@@ -20,6 +20,17 @@ const SHARES: Record<Category, number> = { 식비: 0.18, 쇼핑: 0.1, 교통: 0.
 const LAST: Record<Category, number> = { 식비: 0.22, 쇼핑: 0.14, 교통: 0.07, 생활: 0.57 };
 const money = (amount: number) => `${Math.round(amount).toLocaleString("ko-KR")}원`;
 
+function categoryDonutGradient(shares: number[]) {
+  let cursor = 0;
+  return shares
+    .map((share, index) => {
+      const start = cursor;
+      cursor += share;
+      return `var(--color-categorical-${index}-fg) ${start}% ${cursor}%`;
+    })
+    .join(", ");
+}
+
 function Switch({
   checked,
   onChange,
@@ -443,7 +454,7 @@ export function AnalysisView() {
       </div>
       <div className="ledger-chart-content">
         {chart === "도넛" ? (
-          <div className="ledger-donut" role="img" aria-label="카테고리 지출" style={{ background: `conic-gradient(var(--color-primary-default) 0 32%, var(--color-secondary-default) 32% 52%, var(--color-accent-default) 52% 60%, var(--color-border-default) 60% 100%)` }}>
+          <div className="ledger-donut" role="img" aria-label="카테고리 지출" style={{ background: `conic-gradient(${categoryDonutGradient(CATEGORIES.map(item => values[item] / Math.max(total, 1) * 100))})` }}>
             <div><small>총 지출</small><strong>{Math.round(total / 10000)}<small>만원</small></strong></div>
           </div>
         ) : (
@@ -480,8 +491,11 @@ export function AnalysisView() {
               <td>{money(values[item])}</td>
               <td>{money(last[item])}</td>
               <td>
-                <div className="ledger-progress" role="progressbar" aria-label={`${item} 진행률`} aria-valuenow={Math.round(values[item] / 800000 * 100)}>
+                <div className="ledger-progress" role="progressbar" aria-label={`${item} 이번 기간`} aria-valuenow={Math.round(values[item] / 800000 * 100)}>
                   <span style={{ width: `${Math.min(100, values[item] / 8000)}%` }} />
+                </div>
+                <div className="ledger-progress ledger-progress-secondary" role="progressbar" aria-label={`${item} 지난 기간`} aria-valuenow={Math.round(last[item] / 800000 * 100)}>
+                  <span style={{ width: `${Math.min(100, last[item] / 8000)}%` }} />
                 </div>
               </td>
             </tr>

@@ -28,6 +28,7 @@ type HydrationInput = Partial<Persisted> & {
 
 type MatchuState = Persisted & {
   input: GenerateInput;
+  primaryDraftHex: string | null;
   hasMatched: boolean;
   matchedHex: string | null;
   selectedPaletteId: string;
@@ -37,14 +38,13 @@ type MatchuState = Persisted & {
   pendingBleed: boolean;
   bleedKey: number;
   matchNonce: number;
-  viewAllTokens: boolean;
   matchStage: MatchStage;
   setLocale: (locale: Locale) => void;
   setInput: (input: Partial<GenerateInput>) => void;
+  setPrimaryDraftHex: (hex: string | null) => void;
   replaceInput: (input: GenerateInput) => void;
   setPlatform: (platform: PlatformView) => void;
   setPreviewTab: (tab: PreviewTab) => void;
-  setViewAllTokens: (value: boolean) => void;
   setSkipLoader: (value: boolean) => void;
   setPendingBleed: (value: boolean) => void;
   setMatchStage: (stage: MatchStage) => void;
@@ -67,9 +67,9 @@ export const EMPTY_INPUT: GenerateInput = {
 export const useMatchuStore = create<MatchuState>((set) => ({
   locale: "ko",
   input: EMPTY_INPUT,
+  primaryDraftHex: null,
   platform: "web",
   previewTab: "overview",
-  viewAllTokens: false,
   hydrated: false,
   skipLoader: false,
   pendingBleed: false,
@@ -81,6 +81,7 @@ export const useMatchuStore = create<MatchuState>((set) => ({
   selectedPaletteId: DEFAULT_PALETTE_ID,
   palettesRevealed: false,
   setLocale: (locale) => set({ locale }),
+  setPrimaryDraftHex: (primaryDraftHex) => set({ primaryDraftHex }),
   setInput: (input) =>
     set((state) => ({
       input: { ...state.input, ...input },
@@ -88,7 +89,6 @@ export const useMatchuStore = create<MatchuState>((set) => ({
   replaceInput: (input) => set({ input }),
   setPlatform: (platform) => set({ platform }),
   setPreviewTab: (previewTab) => set({ previewTab }),
-  setViewAllTokens: (viewAllTokens) => set({ viewAllTokens }),
   setSkipLoader: (skipLoader) => set({ skipLoader }),
   setPendingBleed: (pendingBleed) => set({ pendingBleed }),
   setMatchStage: (matchStage) => set({ matchStage }),
@@ -115,10 +115,10 @@ export const useMatchuStore = create<MatchuState>((set) => ({
     })),
   resetSession: () =>
     set((state) => ({
+      primaryDraftHex: null,
       input: EMPTY_INPUT,
       platform: "web",
       previewTab: "overview",
-      viewAllTokens: false,
       skipLoader: false,
       pendingBleed: false,
       hasMatched: false,

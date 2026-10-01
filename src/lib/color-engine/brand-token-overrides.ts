@@ -1,4 +1,5 @@
-import { chooseOnColor, mixOklab, shiftLightness } from "./color-utils";
+import { chooseOnColor, mixOklab, parseToOklch, shiftLightness } from "./color-utils";
+import { actionTokens, generateBrandPalette, neutralScale } from "@/lib/palette/adaptive";
 import type { SemanticTokens } from "./types";
 
 type BrandRoot = "primary" | "secondary" | "accent";
@@ -52,6 +53,27 @@ export function deriveBrandTokenOverrides(
       "interaction.secondaryHover": hover,
       "interaction.secondaryPressed": pressed,
     });
+  }
+
+  if (tokens.action) {
+    const brand = generateBrandPalette(parseToOklch(value), "near-harmony");
+    const mode = parseToOklch(canvas).l > 0.5 ? "light" : "dark";
+    const action = actionTokens(value, brand.character, neutralScale(brand.character), [canvas, tokens.surface.default, tokens.surface.raised], mode);
+    Object.assign(patch, {
+      [`${root}.hover`]: action.hover, [`${root}.pressed`]: action.pressed,
+      [`${root}.selected`]: action.selected, [`${root}.subtle`]: action.selected,
+      [`${root}.${onKey}`]: action.on,
+    });
+    for (const [state, hex] of Object.entries(action)) patch[`action.${root}.${state}`] = hex;
+    if (root === "primary") {
+      patch["interaction.primaryHover"] = action.hover; patch["interaction.primaryPressed"] = action.pressed;
+      patch["interaction.primarySelected"] = action.selected;
+      patch["selected.background"] = action.selected; patch["selected.border"] = action.selectedBorder;
+      patch["selected.text"] = action.selectedText; patch["selected.icon"] = action.selectedIcon;
+      patch["border.focus"] = action.focus; patch["interaction.focusRing"] = action.focus; patch["focus.ring"] = action.focus;
+    } else if (root === "secondary") {
+      patch["interaction.secondaryHover"] = action.hover; patch["interaction.secondaryPressed"] = action.pressed;
+    }
   }
 
   return patch;

@@ -1,4 +1,4 @@
-export const ENGINE_VERSION = "1.0.0";
+export const ENGINE_VERSION = "2.1.0";
 
 export type Mood =
   | "balanced"
@@ -69,6 +69,11 @@ export type PrimitiveScales = {
 };
 
 export type SemanticTokens = {
+  action?: import("@/lib/palette/adaptive").UiColorSystem["actions"];
+  status?: import("@/lib/palette/adaptive").UiColorSystem["statuses"];
+  selected?: { background: string; border: string; text: string; icon: string };
+  focus?: { ring: string };
+  disabled?: { background: string; border: string; text: string; icon: string };
   background: {
     canvas: string;
     subtle: string;

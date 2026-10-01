@@ -11,10 +11,12 @@ export function AppleArtwork({
   look = DEFAULT_APPLE_LOOK,
   leftEyeRef,
   rightEyeRef,
+  hex,
 }: {
   look?: { left: EyePosition; right: EyePosition };
   leftEyeRef?: Ref<SVGEllipseElement>;
   rightEyeRef?: Ref<SVGEllipseElement>;
+  hex?: string;
 }) {
   const textureId = useId();
 
@@ -57,6 +59,7 @@ export function AppleArtwork({
           <ellipse rx="8.2" ry="10.7" fill="#302623" transform={`translate(${look.right.x} ${look.right.y}) rotate(-5)`} />
         </g>
       </g>
+      {hex ? <text className="apple-hex" x="83" y="124" textAnchor="middle">{hex.toUpperCase()}</text> : null}
     </svg>
   );
 }

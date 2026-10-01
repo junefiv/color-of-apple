@@ -1,26 +1,4 @@
-export type PaletteConceptId =
-  | "balance"
-  | "monochrome"
-  | "tonal"
-  | "neighbor"
-  | "analogous-flow"
-  | "complement"
-  | "split-complement"
-  | "triad"
-  | "square"
-  | "highlight"
-  | "vivid-pop"
-  | "playful"
-  | "soft-pastel"
-  | "dusty"
-  | "natural"
-  | "fresh-air"
-  | "clean"
-  | "minimal-gray"
-  | "warm-neutral"
-  | "cool-neutral"
-  | "classy"
-  | "editorial";
+export type PaletteConceptId = "near-harmony" | "soft-harmony" | "tonal" | "analog" | "split-contrast" | "triadic" | "neutralized";
 
 export type PaletteGroup = "harmony" | "expressive" | "soft-natural" | "professional";
 export type PaletteTag = "calm" | "vivid" | "contrast";
@@ -62,10 +40,10 @@ export type PaletteConcept = {
   name: string;
   impression: { ko: string; en: string };
   tags: PaletteTag[];
-  preset: PalettePreset;
 };
 
 export type PaletteTokens = {
+  system: import("./adaptive").UiColorSystem;
   core: {
     primary: string;
     secondary: string;

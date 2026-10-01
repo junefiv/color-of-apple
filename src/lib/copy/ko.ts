@@ -594,8 +594,6 @@ export const ko = {
   },
   tokens: {
     title: "COLOR TOKENS",
-    viewAll: "전체 토큰",
-    viewCore: "핵심 토큰",
     resetAll: "전체 취소",
     undo: "실행 취소",
     close: "컬러 토큰 닫기",

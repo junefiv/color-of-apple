@@ -1,4 +1,7 @@
-import { contrastRatio, mixOklab } from "@/lib/color-engine/color-utils";
+import { contrastRatio } from "@/lib/color-engine/color-utils";
+import { categoricalToCssVariables } from "./categorical";
+import { dataVisualizationCssVariables } from "./data-viz";
+import { secondaryRoleCssVariables } from "./secondary-role";
 import type { PaletteTokens } from "./types";
 
 export function paletteTokensToCssVariables(tokens: PaletteTokens): Record<string, string> {
@@ -9,7 +12,7 @@ export function paletteTokensToCssVariables(tokens: PaletteTokens): Record<strin
 
   return {
     "--color-primary-default": tokens.core.primary,
-    "--color-secondary-default": tokens.core.secondary,
+    ...secondaryRoleCssVariables(tokens),
     "--color-accent-default": tokens.core.accent,
     "--color-surface-default": tokens.core.surface,
     "--color-primary-on": tokens.core.onPrimary,
@@ -38,19 +41,19 @@ export function paletteTokensToCssVariables(tokens: PaletteTokens): Record<strin
     "--color-success": tokens.status.success,
     "--color-success-default": tokens.status.success,
     "--color-success-surface": tokens.status.successSurface,
-    "--color-success-text": tokens.status.success,
+    "--color-success-text": tokens.system.statuses.success.text,
     "--color-warning": tokens.status.warning,
     "--color-warning-default": tokens.status.warning,
     "--color-warning-surface": tokens.status.warningSurface,
-    "--color-warning-text": tokens.status.warning,
+    "--color-warning-text": tokens.system.statuses.warning.text,
     "--color-danger": tokens.status.danger,
     "--color-danger-default": tokens.status.danger,
     "--color-danger-surface": tokens.status.dangerSurface,
-    "--color-danger-text": tokens.status.danger,
+    "--color-danger-text": tokens.system.statuses.danger.text,
     "--color-info": tokens.status.info,
     "--color-info-default": tokens.status.info,
     "--color-info-surface": tokens.status.infoSurface,
-    "--color-info-text": tokens.status.info,
+    "--color-info-text": tokens.system.statuses.info.text,
     "--color-success-on": tokens.status.onSuccess,
     "--color-warning-on": tokens.status.onWarning,
     "--color-danger-on": tokens.status.onDanger,
@@ -63,8 +66,6 @@ export function paletteTokensToCssVariables(tokens: PaletteTokens): Record<strin
     "--color-interaction-primary-pressed": tokens.interaction.primaryPressed,
     "--color-interaction-primary-selected": tokens.interaction.primarySelected,
     "--color-interaction-selected": tokens.interaction.primarySelected,
-    "--color-secondary-hover": tokens.interaction.secondaryHover,
-    "--color-secondary-pressed": tokens.interaction.secondaryPressed,
     "--color-interaction-secondary-hover": tokens.interaction.secondaryHover,
     "--color-interaction-secondary-pressed": tokens.interaction.secondaryPressed,
     "--color-neutral-hover": tokens.interaction.neutralHover,
@@ -84,12 +85,20 @@ export function paletteTokensToCssVariables(tokens: PaletteTokens): Record<strin
 
     "--color-primary-text": tokens.text.link,
     "--color-primary-border": tokens.border.focus,
-    "--color-accent-text": accentText,
-    "--color-chart-1": tokens.core.primary,
-    "--color-chart-2": tokens.core.secondary,
-    "--color-chart-3": tokens.core.accent,
-    "--color-chart-4": mixOklab(tokens.core.secondary, tokens.core.accent, 0.45),
-    "--color-chart-5": tokens.core.primarySubtle,
+    "--color-accent-subtle": tokens.system.actions.accent.selected,
+    "--color-accent-text": tokens.system.actions.accent.selectedText,
+    ...dataVisualizationCssVariables(tokens),
+    ...categoricalToCssVariables(tokens.system.categorical),
+    ...Object.fromEntries(Object.entries(tokens.system.actions).flatMap(([role, action]) => Object.entries(action).map(([state, hex]) => [`--action-${role}-${state.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}`, hex]))),
+    ...Object.fromEntries(Object.entries(tokens.system.statuses).flatMap(([role, status]) => Object.entries(status).map(([state, hex]) => [`--color-${role}-${state.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}`, hex]))),
+    "--color-accent-hover": tokens.system.actions.accent.hover,
+    "--color-accent-pressed": tokens.system.actions.accent.pressed,
+    "--color-primary-on-hover": tokens.system.actions.primary.onHover,
+    "--color-primary-on-pressed": tokens.system.actions.primary.onPressed,
+    "--color-secondary-on-hover": tokens.system.actions.secondary.onHover,
+    "--color-secondary-on-pressed": tokens.system.actions.secondary.onPressed,
+    "--color-accent-on-hover": tokens.system.actions.accent.onHover,
+    "--color-accent-on-pressed": tokens.system.actions.accent.onPressed,
   };
 }
 

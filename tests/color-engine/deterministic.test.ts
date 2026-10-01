@@ -13,16 +13,16 @@ describe("generateColorSystem", () => {
     expect(stable(first)).toBe(stable(second));
   });
 
-  it("keeps the source hex on primary 500", () => {
+  it("keeps the source hex at its natural lightness anchor", () => {
     const result = generateColorSystem(DEFAULT_INPUT);
-    expect(result.primitive.primary[500]).toBe("#ff6b35");
-    expect(result.meta.anchorStep).toBe(500);
+    expect(result.primitive.primary[result.meta.anchorStep]).toBe("#ff6b35");
+    expect(result.meta.anchorStep).toBe(result.derived.light.system.anchors.primary);
     expect(result.meta.sourceHex).toBe("#ff6b35");
   });
 
   it("emits light and dark semantic tokens and a version", () => {
     const result = generateColorSystem(DEFAULT_INPUT);
-    expect(result.meta.engineVersion).toBe("1.0.0");
+    expect(result.meta.engineVersion).toBe("2.1.0");
     expect(result.semantic.light.primary.default).toMatch(/^#/);
     expect(result.semantic.dark.background.canvas).toMatch(/^#/);
     expect(result.semantic.light.background.canvas).not.toBe(

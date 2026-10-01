@@ -7,6 +7,7 @@ import { useAuth } from "@/components/auth/auth-provider";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -53,7 +54,7 @@ export function AccountButton() {
           aria-label={isKo ? "프로젝트 저장 현황" : "Project storage status"}
           title={isPro
             ? (isKo ? "Pro 플랜은 프로젝트 저장 제한이 없습니다." : "The Pro plan has no project storage limit.")
-            : (isKo ? "로그인하면 내보내기를 무제한 사용할 수 있습니다." : "Sign in for unlimited exports.")}
+            : (isKo ? "로그인하면보내기를 무제한 사용할 수 있습니다." : "Sign in for unlimited exports.")}
         >
           <GnbUsageRow
             label={isKo ? "저장 프로젝트" : "Saved projects"}
@@ -71,26 +72,32 @@ export function AccountButton() {
             <DropdownMenuItem disabled className="py-2">{isKo ? "계정을 확인하는 중…" : "Checking your account…"}</DropdownMenuItem>
           ) : !user ? (
             <>
-              <DropdownMenuLabel className="px-2 py-2">
-                <span className="block text-sm font-semibold text-foreground">{isKo ? "로그인이 필요합니다" : "Sign in required"}</span>
-                <span className="mt-0.5 block font-normal leading-4">{isKo ? "프로젝트 저장·공유·내보내기를 사용할 수 있어요." : "Save, share, and export your projects."}</span>
-              </DropdownMenuLabel>
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="px-2 py-2">
+                  <span className="block text-sm font-semibold text-foreground">{isKo ? "로그인이 필요합니다" : "Sign in required"}</span>
+                  <span className="mt-0.5 block font-normal leading-4">{isKo ? "프로젝트 저장·공유·보내기를 사용할 수 있어요." : "Save, share, and export your projects."}</span>
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="py-2" onClick={() => { void login(); }}><LogIn aria-hidden />{isKo ? "Google로 로그인" : "Sign in with Google"}</DropdownMenuItem>
             </>
           ) : (
             <>
-              <DropdownMenuLabel className="px-2 py-2">
-                <span className="block truncate text-sm font-semibold text-foreground">{profile?.displayName ?? user.displayName ?? (isKo ? "사용자" : "User")}</span>
-                <span className="mt-0.5 block truncate font-normal">{profile?.email ?? user.email}</span>
-              </DropdownMenuLabel>
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="px-2 py-2">
+                  <span className="block truncate text-sm font-semibold text-foreground">{profile?.displayName ?? user.displayName ?? (isKo ? "사용자" : "User")}</span>
+                  <span className="mt-0.5 block truncate font-normal">{profile?.email ?? user.email}</span>
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel className="flex items-center justify-between px-2 py-2 text-foreground">
-                <span>{isKo ? "현재 플랜" : "Current plan"}</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 font-semibold">
-                  {isPro ? <Crown className="size-3" aria-hidden /> : null}{isPro ? "Pro" : "Free"}
-                </span>
-              </DropdownMenuLabel>
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="flex items-center justify-between px-2 py-2 text-foreground">
+                  <span>{isKo ? "현재 플랜" : "Current plan"}</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 font-semibold">
+                    {isPro ? <Crown className="size-3" aria-hidden /> : null}{isPro ? "Pro" : "Free"}
+                  </span>
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
               {!isPro ? (
                 <DropdownMenuItem className="py-2" onClick={() => { setOpen(false); router.push("/coming-soon"); }}>
                   <Crown aria-hidden />{isKo ? "플랜 업그레이드" : "Upgrade plan"}

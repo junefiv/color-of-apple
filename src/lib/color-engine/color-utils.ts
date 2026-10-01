@@ -25,6 +25,14 @@ export function hueDistance(a: number, b: number) {
   return diff > 180 ? 360 - diff : diff;
 }
 
+/** Approximate OKLCH perceptual distance for palette separation (hue, chroma, lightness). */
+export function oklchPerceptualDistance(a: OklchColor, b: OklchColor) {
+  const dh = hueDistance(a.h, b.h) / 180;
+  const dl = a.l - b.l;
+  const dc = a.c - b.c;
+  return Math.hypot(dl * 1.8, dc * 2.4, dh);
+}
+
 export function expandHex(value: string) {
   const hex = value.trim();
   if (/^#[0-9a-f]{3}$/i.test(hex)) {

@@ -227,7 +227,15 @@ export function previewComponentVars(
   vars["--color-primary-border"] = p[200];
 
   vars["--color-secondary-default"] = semantic.secondary.default;
+  vars["--color-secondary-hover"] = semantic.secondary.hover;
+  vars["--color-secondary-pressed"] = semantic.secondary.pressed;
+  vars["--color-secondary-subtle"] = semantic.secondary.subtle;
+  vars["--color-secondary-surface"] = s[50];
+  vars["--color-secondary-border"] = semantic.secondary.border;
+  vars["--color-secondary-text"] = semantic.secondary.text;
   vars["--color-secondary-on"] = semantic.secondary.onSecondary;
+  vars["--color-series-primary"] = semantic.primary.default;
+  vars["--color-series-secondary"] = semantic.secondary.default;
   vars["--color-accent-default"] = a[500];
   vars["--color-accent-on"] = pickOnNeutral(a[500], n);
   vars["--color-accent-subtle"] = a[50];
@@ -241,6 +249,39 @@ export function previewComponentVars(
   vars["--color-danger-text"] = er[800];
   vars["--color-info-surface"] = infoScale[50];
   vars["--color-info-text"] = infoScale[800];
+
+  // Component states consume semantic roles rather than assuming the base is 500.
+  if (semantic.action) {
+    for (const [role, prefix] of [["primary", "--btn-primary"], ["secondary", "--btn-secondary"], ["accent", "--btn-cta"]] as const) {
+      const action = semantic.action[role];
+      for (const state of ["default", "hover", "pressed"] as const) set(vars, prefix, state, { bg: action[state], fg: state === "default" ? action.on : state === "hover" ? action.onHover : action.onPressed, border: TRANSPARENT });
+      set(vars, prefix, "selected", { bg: action.selected, fg: action.selectedText, border: action.selectedBorder });
+      set(vars, prefix, "focus", { bg: action.default, fg: action.on, border: action.focus });
+      set(vars, prefix, "disabled", { bg: action.disabled, fg: action.disabledText, border: semantic.interaction.disabledBorder });
+      vars[`${prefix}-fg`] = action.on;
+    }
+    const primary = semantic.action.primary;
+    Object.assign(vars, {
+      "--switch-track-on": primary.default, "--switch-thumb-on": primary.on, "--switch-track-on-hover": primary.hover,
+      "--selection-selected-bg": primary.default, "--selection-selected-border": primary.focus, "--selection-selected-icon": primary.on,
+      "--selection-selected-hover": primary.hover, "--selection-selected-pressed": primary.pressed, "--selection-radio-dot": primary.default,
+      "--tab-indicator": primary.default, "--tab-fg-selected": primary.selectedText,
+      "--nav-indicator": primary.default, "--nav-bg-selected": primary.selected, "--nav-fg-selected": primary.selectedText,
+      "--progress-indicator": primary.default, "--count-badge-bg": primary.default, "--count-badge-fg": primary.on,
+      "--color-accent-default": semantic.accent.default, "--color-accent-on": semantic.accent.onAccent,
+    });
+    for (const prefix of ["--chip", "--filter-chip", "--card"]) set(vars, prefix, "selected", { bg: primary.selected, fg: primary.selectedText, border: primary.selectedBorder });
+  }
+  if (semantic.status) {
+    for (const role of ["success", "warning", "danger", "info"] as const) {
+      const status = semantic.status[role], name = role === "danger" ? "error" : role;
+      for (const prefix of [`--badge-${name}`, `--alert-${name}`]) Object.assign(vars, { [`${prefix}-bg`]: status.surface, [`${prefix}-fg`]: status.text, [`${prefix}-border`]: status.border });
+      vars[`--color-${role}-surface`] = status.surface; vars[`--color-${role}-text`] = status.text;
+    }
+    const danger = semantic.status.danger;
+    for (const state of ["default", "hover", "pressed"] as const) set(vars, "--btn-destructive", state, { bg: danger[state], fg: state === "default" ? danger.on : state === "hover" ? danger.onHover : danger.onPressed, border: TRANSPARENT });
+    vars["--btn-destructive-fg"] = danger.on;
+  }
 
   return vars;
 }
