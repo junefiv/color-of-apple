@@ -203,6 +203,14 @@ export function Workbench({
     activeTokenEdit.current = null;
   }
 
+  function cancelTokenEdit() {
+    const edit = activeTokenEdit.current;
+    activeTokenEdit.current = null;
+    if (!edit || edit.paletteId !== selectedPaletteId) return;
+    tokenOverridesRef.current = edit.before;
+    setTokenOverridesByPalette((current) => ({ ...current, [selectedPaletteId]: edit.before }));
+  }
+
   function undoTokenChange() {
     activeTokenEdit.current = null;
     const previous = tokenHistory.at(-1);
@@ -318,7 +326,16 @@ export function Workbench({
     void trackProductEvent("generate", { source: "token_panel" });
   }
 
-  function requestProjectSave() {
+  async function requestProjectSave() {
+    try {
+      if (!user) {
+        await signIn();
+        void trackProductEvent("user_login", { source: "project_save" });
+      }
+    } catch {
+      uiToast.error(locale === "ko" ? "로그인을 완료하지 못했습니다." : "Could not complete sign-in.", locale);
+      return;
+    }
     setProjectNameDraft(projectTitle);
     setSaveDialogOpen(true);
   }
@@ -381,13 +398,6 @@ export function Workbench({
 
         <button
           type="button"
-          className="token-inspector-backdrop"
-          aria-label={locale === "ko" ? "컬러 토큰 패널 닫기" : "Close color token panel"}
-          onClick={() => setTokenPanelOpen(false)}
-        />
-
-        <button
-          type="button"
           className="token-inspector-bookmark"
           style={{
             "--token-accent": effectivePrimary,
@@ -422,6 +432,9 @@ export function Workbench({
           style={{
             "--token-accent": effectivePrimary,
             "--token-accent-on": chooseOnColor(effectivePrimary),
+            "--color-primary-default": tokenOverrides["primary.default"] ?? result.semantic.light.primary.default,
+            "--color-primary-text": tokenOverrides["primary.text"] ?? result.semantic.light.primary.text,
+            "--color-surface-default": tokenOverrides["surface.default"] ?? result.semantic.light.surface.default,
           } as CSSProperties}
         >
           <TokenPanel
@@ -441,6 +454,7 @@ export function Workbench({
             onTokenEditStart={beginTokenEdit}
             onTokenPreview={previewTokenEdit}
             onTokenChange={finishTokenEdit}
+            onTokenCancel={cancelTokenEdit}
             onTokenReset={(path) => {
               const next = { ...tokenOverrides };
               const resetPaths = Object.keys(

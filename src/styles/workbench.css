@@ -192,43 +192,6 @@
   gap: 0.4rem;
 }
 
-.gnb-usage {
-  display: grid;
-  min-width: 8.75rem;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto;
-  flex-shrink: 0;
-  gap: 0.08rem;
-  padding: 0.25rem 0.6rem;
-  border-left: 1px solid var(--border-default);
-  color: var(--text-secondary);
-  font-family: var(--font-ui);
-}
-
-.gnb-usage-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: baseline;
-  gap: 0.75rem;
-  font-size: 10px;
-  line-height: 1.15;
-  white-space: nowrap;
-}
-
-.gnb-usage-row span {
-  overflow: hidden;
-  color: var(--text-tertiary);
-  font-weight: 540;
-  text-overflow: ellipsis;
-}
-
-.gnb-usage-row strong {
-  color: var(--text-primary);
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 760;
-}
-
 .studio-gnb-action,
 .locale-toggle {
   display: inline-flex;
@@ -680,22 +643,6 @@
   outline-offset: 3px;
 }
 
-.token-inspector-backdrop {
-  position: absolute;
-  z-index: 31;
-  inset: 0;
-  border: 0;
-  background: rgb(22 22 25 / 24%);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 200ms ease;
-}
-
-.workbench-main[data-token-panel="open"] .token-inspector-backdrop {
-  opacity: 1;
-  pointer-events: auto;
-}
-
 @media (min-width: 1200px) {
   .workbench-main {
     --token-inspector-width: clamp(18rem, 20vw, 20rem);
@@ -718,8 +665,7 @@
     transition: none;
   }
 
-  .token-inspector-bookmark,
-  .token-inspector-backdrop {
+  .token-inspector-bookmark {
     display: none;
   }
 }
@@ -821,10 +767,6 @@
 
   .studio-gnb-actions {
     justify-content: flex-end;
-  }
-
-  .studio-gnb-actions .gnb-usage {
-    display: none;
   }
 }
 
@@ -946,16 +888,9 @@
   gap: 0.32rem;
   padding: 0 0.5rem;
   overflow: hidden;
-  border-color: color-mix(
-    in oklab,
-    var(--color-primary-border, var(--token-accent, var(--match-primary, var(--text-primary)))) 55%,
-    var(--border-default)
-  );
-  background: var(
-    --color-primary-subtle,
-    color-mix(in oklab, var(--token-accent, var(--match-primary, var(--text-primary))) 14%, var(--surface))
-  );
-  color: var(--color-primary-text, var(--token-accent, var(--match-primary, var(--text-primary))));
+  border-color: transparent;
+  background: color-mix(in oklab, var(--color-primary-default, var(--token-accent)) 14%, var(--color-surface-default, var(--surface)));
+  color: var(--color-primary-text, var(--token-accent));
   font-weight: 700;
 }
 
@@ -964,32 +899,71 @@
   text-overflow: ellipsis;
 }
 
+.token-panel-colorbook-copy {
+  display: inline-flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 0.28rem;
+}
+
+.token-panel-colorbook-copy > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.token-panel-colorbook-count {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
 .token-panel-project-actions .token-panel-colorbook-btn:hover:not(:disabled) {
-  border-color: color-mix(
-    in oklab,
-    var(--color-primary-border, var(--token-accent, var(--match-primary, var(--text-primary)))) 70%,
-    var(--border-default)
-  );
-  background: color-mix(
-    in oklab,
-    var(--color-primary-subtle, var(--token-accent, var(--match-primary, var(--text-primary)))) 88%,
-    var(--surface)
-  );
-  color: var(--color-primary-text, var(--token-accent, var(--match-primary, var(--text-primary))));
+  border-color: transparent;
+  background: color-mix(in oklab, var(--color-primary-default, var(--token-accent)) 26%, var(--color-surface-default, var(--surface)));
+  color: var(--color-primary-text, var(--token-accent));
 }
 
 .token-panel-project-actions .token-panel-colorbook-btn:active:not(:disabled) {
-  background: color-mix(
-    in oklab,
-    var(--color-primary-subtle, var(--token-accent, var(--match-primary, var(--text-primary)))) 76%,
-    var(--border-default)
-  );
+  background: color-mix(in oklab, var(--color-primary-default, var(--token-accent)) 38%, var(--color-surface-default, var(--surface)));
 }
 
 .token-panel-share-btn {
   width: 2rem;
   height: 1.9rem;
   flex: 0 0 2rem;
+}
+
+@media (max-width: 1199px) {
+  .token-panel-project-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 2rem;
+    grid-template-areas:
+      "folder folder"
+      "save share";
+    gap: 0.35rem;
+  }
+
+  .token-panel-project-actions .token-panel-colorbook-btn:nth-child(1) {
+    grid-area: folder;
+    width: auto;
+    flex: none;
+  }
+
+  .token-panel-project-actions .token-panel-colorbook-btn:nth-child(2) {
+    grid-area: save;
+    width: auto;
+    flex: none;
+  }
+
+  .token-panel-share-btn {
+    grid-area: share;
+    justify-self: stretch;
+  }
+
+  .token-panel-project-actions .token-panel-colorbook-btn > span,
+  .token-panel-colorbook-copy > span:first-child {
+    overflow: visible;
+    text-overflow: clip;
+  }
 }
 
 .token-panel-project-actions button:disabled {
@@ -1154,7 +1128,7 @@
   min-height: 0;
   flex: 1;
   overflow-y: auto;
-  padding: 0 0.75rem 1rem;
+  padding: 0.85rem 1rem 1rem;
 }
 
 .token-card-viewport {
@@ -1182,15 +1156,15 @@
 }
 
 .token-palette-setup {
-  padding: 1rem 0.25rem;
-  margin-bottom: 1rem;
+  flex: 0 0 auto;
+  padding: 1rem 1rem 0.85rem;
   border-bottom: 1px solid var(--border-default);
 }
 
 .token-apple-row {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.3rem;
   margin-bottom: 1rem;
 }
 
@@ -1201,8 +1175,6 @@
 .primary-apple-popover {
   position: fixed;
   z-index: 120;
-  display: grid;
-  gap: 0.65rem;
 }
 
 .primary-apple-picker-card,
@@ -1232,7 +1204,32 @@
 }
 
 .primary-apple-generate-tip {
+  position: absolute;
   animation: studio-apple-tip-in 220ms ease-out;
+}
+
+.primary-apple-generate-tip.is-bottom {
+  top: calc(100% + 0.65rem);
+  right: 0;
+  left: 0;
+}
+
+.primary-apple-generate-tip.is-top {
+  right: 0;
+  bottom: calc(100% + 0.65rem);
+  left: 0;
+}
+
+.primary-apple-generate-tip.is-right {
+  top: 0;
+  left: calc(100% + 0.65rem);
+  width: 15rem;
+}
+
+.primary-apple-generate-tip.is-left {
+  top: 0;
+  right: calc(100% + 0.65rem);
+  width: 15rem;
 }
 
 .primary-apple-generate-tip .match-button {
@@ -1250,12 +1247,21 @@
   height: 3.5rem;
 }
 
-.token-apple-message {
+.token-apple-message-stage {
   flex: 1;
+  min-width: 0;
+  perspective: 720px;
+}
+
+.token-apple-message {
+  display: grid;
+  align-items: center;
+  box-sizing: border-box;
+  height: calc(0.65rem * 2 + 1.55 * 12px * 2 + 2px);
   margin: 0;
-  padding: 0.65rem 0.75rem;
+  padding: 0.65rem 0.7rem 0.65rem 0.75rem;
   border: 1px solid var(--border-default);
-  border-radius: 1rem 1rem 1rem 0.25rem;
+  border-radius: 1rem 1rem 1rem 0.15rem;
   background: var(--surface);
   color: var(--text-primary);
   font-size: 12px;
@@ -1263,10 +1269,36 @@
   line-height: 1.55;
   min-width: 0;
   overflow: hidden;
+  transform-origin: center center;
+}
+
+.token-apple-message span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.token-apple-message[data-flip^="out"] {
+  animation: token-apple-flip-out 280ms ease-in forwards;
+}
+
+.token-apple-message[data-flip^="in"] {
+  animation: token-apple-flip-in 280ms ease-out forwards;
+}
+
+@keyframes token-apple-flip-out {
+  from { transform: rotateX(0deg); }
+  to { transform: rotateX(90deg); }
+}
+
+@keyframes token-apple-flip-in {
+  from { transform: rotateX(-90deg); }
+  to { transform: rotateX(0deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .token-card-track { transition: none; }
+  .token-apple-message[data-flip^="out"],
+  .token-apple-message[data-flip^="in"] { animation: none; }
 }
 
 .token-palette-title {
@@ -1342,14 +1374,26 @@
   outline-offset: 2px;
 }
 
+@media (max-width: 720px) {
+  .token-primary-apple .logo-apple {
+    width: 2.6rem;
+    height: 2.6rem;
+  }
 
-.token-panel-report {
-  flex: 0 0 auto;
-  border-top: 1px solid var(--border-default);
-  padding: 0.55rem 1rem;
-  color: var(--text-tertiary);
-  font-size: 11px;
+  .token-palette-options {
+    padding: 0.35rem;
+  }
+
+  .token-palette-options .space-palette {
+    padding: 0.32rem 0.4rem;
+    gap: 0.22rem;
+  }
+
+  .token-palette-options .space-palette-swatches span {
+    height: 0.45rem;
+  }
 }
+
 
 .token-color-picker {
   position: relative;
@@ -1357,14 +1401,10 @@
   width: 1.35rem;
   height: 1.35rem;
   flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
   cursor: pointer;
-}
-
-.token-color-picker input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
 }
 
 .token-color-picker span {
@@ -1417,9 +1457,12 @@
 }
 
 .token-export-formats button {
+  display: flex;
   min-height: 2rem;
   min-width: 0;
-  padding: 0.35rem 0.15rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.2rem;
   border: 1px solid var(--border-default);
   border-radius: 0.55rem;
   background: var(--surface);
@@ -1427,7 +1470,9 @@
   font-family: var(--font-ui);
   font-size: 9px;
   letter-spacing: -0.025em;
-  white-space: nowrap;
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: break-word;
   cursor: pointer;
 }
 
@@ -1459,7 +1504,8 @@
 
 .token-export-actions button {
   display: inline-flex;
-  width: 100%;
+  flex: 1;
+  width: auto;
   min-height: 2.25rem;
   align-items: center;
   justify-content: center;

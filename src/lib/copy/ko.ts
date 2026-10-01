@@ -841,7 +841,7 @@ export const ko = {
     json: "JSON",
     figma: "Figma",
     download: "파일 받기",
-    copy: "복사",
+    copy: "복사하기",
   },
   share: {
     title: "이 컬러, 같이 볼까요?",

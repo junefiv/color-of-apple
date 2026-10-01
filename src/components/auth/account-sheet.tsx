@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Crown, LogIn, LogOut, UserRound } from "lucide-react";
+import { useState } from "react";
+import { Crown, LogIn, LogOut, UserRoundCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/auth-provider";
 import {
@@ -14,7 +14,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { uiToast } from "@/components/ui/toast";
-import { FREE_PROJECT_LIMIT, subscribeProjects, type SavedProject } from "@/lib/firebase/data";
 import { useMatchuStore } from "@/lib/store";
 import { trackProductEvent } from "@/lib/analytics";
 
@@ -23,15 +22,6 @@ export function AccountButton() {
   const locale = useMatchuStore((state) => state.locale);
   const { user, profile, loading, signIn, signOut } = useAuth();
   const [open, setOpen] = useState(false);
-  const [projects, setProjects] = useState<SavedProject[]>([]);
-
-  useEffect(() => {
-    if (!user) {
-      setProjects([]);
-      return;
-    }
-    return subscribeProjects(user.uid, setProjects);
-  }, [user]);
 
   const isKo = locale === "ko";
   const isPro = profile?.plan === "pro";
@@ -48,23 +38,12 @@ export function AccountButton() {
 
   return (
     <>
-      {user ? (
-        <div
-          className="gnb-usage"
-          aria-label={isKo ? "프로젝트 저장 현황" : "Project storage status"}
-          title={isPro
-            ? (isKo ? "Pro 플랜은 프로젝트 저장 제한이 없습니다." : "The Pro plan has no project storage limit.")
-            : (isKo ? "로그인하면보내기를 무제한 사용할 수 있습니다." : "Sign in for unlimited exports.")}
-        >
-          <GnbUsageRow
-            label={isKo ? "저장 프로젝트" : "Saved projects"}
-            value={isPro ? `${projects.length} / ∞` : `${projects.length} / ${FREE_PROJECT_LIMIT}`}
-          />
-        </div>
-      ) : null}
       <DropdownMenu open={open} onOpenChange={setOpen}>
-        <DropdownMenuTrigger className="studio-gnb-action" aria-label={isKo ? "계정 메뉴" : "Account menu"}>
-          <UserRound aria-hidden />
+        <DropdownMenuTrigger
+          className="studio-gnb-action"
+          aria-label={user ? (isKo ? "계정 메뉴" : "Account menu") : (isKo ? "로그인" : "Sign in")}
+        >
+          {user ? <UserRoundCheck aria-hidden /> : <LogIn aria-hidden />}
           <span>{user ? (profile?.displayName ?? (isKo ? "내 계정" : "Account")) : (isKo ? "로그인" : "Sign in")}</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" sideOffset={8} className="w-64 p-2">
@@ -114,8 +93,4 @@ export function AccountButton() {
       </DropdownMenu>
     </>
   );
-}
-
-function GnbUsageRow({ label, value }: { label: string; value: string }) {
-  return <div className="gnb-usage-row"><span>{label}</span><strong>{value}</strong></div>;
 }

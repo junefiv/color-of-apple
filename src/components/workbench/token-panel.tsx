@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Download, Library, RotateCcw, Save, Share2, Undo2 } from "lucide-react";
+import { Copy, Download, Library, RotateCcw, Save, Share2, Undo2 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/auth/auth-provider";
+import { FREE_PROJECT_LIMIT, subscribeProjects } from "@/lib/firebase/data";
 import { uiToast } from "@/components/ui/toast";
 import {
   CORE_TOKENS,
@@ -17,7 +18,9 @@ import { preventProtectedCopy, preventProtectedCopyShortcut } from "@/lib/copy-p
 import { useMatchuStore } from "@/lib/store";
 import { trackProductEvent } from "@/lib/analytics";
 import { PrimaryApplePicker } from "./primary-apple-picker";
+import { AppleCommentBubble } from "./apple-comment-bubble";
 import { PalettePicker } from "@/components/flow/palette-picker";
+import { ColorPickerPopover } from "@/components/flow/color-picker-popover";
 
 export function TokenPanel({
   result,
@@ -32,6 +35,7 @@ export function TokenPanel({
   onTokenChange,
   onTokenEditStart,
   onTokenPreview,
+  onTokenCancel,
   onTokenReset,
   onResetAll,
   canUndo,
@@ -51,6 +55,7 @@ export function TokenPanel({
   onTokenChange: (path: string, value: string) => void;
   onTokenEditStart: () => void;
   onTokenPreview: (path: string, value: string) => void;
+  onTokenCancel: () => void;
   onTokenReset: (path: string) => void;
   onResetAll: () => void;
   canUndo: boolean;
@@ -59,15 +64,33 @@ export function TokenPanel({
   onNewPalette: (hex: string) => void;
 }) {
   const copy = useCopy();
-  const { user, signIn } = useAuth();
+  const { user, profile, signIn } = useAuth();
   const locale = useMatchuStore((state) => state.locale);
   const [panel, setPanel] = useState<"tokens" | "export">("tokens");
+  const [projectCount, setProjectCount] = useState(0);
+  const [resetNonce, setResetNonce] = useState(0);
   const [format, setFormat] = useState<ExportFormat>("css");
   const tokens = result.semantic.light;
-  const report = result.accessibility.light;
+  const theme = useMemo(() => applyOverrides(result, overrides).semantic.light, [overrides, result]);
   const file = useMemo(() => {
     return formatExport(format, applyOverrides(result, overrides), input);
   }, [format, result, overrides, input]);
+
+  useEffect(() => {
+    if (!user) {
+      setProjectCount(0);
+      return;
+    }
+    return subscribeProjects(user.uid, (projects) => setProjectCount(projects.length));
+  }, [user]);
+
+  const projectSlots = profile?.plan === "pro" ? "∞" : String(FREE_PROJECT_LIMIT);
+  const folderCount = `${projectCount}/${projectSlots}`;
+  const saveLabel = saving
+    ? (locale === "ko" ? "저장 중…" : "Saving…")
+    : savedProject
+      ? (locale === "ko" ? "이어서 저장" : "Continue saving")
+      : (locale === "ko" ? "컬러북 저장" : "Save colorbook");
 
   const grouped = CORE_TOKENS.reduce<Record<string, typeof CORE_TOKENS>>((acc, token) => {
     acc[token.group] = acc[token.group] ?? [];
@@ -95,6 +118,26 @@ export function TokenPanel({
       void trackProductEvent("export_downloaded", { format });
     } catch {
       uiToast.error(locale === "ko" ? "파일을 다운로드하지 못했습니다." : "Could not download the file.", locale);
+    }
+  }
+
+  async function copyFile() {
+    if (!file) return;
+    try {
+      if (!user) {
+        await signIn();
+        void trackProductEvent("user_login", { source: "export_copy" });
+      }
+    } catch {
+      uiToast.error(locale === "ko" ? "로그인을 완료하지 못했습니다." : "Could not complete sign-in.", locale);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(file.code);
+      uiToast.success(copy.result.copied, locale);
+      void trackProductEvent("export_copied", { format });
+    } catch {
+      uiToast.error(copy.result.copyFailed, locale);
     }
   }
 
@@ -131,10 +174,10 @@ export function TokenPanel({
         </div>
         {panel === "tokens" ? (
           <div className="token-history-actions token-panel-toolbar">
-            <button type="button" disabled={!canUndo} onClick={onUndo}>
+            <button type="button" disabled={!canUndo} onClick={() => { setResetNonce((value) => value + 1); onUndo(); }}>
               <Undo2 aria-hidden />{copy.tokens.undo}
             </button>
-            <button type="button" disabled={Object.keys(overrides).length === 0} onClick={onResetAll}>
+            <button type="button" disabled={Object.keys(overrides).length === 0} onClick={() => { setResetNonce((value) => value + 1); onResetAll(); }}>
               <RotateCcw aria-hidden />{copy.tokens.resetAll}
             </button>
           </div>
@@ -144,14 +187,19 @@ export function TokenPanel({
       <div className="token-panel-body token-card-viewport">
         <div className="token-card-track" data-panel={panel}>
         <div className="token-card-page" aria-hidden={panel !== "tokens"} inert={panel !== "tokens"}>
-          <div className="token-panel-list">
-            <div className="token-palette-setup">
-              <div className="token-apple-row">
-                <PrimaryApplePicker hex={overrides["primary.default"] ?? tokens.primary.default} locale={locale} onGenerate={onNewPalette} />
-                <p className="token-apple-message" role="note">{locale === "ko" ? "저를 클릭해서 새로운 Primary 컬러를 선택하세요!" : "Click me to choose a new Primary color!"}</p>
-              </div>
-              <PalettePicker hex={input.hex} variant="panel" />
+          <div className="token-palette-setup">
+            <div className="token-apple-row">
+              <PrimaryApplePicker hex={overrides["primary.default"] ?? tokens.primary.default} locale={locale} onGenerate={onNewPalette} />
+              <AppleCommentBubble
+                theme={theme}
+                resetNonce={resetNonce}
+                locale={locale}
+                prompt={locale === "ko" ? "저를 클릭해서 새로운 Primary 컬러를 선택하세요!" : "Click me to choose a new Primary color!"}
+              />
             </div>
+            <PalettePicker hex={input.hex} variant="panel" />
+          </div>
+          <div className="token-panel-list">
             {Object.entries(grouped).map(([group, items]) => (
               <div key={group} className="mb-4">
                 <p className="mb-1.5 px-1 text-[10px] tracking-wide text-muted-foreground uppercase">
@@ -174,6 +222,7 @@ export function TokenPanel({
                         onChange={onTokenChange}
                         onEditStart={onTokenEditStart}
                         onPreview={onTokenPreview}
+                        onCancel={onTokenCancel}
                         onReset={onTokenReset}
                         onFocusToken={onTokenFocus}
                       />
@@ -182,10 +231,6 @@ export function TokenPanel({
                 </div>
               </div>
             ))}
-          </div>
-          <div className="token-panel-report">
-            <p>{copy.result.contrast.replace("{count}", String(report.failCount))}</p>
-            {report.failCount > 0 ? <p className="mt-1">{copy.result.fixContrast}</p> : null}
           </div>
         </div>
         <div className="token-card-page" aria-hidden={panel !== "export"} inert={panel !== "export"}>
@@ -203,6 +248,7 @@ export function TokenPanel({
           <pre>{file?.code}</pre>
           <div className="token-export-actions">
             <button type="button" data-primary onClick={downloadFile}><Download aria-hidden />{copy.export.download}</button>
+            <button type="button" onClick={copyFile}><Copy aria-hidden />{copy.export.copy}</button>
           </div>
         </div>
         </div>
@@ -217,23 +263,20 @@ export function TokenPanel({
             onClick={onOpenProjects}
           >
             <Library aria-hidden />
-            <span>{locale === "ko" ? "컬러북 폴더" : "Colorbook folder"}</span>
+            <span className="token-panel-colorbook-copy">
+              <span>{locale === "ko" ? "컬러북 폴더" : "Colorbook folder"}</span>
+              <span className="token-panel-colorbook-count">{folderCount}</span>
+            </span>
           </button>
           <button
             type="button"
             className="token-panel-colorbook-btn"
             disabled={saving}
-            aria-label={saving
-              ? (locale === "ko" ? "저장 중…" : "Saving…")
-              : (locale === "ko" ? "컬러북 저장" : "Save colorbook")}
+            aria-label={saveLabel}
             onClick={onSave}
           >
             <Save aria-hidden />
-            <span>
-              {saving
-                ? (locale === "ko" ? "저장 중…" : "Saving…")
-                : (locale === "ko" ? "컬러북 저장" : "Save colorbook")}
-            </span>
+            <span>{saveLabel}</span>
           </button>
           <button
             type="button"
@@ -263,6 +306,7 @@ function TokenRow({
   onChange,
   onEditStart,
   onPreview,
+  onCancel,
   onReset,
   onFocusToken,
 }: {
@@ -278,26 +322,15 @@ function TokenRow({
   onChange: (path: string, value: string) => void;
   onEditStart: () => void;
   onPreview: (path: string, value: string) => void;
+  onCancel: () => void;
   onReset: (path: string) => void;
   onFocusToken: (role: TokenFocusRole | null) => void;
 }) {
   const rowRef = useRef<HTMLDivElement>(null);
-  const colorInputRef = useRef<HTMLInputElement>(null);
-  const commitRef = useRef<(value: string) => void>(() => undefined);
+  const swatchRef = useRef<HTMLButtonElement>(null);
+  const originRef = useRef(hex);
+  const [open, setOpen] = useState(false);
   const [tipStyle, setTipStyle] = useState<CSSProperties | null>(null);
-  const colorValue = /^#[0-9a-f]{6}$/i.test(hex) ? hex : "#000000";
-
-  useEffect(() => {
-    commitRef.current = (value: string) => onChange(path, value);
-  }, [onChange, path]);
-
-  useEffect(() => {
-    const input = colorInputRef.current;
-    if (!input) return;
-    const commitNativeChange = () => commitRef.current(input.value.toUpperCase());
-    input.addEventListener("change", commitNativeChange);
-    return () => input.removeEventListener("change", commitNativeChange);
-  }, []);
 
   const hideTip = () => setTipStyle(null);
   const showTip = () => {
@@ -309,37 +342,80 @@ function TokenRow({
       top: Math.min(Math.max(12, rect.top - 18), window.innerHeight - 180),
     });
   };
+  const keyboardTip = () => rowRef.current?.matches(":focus-visible") ?? false;
+
+  useEffect(() => {
+    const row = rowRef.current;
+    if (!tipStyle || !row) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry?.isIntersecting) return;
+      setTipStyle(null);
+      onFocusToken(null);
+    }, { threshold: 0.5 });
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, [onFocusToken, tipStyle]);
 
   return (
     <div
       ref={rowRef}
       className="token-row"
       tabIndex={role ? 0 : undefined}
-      onMouseEnter={() => { showTip(); onFocusToken(tokenFocusFromPath(path)); }}
-      onMouseLeave={() => {
+      onPointerEnter={() => { showTip(); onFocusToken(tokenFocusFromPath(path)); }}
+      onPointerLeave={() => {
+        if (keyboardTip()) return;
         hideTip();
-        if (!rowRef.current?.contains(document.activeElement)) onFocusToken(null);
+        onFocusToken(null);
       }}
-      onFocus={() => { showTip(); onFocusToken(tokenFocusFromPath(path)); }}
+      onFocus={(event) => {
+        if (!event.currentTarget.matches(":focus-visible")) return;
+        showTip();
+        onFocusToken(tokenFocusFromPath(path));
+      }}
       onBlur={(event) => {
         hideTip();
         if (!event.currentTarget.contains(event.relatedTarget)) onFocusToken(null);
       }}
     >
-      <label className="token-color-picker" title={label}>
-        <input
-          ref={colorInputRef}
-          type="color"
-          value={colorValue}
-          aria-label={`${label} ${hex}`}
-          onPointerDown={onEditStart}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") onEditStart();
-          }}
-          onInput={(event) => onPreview(path, event.currentTarget.value.toUpperCase())}
-        />
+      <button
+        ref={swatchRef}
+        type="button"
+        className="token-color-picker"
+        title={label}
+        aria-label={`${label} ${hex}`}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => {
+          if (open) {
+            onCancel();
+            setOpen(false);
+            return;
+          }
+          originRef.current = hex;
+          onEditStart();
+          setOpen(true);
+        }}
+      >
         <span style={{ background: hex }} />
-      </label>
+      </button>
+      {open ? (
+        <ColorPickerPopover
+          anchorRef={swatchRef}
+          color={hex}
+          title={label}
+          actionLabel="Change Color"
+          onChange={(next) => onPreview(path, next)}
+          onAction={(next) => {
+            if (next.toUpperCase() === originRef.current.toUpperCase()) onCancel();
+            else onChange(path, next);
+            setOpen(false);
+          }}
+          onDismiss={() => {
+            onCancel();
+            setOpen(false);
+          }}
+        />
+      ) : null}
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13px] font-semibold">{label}</p>
         <p className="token-name text-[var(--text-tertiary)]">

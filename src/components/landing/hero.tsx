@@ -81,17 +81,19 @@ export function Hero() {
     };
   }, []);
 
-  function generate() {
+  function generate(nextHex?: string) {
+    const color = typeof nextHex === "string" ? nextHex : hex;
     cancelRandom();
     try {
-      parseToOklch(hex);
+      parseToOklch(color);
     } catch {
       setError(copy.input.invalid);
       return;
     }
 
     setPressed(true);
-    setInput({ hex, previewTarget: "both" });
+    setHex(color);
+    setInput({ hex: color, previewTarget: "both" });
     setPlatform("web");
     setError(null);
     resetMatch();
@@ -177,6 +179,7 @@ export function Hero() {
             setHex(nextHex);
             setError(null);
           }}
+          onGenerate={generate}
         />
         <div className="hero-generate">
           <div className="landing-hero-actions">

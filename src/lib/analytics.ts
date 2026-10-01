@@ -11,6 +11,7 @@ export type ProductEvent =
   | "export_opened"
   | "export_format_selected"
   | "export_downloaded"
+  | "export_copied"
   | "project_saved"
   | "project_library_opened"
   | "project_opened"
