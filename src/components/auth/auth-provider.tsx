@@ -10,6 +10,8 @@ import {
 } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { ensureUserProfile, subscribeUserProfile, type UserProfile } from "@/lib/firebase/data";
+import { useRefresh } from "@/components/refresh-provider";
+import { useMatchuStore } from "@/lib/store";
 
 type AuthContextValue = {
   user: User | null;
@@ -22,6 +24,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { runRefresh } = useRefresh();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,15 +66,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     profile,
     loading,
-    signIn: async () => {
+    signIn: () => runRefresh(useMatchuStore.getState().locale === "ko" ? "로그인 중…" : "Signing in…", async () => {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
       const credential = await signInWithPopup(getFirebaseAuth(), provider);
       await ensureUserProfile(credential.user);
       return credential.user;
-    },
-    signOut: () => firebaseSignOut(getFirebaseAuth()),
-  }), [loading, profile, user]);
+    }),
+    signOut: () => runRefresh(useMatchuStore.getState().locale === "ko" ? "로그아웃 중…" : "Signing out…", () => firebaseSignOut(getFirebaseAuth())),
+  }), [loading, profile, runRefresh, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

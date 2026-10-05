@@ -4,6 +4,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
@@ -121,6 +122,19 @@ export function subscribeProjects(uid: string, onValue: (projects: SavedProject[
     (snapshot) => onValue(snapshot.docs.map(projectFromDocument)),
     () => onValue([]),
   );
+}
+
+export async function hasAvailableProjectSlot(uid: string) {
+  const database = getFirebaseDb();
+  const [profile, projects] = await Promise.all([
+    getDoc(doc(database, "users", uid)),
+    getDocs(collection(database, "users", uid, "projects")),
+  ]);
+  if (!profile.exists()) throw new Error("user profile is missing");
+  if (profile.data().plan === "pro") return true;
+  const occupied = new Set(projects.docs.map(project => project.id));
+  return Array.from({ length: FREE_PROJECT_LIMIT }, (_, i) => `slot-${i + 1}`)
+    .some(id => !occupied.has(id));
 }
 
 export async function saveProject({

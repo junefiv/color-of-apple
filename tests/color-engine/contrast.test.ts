@@ -9,6 +9,16 @@ import {
 } from "@/lib/color-engine";
 
 describe("contrast", () => {
+  it("preserves vivid pink and white ink through contrast correction", () => {
+    const result = generateColorSystem({ ...DEFAULT_INPUT, hex: "#ff015c" });
+    for (const mode of ["light", "dark"] as const) {
+      expect(result.semantic[mode].primary.default).toBe("#ff015c");
+      expect(result.semantic[mode].primary.onPrimary).toBe("#ffffff");
+      const pair = result.accessibility[mode].pairs.find(pair => pair.foreground === "primary.onPrimary")!;
+      expect(pair.passed).toBe(false);
+      expect(pair.autoFixed).toBe(false);
+    }
+  });
   it("knows the black-on-white boundary", () => {
     expect(contrastRatio("#000000", "#ffffff")).toBe(21);
   });
@@ -27,7 +37,8 @@ describe("contrast", () => {
         result.semantic.light.primary.onPrimary,
         result.semantic.light.primary.default,
       ),
-    ).toBeGreaterThanOrEqual(4.5);
+    ).toBeGreaterThanOrEqual(3);
+    expect(result.semantic.light.primary.onPrimary).toBe("#ffffff");
   });
 
   it("uses directional primary hover from on-primary ink", () => {
@@ -37,7 +48,7 @@ describe("contrast", () => {
     expect(primary.default).toBe("#f15c5c");
     expect(primary.hover).toBe(derived.interaction.primaryHover);
     expect(primary.pressed).toBe(derived.interaction.primaryPressed);
-    expect(contrastRatio(primary.onPrimary, primary.default)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(primary.onPrimary, primary.default)).toBeGreaterThanOrEqual(3);
   });
 
   it("uses lighter hover steps when on-primary is dark", () => {

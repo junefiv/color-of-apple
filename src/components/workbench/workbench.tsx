@@ -14,15 +14,18 @@ import { PreviewCanvas } from "@/components/preview/preview-canvas";
 import { ThemeScope } from "@/components/preview/theme-scope";
 import { useColorSystem } from "@/hooks/use-color-system";
 import { useCopy } from "@/hooks/use-copy";
-import { chooseOnColor, deriveBrandTokenOverrides, getToken, tokenPathToCssVar } from "@/lib/color-engine";
+import { chooseOnColor, deriveBrandTokenOverrides, tokenPathToCssVar } from "@/lib/color-engine";
+import { undoToken } from "@/lib/token-undo";
 import { encodeShare } from "@/lib/share/encode";
-import { isPlanRequiredError, quotaErrorMessage, saveProject } from "@/lib/firebase/data";
+import { hasAvailableProjectSlot, isPlanRequiredError, quotaErrorMessage, saveProject } from "@/lib/firebase/data";
 import { trackProductEvent } from "@/lib/analytics";
 import { applyTokenSnapshot, createTokenSnapshot, diffTokenSnapshots, type ColorHistoryEntry } from "@/lib/project-tokens";
 import { MEDIA_QUERIES } from "@/lib/responsive";
 import { useMatchuStore } from "@/lib/store";
 import { TokenPanel, type TokenFocusRole } from "./token-panel";
 import { ProjectLibraryDialog } from "./project-library-dialog";
+import { PaletteControls } from "./palette-controls";
+import { PalettePicker } from "@/components/flow/palette-picker";
 
 function sameOverrides(left: Record<string, string>, right: Record<string, string>) {
   const entries = Object.entries(left);
@@ -58,6 +61,7 @@ export function Workbench({
       : {}
   ));
   const [tokenHistoryByPalette, setTokenHistoryByPalette] = useState<Record<string, Array<Record<string, string>>>>({});
+  const [committedOverridesByPalette, setCommittedOverridesByPalette] = useState(tokenOverridesByPalette);
   const [tokenFocus, setTokenFocus] = useState<TokenFocusRole | null>(null);
   const [savedProjectId, setSavedProjectId] = useState<string | null>(projectId);
   const [projectTitle, setProjectTitle] = useState(initialProjectTitle?.trim() ?? "");
@@ -66,10 +70,12 @@ export function Workbench({
   const [saving, setSaving] = useState(false);
   const [pendingColorHistory, setPendingColorHistory] = useState<ColorHistoryEntry[]>([]);
   const [savedSignature, setSavedSignature] = useState<string | null>(null);
-  const [projectLimitOpen, setProjectLimitOpen] = useState(false);
+  const [checkingSave, setCheckingSave] = useState(false);
+  const [freeingProjectSlot, setFreeingProjectSlot] = useState(false);
   const [projectLibraryOpen, setProjectLibraryOpen] = useState(false);
   const [mobilePreviewOnly, setMobilePreviewOnly] = useState(false);
   const [tokenPanelOpen, setTokenPanelOpen] = useState(false);
+  const [resetNonce, setResetNonce] = useState(0);
   const activeTokenEdit = useRef<{ paletteId: string; before: Record<string, string> } | null>(null);
   const tokenOverridesRef = useRef<Record<string, string>>({});
   const tokenPanelSwipeStart = useRef<number | null>(null);
@@ -93,6 +99,10 @@ export function Workbench({
   const effectivePrimary = tokenOverrides["primary.default"] ?? result.semantic.light.primary.default;
   const tokenHistory = tokenHistoryByPalette[selectedPaletteId] ?? [];
   const effectiveSnapshot = useMemo(() => createTokenSnapshot(result, tokenOverrides), [result, tokenOverrides]);
+  const effectiveTheme = useMemo(() => applyTokenSnapshot(result, effectiveSnapshot).semantic.light, [result, effectiveSnapshot]);
+  const commentTheme = useMemo(() => applyTokenSnapshot(
+    result, createTokenSnapshot(result, committedOverridesByPalette[selectedPaletteId] ?? {}),
+  ).semantic.light, [result, committedOverridesByPalette, selectedPaletteId]);
   const currentSignature = useMemo(
     () => JSON.stringify({ input, selectedPaletteId, tokens: effectiveSnapshot }),
     [effectiveSnapshot, input, selectedPaletteId],
@@ -144,21 +154,6 @@ export function Workbench({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSignature, pendingColorHistory, projectTitle, savedProjectId]);
 
-  function commitTokenOverrides(next: Record<string, string>) {
-    activeTokenEdit.current = null;
-    if (sameOverrides(tokenOverrides, next)) return;
-    setTokenHistoryByPalette((current) => ({
-      ...current,
-      [selectedPaletteId]: [...(current[selectedPaletteId] ?? []), { ...tokenOverrides }],
-    }));
-    setTokenOverridesByPalette((current) => ({ ...current, [selectedPaletteId]: next }));
-    const changes = diffTokenSnapshots(
-      createTokenSnapshot(result, tokenOverrides),
-      createTokenSnapshot(result, next),
-    );
-    if (changes.length > 0) setPendingColorHistory((current) => [...current, ...changes]);
-  }
-
   function nextTokenOverrides(path: string, value: string) {
     return {
       ...tokenOverridesRef.current,
@@ -185,6 +180,7 @@ export function Workbench({
     const next = nextTokenOverrides(path, value);
     tokenOverridesRef.current = next;
     setTokenOverridesByPalette((current) => ({ ...current, [selectedPaletteId]: next }));
+    setCommittedOverridesByPalette((current) => ({ ...current, [selectedPaletteId]: next }));
 
     if (edit?.paletteId === selectedPaletteId && !sameOverrides(edit.before, next)) {
       setTokenHistoryByPalette((current) => ({
@@ -211,18 +207,21 @@ export function Workbench({
     setTokenOverridesByPalette((current) => ({ ...current, [selectedPaletteId]: edit.before }));
   }
 
-  function undoTokenChange() {
+  function undoTokenChange(path: string) {
     activeTokenEdit.current = null;
-    const previous = tokenHistory.at(-1);
-    if (!previous) return;
+    const undone = undoToken(path, tokenOverrides, tokenHistory);
+    if (!undone) return;
+    setResetNonce(value => value + 1);
     const changes = diffTokenSnapshots(
       createTokenSnapshot(result, tokenOverrides),
-      createTokenSnapshot(result, previous),
+      createTokenSnapshot(result, undone.overrides),
     );
-    setTokenOverridesByPalette((current) => ({ ...current, [selectedPaletteId]: previous }));
+    tokenOverridesRef.current = undone.overrides;
+    setTokenOverridesByPalette((current) => ({ ...current, [selectedPaletteId]: undone.overrides }));
+    setCommittedOverridesByPalette((current) => ({ ...current, [selectedPaletteId]: undone.overrides }));
     setTokenHistoryByPalette((current) => ({
       ...current,
-      [selectedPaletteId]: (current[selectedPaletteId] ?? []).slice(0, -1),
+      [selectedPaletteId]: undone.history,
     }));
     if (changes.length > 0) setPendingColorHistory((current) => [...current, ...changes]);
   }
@@ -284,11 +283,9 @@ export function Workbench({
       return true;
     } catch (error) {
       if (isPlanRequiredError(error)) {
-        uiToast.info(
-          locale === "ko" ? "무료 한도를 모두 사용했어요. Pro 플랜은 곧 제공됩니다." : "You reached the free limit. Pro is coming soon.",
-          locale,
-        );
-        setProjectLimitOpen(true);
+        setSaveDialogOpen(false);
+        setFreeingProjectSlot(true);
+        setProjectLibraryOpen(true);
         void trackProductEvent("limit_reached", { kind: "project" });
         return false;
       }
@@ -308,6 +305,7 @@ export function Workbench({
   function generateFromPrimary(hex: string) {
     setUseInitialSnapshot(false);
     setTokenOverridesByPalette({});
+    setCommittedOverridesByPalette({});
     setTokenHistoryByPalette({});
     tokenOverridesRef.current = {};
     activeTokenEdit.current = null;
@@ -327,61 +325,29 @@ export function Workbench({
   }
 
   async function requestProjectSave() {
+    if (checkingSave || saving) return;
+    setCheckingSave(true);
     try {
-      if (!user) {
-        await signIn();
-        void trackProductEvent("user_login", { source: "project_save" });
+      const currentUser = user ?? await signIn();
+      if (!user) void trackProductEvent("user_login", { source: "project_save" });
+      setProjectNameDraft(projectTitle);
+      if (!savedProjectId && !await hasAvailableProjectSlot(currentUser.uid)) {
+        setFreeingProjectSlot(true);
+        setProjectLibraryOpen(true);
+        void trackProductEvent("limit_reached", { kind: "project" });
+        return;
       }
+      setSaveDialogOpen(true);
     } catch {
-      uiToast.error(locale === "ko" ? "로그인을 완료하지 못했습니다." : "Could not complete sign-in.", locale);
-      return;
+      uiToast.error(locale === "ko" ? "저장 준비를 완료하지 못했습니다. 다시 시도해 주세요." : "Could not prepare to save. Please try again.", locale);
+    } finally {
+      setCheckingSave(false);
     }
-    setProjectNameDraft(projectTitle);
-    setSaveDialogOpen(true);
   }
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-[var(--background)]">
-      <SiteHeader remakeWordmark onRemake={startNewPalette}>
-        <div
-          className="studio-nav"
-          role="radiogroup"
-          aria-label={copy.result.platforms}
-          data-view={view}
-          data-mobile-preview={mobilePreviewOnly || undefined}
-          style={{
-            "--studio-switch-fill": effectivePrimary,
-            "--studio-switch-on": chooseOnColor(effectivePrimary),
-          } as CSSProperties}
-        >
-          {!mobilePreviewOnly ? (
-            <ChromeChip
-              active={view === "web"}
-              matched={hasMatched}
-              onClick={() => {
-                setPlatform("web");
-                setPreviewTab("overview");
-              }}
-              label={copy.result.web}
-            />
-          ) : null}
-          <ChromeChip
-            active={view === "app"}
-            matched={hasMatched}
-            onClick={() => {
-              setPlatform("app");
-              setPreviewTab("overview");
-            }}
-            label={copy.result.app}
-          />
-          <ChromeChip
-            active={view === "components"}
-            matched={hasMatched}
-            onClick={() => setPreviewTab("components")}
-            label={copy.preview.components}
-          />
-        </div>
-      </SiteHeader>
+      <SiteHeader compact remakeWordmark onRemake={startNewPalette} />
 
       <div
         className="workbench-main match-transition relative min-h-0 flex-1"
@@ -389,12 +355,62 @@ export function Workbench({
         data-token-panel={tokenPanelOpen ? "open" : "closed"}
       >
         <div className="workbench-preview min-h-0 min-w-0" data-token-focus={tokenFocus ?? undefined}>
-          <ThemeScope result={result} extraVars={overrideVars} className="flex h-full min-h-0 flex-col bg-transparent p-2">
+          <div className="workbench-preview-toolbar">
+            {!savedProjectId ? <PalettePicker hex={input.hex} variant="panel" /> : null}
+            <div
+              className="studio-nav"
+              role="radiogroup"
+              aria-label={copy.result.platforms}
+              data-view={view}
+              data-mobile-preview={mobilePreviewOnly || undefined}
+              style={{
+                "--studio-switch-fill": effectivePrimary,
+                "--studio-switch-on": chooseOnColor(effectivePrimary),
+              } as CSSProperties}
+            >
+              {!mobilePreviewOnly ? (
+                <ChromeChip
+                  active={view === "web"}
+                  matched={hasMatched}
+                  onClick={() => {
+                    setPlatform("web");
+                    setPreviewTab("overview");
+                  }}
+                  label={copy.result.web}
+                />
+              ) : null}
+              <ChromeChip
+                active={view === "app"}
+                matched={hasMatched}
+                onClick={() => {
+                  setPlatform("app");
+                  setPreviewTab("overview");
+                }}
+                label={copy.result.app}
+              />
+              <ChromeChip
+                active={view === "components"}
+                matched={hasMatched}
+                onClick={() => setPreviewTab("components")}
+                label={copy.preview.components}
+              />
+            </div>
+          </div>
+          <ThemeScope result={result} extraVars={overrideVars} className="flex min-h-0 flex-1 flex-col bg-transparent p-2">
             <div className="min-h-0 flex-1">
               <PreviewCanvas platform={platform} tab={previewTab} />
             </div>
           </ThemeScope>
         </div>
+
+        {tokenPanelOpen ? (
+          <button
+            type="button"
+            className="token-inspector-dismiss"
+            aria-label={locale === "ko" ? "컬러 토큰 패널 닫기" : "Close color token panel"}
+            onClick={() => setTokenPanelOpen(false)}
+          />
+        ) : null}
 
         <button
           type="button"
@@ -438,32 +454,24 @@ export function Workbench({
           } as CSSProperties}
         >
           <TokenPanel
-            onNewPalette={generateFromPrimary}
+            paletteControls={<PaletteControls theme={effectiveTheme} commentTheme={commentTheme} locale={locale} savedProject={Boolean(savedProjectId)} resetNonce={resetNonce} onGenerate={generateFromPrimary} />}
             result={result}
             input={input}
             overrides={tokenOverrides}
-            saving={saving}
+            saving={saving || checkingSave}
             projectTitle={projectTitle || null}
             savedProject={Boolean(savedProjectId)}
             onOpenProjects={() => { void openProjectLibrary(); }}
             onSave={requestProjectSave}
             onShare={share}
-            canUndo={tokenHistory.length > 0}
-            onUndo={undoTokenChange}
+            undoableTokens={Array.from(new Set(tokenHistory.flatMap(entry => Object.keys(entry)).concat(Object.keys(tokenOverrides))))
+              .filter(path => tokenHistory.some(entry => entry[path] !== tokenOverrides[path]))}
+            onTokenUndo={undoTokenChange}
             onTokenFocus={setTokenFocus}
             onTokenEditStart={beginTokenEdit}
             onTokenPreview={previewTokenEdit}
             onTokenChange={finishTokenEdit}
             onTokenCancel={cancelTokenEdit}
-            onTokenReset={(path) => {
-              const next = { ...tokenOverrides };
-              const resetPaths = Object.keys(
-                deriveBrandTokenOverrides(result.semantic.light, path, getToken(result.semantic.light, path)),
-              );
-              for (const resetPath of resetPaths) delete next[resetPath];
-              commitTokenOverrides(next);
-            }}
-            onResetAll={() => commitTokenOverrides({})}
           />
         </aside>
       </div>
@@ -526,33 +534,15 @@ export function Workbench({
 
       <ProjectLibraryDialog
         open={projectLibraryOpen}
-        onOpenChange={setProjectLibraryOpen}
+        onOpenChange={(open) => { setProjectLibraryOpen(open); if (!open) setFreeingProjectSlot(false); }}
         currentProjectId={savedProjectId}
+        freeSlot={freeingProjectSlot}
+        onSlotFreed={() => {
+          setProjectLibraryOpen(false);
+          setFreeingProjectSlot(false);
+          setSaveDialogOpen(true);
+        }}
       />
-
-      <Dialog open={projectLimitOpen} onOpenChange={setProjectLimitOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{locale === "ko" ? "무료 저장 공간 5개를 모두 사용했어요" : "All 5 free saved-color slots are in use"}</DialogTitle>
-            <DialogDescription>
-              {locale === "ko"
-                ? "저장한 컬러를 하나 삭제하고 다시 저장하거나 Pro 플랜을 확인해 주세요."
-                : "Delete a saved color set and try again, or review the Pro plan."}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setProjectLimitOpen(false);
-              void openProjectLibrary();
-            }}>
-              {locale === "ko" ? "저장한 컬러 관리" : "Manage saved colors"}
-            </Button>
-            <Button onClick={() => router.push("/coming-soon")}>
-              {locale === "ko" ? "Pro 플랜 보기" : "View Pro plan"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Copy, Download, Library, RotateCcw, Save, Share2, Undo2 } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Copy, Download, Library, Save, Share2, Undo2 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/auth/auth-provider";
 import { FREE_PROJECT_LIMIT, subscribeProjects } from "@/lib/firebase/data";
@@ -17,10 +17,11 @@ import { useCopy } from "@/hooks/use-copy";
 import { preventProtectedCopy, preventProtectedCopyShortcut } from "@/lib/copy-protection";
 import { useMatchuStore } from "@/lib/store";
 import { trackProductEvent } from "@/lib/analytics";
-import { PrimaryApplePicker } from "./primary-apple-picker";
-import { AppleCommentBubble } from "./apple-comment-bubble";
-import { PalettePicker } from "@/components/flow/palette-picker";
+
+
+
 import { ColorPickerPopover } from "@/components/flow/color-picker-popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export function TokenPanel({
   result,
@@ -29,6 +30,7 @@ export function TokenPanel({
   saving,
   projectTitle,
   savedProject,
+  paletteControls,
   onOpenProjects,
   onSave,
   onShare,
@@ -36,12 +38,9 @@ export function TokenPanel({
   onTokenEditStart,
   onTokenPreview,
   onTokenCancel,
-  onTokenReset,
-  onResetAll,
-  canUndo,
-  onUndo,
+  undoableTokens,
+  onTokenUndo,
   onTokenFocus,
-  onNewPalette,
 }: {
   result: ColorSystemResult;
   input: GenerateInput;
@@ -49,6 +48,7 @@ export function TokenPanel({
   saving: boolean;
   projectTitle: string | null;
   savedProject: boolean;
+  paletteControls: ReactNode;
   onOpenProjects: () => void;
   onSave: () => void;
   onShare: () => void;
@@ -56,22 +56,20 @@ export function TokenPanel({
   onTokenEditStart: () => void;
   onTokenPreview: (path: string, value: string) => void;
   onTokenCancel: () => void;
-  onTokenReset: (path: string) => void;
-  onResetAll: () => void;
-  canUndo: boolean;
-  onUndo: () => void;
+  undoableTokens: string[];
+  onTokenUndo: (path: string) => void;
   onTokenFocus: (role: TokenFocusRole | null) => void;
-  onNewPalette: (hex: string) => void;
 }) {
   const copy = useCopy();
   const { user, profile, signIn } = useAuth();
   const locale = useMatchuStore((state) => state.locale);
-  const [panel, setPanel] = useState<"tokens" | "export">("tokens");
+  const [exportOpen, setExportOpen] = useState(false);
+
   const [projectCount, setProjectCount] = useState(0);
-  const [resetNonce, setResetNonce] = useState(0);
+
   const [format, setFormat] = useState<ExportFormat>("css");
   const tokens = result.semantic.light;
-  const theme = useMemo(() => applyOverrides(result, overrides).semantic.light, [overrides, result]);
+
   const file = useMemo(() => {
     return formatExport(format, applyOverrides(result, overrides), input);
   }, [format, result, overrides, input]);
@@ -142,63 +140,25 @@ export function TokenPanel({
   }
 
   return (
+    <Dialog open={exportOpen} onOpenChange={setExportOpen}>
     <aside
       className="token-panel-shell copy-protected"
       onCopyCapture={preventProtectedCopy}
       onKeyDownCapture={preventProtectedCopyShortcut}
     >
-      <header className="token-panel-header">
-        <div className="token-panel-tabs" data-panel={panel} role="tablist" aria-label={copy.tokens.title}>
-          <button type="button" role="tab" aria-selected={panel === "tokens"} onClick={() => setPanel("tokens")}>
-            {copy.result.tokens}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={panel === "export"}
-            onClick={() => {
-              setPanel("export");
-              void trackProductEvent("export_opened");
-            }}
-          >
-            {copy.result.export}
-          </button>
+      <header className="token-panel-header" data-project={savedProject || undefined}>
+        <div className="token-panel-title-row">
+          {savedProject ? <span className="token-panel-saved-badge"><Library aria-hidden />{locale === "ko" ? "프로젝트" : "Project"}</span> : null}
+          <h2 title={savedProject ? projectTitle ?? undefined : undefined}>{savedProject ? projectTitle || (locale === "ko" ? "저장된 프로젝트" : "Saved project") : copy.result.tokens}</h2>
+          <DialogTrigger className="token-panel-export-btn" onClick={() => { void trackProductEvent("export_opened"); }}>
+            <Download aria-hidden />{copy.result.export}
+          </DialogTrigger>
         </div>
-        <div className="token-panel-project-heading">
-          <p className="ui-label text-[var(--text-tertiary)]">{projectTitle ?? copy.tokens.title}</p>
-          {savedProject ? (
-            <span className="token-panel-saved-badge">
-              {locale === "ko" ? "저장된 컬러" : "Saved color"}
-            </span>
-          ) : null}
-        </div>
-        {panel === "tokens" ? (
-          <div className="token-history-actions token-panel-toolbar">
-            <button type="button" disabled={!canUndo} onClick={() => { setResetNonce((value) => value + 1); onUndo(); }}>
-              <Undo2 aria-hidden />{copy.tokens.undo}
-            </button>
-            <button type="button" disabled={Object.keys(overrides).length === 0} onClick={() => { setResetNonce((value) => value + 1); onResetAll(); }}>
-              <RotateCcw aria-hidden />{copy.tokens.resetAll}
-            </button>
-          </div>
-        ) : null}
       </header>
 
       <div className="token-panel-body token-card-viewport">
-        <div className="token-card-track" data-panel={panel}>
-        <div className="token-card-page" aria-hidden={panel !== "tokens"} inert={panel !== "tokens"}>
-          <div className="token-palette-setup">
-            <div className="token-apple-row">
-              <PrimaryApplePicker hex={overrides["primary.default"] ?? tokens.primary.default} locale={locale} onGenerate={onNewPalette} />
-              <AppleCommentBubble
-                theme={theme}
-                resetNonce={resetNonce}
-                locale={locale}
-                prompt={locale === "ko" ? "저를 클릭해서 새로운 Primary 컬러를 선택하세요!" : "Click me to choose a new Primary color!"}
-              />
-            </div>
-            <PalettePicker hex={input.hex} variant="panel" />
-          </div>
+        <div className="token-card-page">
+          {paletteControls}
           <div className="token-panel-list">
             {Object.entries(grouped).map(([group, items]) => (
               <div key={group} className="mb-4">
@@ -218,12 +178,13 @@ export function TokenPanel({
                         role={guide?.role}
                         uses={guide?.uses}
                         usesLabel={copy.tokens.usesLabel}
-                        edited={Boolean(overrides[token.path])}
+                        canUndo={undoableTokens.includes(token.path)}
+                        undoLabel={copy.tokens.undo}
                         onChange={onTokenChange}
                         onEditStart={onTokenEditStart}
                         onPreview={onTokenPreview}
                         onCancel={onTokenCancel}
-                        onReset={onTokenReset}
+                        onUndo={onTokenUndo}
                         onFocusToken={onTokenFocus}
                       />
                     );
@@ -233,7 +194,15 @@ export function TokenPanel({
             ))}
           </div>
         </div>
-        <div className="token-card-page" aria-hidden={panel !== "export"} inert={panel !== "export"}>
+      </div>
+
+      <DialogContent
+        className="token-export-dialog copy-protected"
+        style={{ "--token-accent": overrides["primary.default"] ?? tokens.primary.default, "--token-accent-on": overrides["primary.onPrimary"] ?? tokens.primary.onPrimary } as CSSProperties}
+        onCopyCapture={preventProtectedCopy}
+        onKeyDownCapture={preventProtectedCopyShortcut}
+      >
+        <DialogHeader><DialogTitle>{copy.export.title}</DialogTitle></DialogHeader>
         <div className="token-export-panel">
           <div className="token-export-formats" role="radiogroup" aria-label={copy.export.title}>
             {([[
@@ -251,9 +220,7 @@ export function TokenPanel({
             <button type="button" onClick={copyFile}><Copy aria-hidden />{copy.export.copy}</button>
           </div>
         </div>
-        </div>
-        </div>
-      </div>
+      </DialogContent>
 
       <footer className="token-panel-footer">
         <div className="token-panel-project-actions">
@@ -290,6 +257,7 @@ export function TokenPanel({
         </div>
       </footer>
     </aside>
+    </Dialog>
   );
 }
 
@@ -301,13 +269,14 @@ function TokenRow({
   role,
   uses,
   usesLabel,
-  edited,
+  canUndo,
+  undoLabel,
   neutralAlias,
   onChange,
   onEditStart,
   onPreview,
   onCancel,
-  onReset,
+  onUndo,
   onFocusToken,
 }: {
   path: string;
@@ -317,16 +286,19 @@ function TokenRow({
   role?: string;
   uses?: string;
   usesLabel: string;
-  edited: boolean;
+  canUndo: boolean;
+  undoLabel: string;
   neutralAlias?: string | null;
   onChange: (path: string, value: string) => void;
   onEditStart: () => void;
   onPreview: (path: string, value: string) => void;
   onCancel: () => void;
-  onReset: (path: string) => void;
+  onUndo: (path: string) => void;
   onFocusToken: (role: TokenFocusRole | null) => void;
 }) {
   const rowRef = useRef<HTMLDivElement>(null);
+  const helpRef = useRef<HTMLButtonElement>(null);
+  const tooltipId = useId();
   const swatchRef = useRef<HTMLButtonElement>(null);
   const originRef = useRef(hex);
   const [open, setOpen] = useState(false);
@@ -336,13 +308,16 @@ function TokenRow({
   const showTip = () => {
     const rect = rowRef.current?.getBoundingClientRect();
     if (!rect || !role) return;
+    const width = Math.min(280, window.innerWidth - 24);
+    const fitsLeft = rect.left >= width + 24;
     setTipStyle({
-      width: 280,
-      right: window.innerWidth - rect.left + 12,
-      top: Math.min(Math.max(12, rect.top - 18), window.innerHeight - 180),
+      width,
+      ...(fitsLeft ? { right: window.innerWidth - rect.left + 12 }
+        : { left: Math.max(12, Math.min(rect.right - width, window.innerWidth - width - 12)) }),
+      top: Math.max(12, Math.min(fitsLeft ? rect.top - 18 : rect.bottom + 8, window.innerHeight - 180)),
     });
   };
-  const keyboardTip = () => rowRef.current?.matches(":focus-visible") ?? false;
+  const keyboardTip = () => helpRef.current?.matches(":focus-visible") ?? false;
 
   useEffect(() => {
     const row = rowRef.current;
@@ -353,35 +328,31 @@ function TokenRow({
       onFocusToken(null);
     }, { threshold: 0.5 });
     observer.observe(row);
-    return () => observer.disconnect();
+    const dismiss = () => { setTipStyle(null); };
+    window.addEventListener("scroll", dismiss, true);
+    window.addEventListener("resize", dismiss);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", dismiss, true);
+      window.removeEventListener("resize", dismiss);
+    };
   }, [onFocusToken, tipStyle]);
 
   return (
     <div
       ref={rowRef}
       className="token-row"
-      tabIndex={role ? 0 : undefined}
-      onPointerEnter={() => { showTip(); onFocusToken(tokenFocusFromPath(path)); }}
+      onPointerEnter={() => { onFocusToken(tokenFocusFromPath(path)); }}
       onPointerLeave={() => {
         if (keyboardTip()) return;
         hideTip();
         onFocusToken(null);
-      }}
-      onFocus={(event) => {
-        if (!event.currentTarget.matches(":focus-visible")) return;
-        showTip();
-        onFocusToken(tokenFocusFromPath(path));
-      }}
-      onBlur={(event) => {
-        hideTip();
-        if (!event.currentTarget.contains(event.relatedTarget)) onFocusToken(null);
       }}
     >
       <button
         ref={swatchRef}
         type="button"
         className="token-color-picker"
-        title={label}
         aria-label={`${label} ${hex}`}
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -422,10 +393,24 @@ function TokenRow({
           {hex.toUpperCase()}{neutralAlias ? <span className="token-neutral-alias"> ({neutralAlias})</span> : null}
         </p>
       </div>
-      {edited ? <button type="button" className="token-reset" aria-label="Reset color" onClick={() => onReset(path)}><RotateCcw aria-hidden /></button> : null}
+      {canUndo ? <button type="button" className="token-reset" title={undoLabel} aria-label={`${label} ${undoLabel}`} onClick={() => onUndo(path)}><Undo2 aria-hidden /></button> : null}
+      {role ? (
+        <button
+          ref={helpRef}
+          type="button"
+          className="token-help"
+          aria-label={`${label} ${usesLabel}`}
+          aria-describedby={tipStyle ? tooltipId : undefined}
+          onPointerEnter={showTip}
+          onPointerLeave={() => { if (!keyboardTip()) hideTip(); }}
+          onFocus={() => { showTip(); onFocusToken(tokenFocusFromPath(path)); }}
+          onBlur={() => { hideTip(); onFocusToken(null); }}
+          onKeyDown={(event) => { if (event.key === "Escape") hideTip(); }}
+        >?</button>
+      ) : null}
       {role && tipStyle
         ? createPortal(
-            <div className="token-tip token-tip-left" role="tooltip" style={tipStyle}>
+            <div id={tooltipId} className="token-tip token-tip-left" role="tooltip" style={tipStyle}>
               <p className="token-tip-kicker">{group}</p>
               <p className="token-tip-name">{label}</p>
               <p className="token-tip-role">{role}</p>

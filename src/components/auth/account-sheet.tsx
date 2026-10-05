@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Crown, LogIn, LogOut, UserRoundCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/auth-provider";
@@ -16,12 +16,17 @@ import {
 import { uiToast } from "@/components/ui/toast";
 import { useMatchuStore } from "@/lib/store";
 import { trackProductEvent } from "@/lib/analytics";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export function AccountButton() {
   const router = useRouter();
   const locale = useMatchuStore((state) => state.locale);
   const { user, profile, loading, signIn, signOut } = useAuth();
   const [open, setOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const accountButtonRef = useRef<HTMLButtonElement>(null);
 
   const isKo = locale === "ko";
   const isPro = profile?.plan === "pro";
@@ -36,10 +41,25 @@ export function AccountButton() {
     }
   }
 
+  async function confirmLogout() {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await signOut();
+      setLogoutOpen(false);
+      uiToast.success(isKo ? "로그아웃했어요." : "Signed out.", locale);
+    } catch {
+      uiToast.error(isKo ? "로그아웃하지 못했습니다. 다시 시도해 주세요." : "Could not sign out. Please try again.", locale);
+    } finally {
+      setSigningOut(false);
+    }
+  }
+
   return (
     <>
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger
+          ref={accountButtonRef}
           className="studio-gnb-action"
           aria-label={user ? (isKo ? "계정 메뉴" : "Account menu") : (isKo ? "로그인" : "Sign in")}
         >
@@ -84,13 +104,29 @@ export function AccountButton() {
                 </DropdownMenuItem>
               ) : null}
               <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" className="py-2" onClick={() => { setOpen(false); void signOut(); }}>
+              <DropdownMenuItem variant="destructive" className="py-2" onClick={() => { setOpen(false); setLogoutOpen(true); }}>
                 <LogOut aria-hidden />{isKo ? "로그아웃" : "Sign out"}
               </DropdownMenuItem>
             </>
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+      <Dialog open={logoutOpen} onOpenChange={(next) => { if (!signingOut) setLogoutOpen(next); }}>
+        <DialogContent finalFocus={accountButtonRef} showCloseButton={!signingOut}>
+          <DialogHeader>
+            <DialogTitle>{isKo ? "로그아웃할까요?" : "Sign out?"}</DialogTitle>
+            <DialogDescription>{isKo ? "다시 로그인하면 저장한 컬러북을 볼 수 있어요." : "Sign in again to access your saved colorbooks."}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" disabled={signingOut} onClick={() => setLogoutOpen(false)} autoFocus>
+              {isKo ? "취소" : "Cancel"}
+            </Button>
+            <Button variant="destructive" disabled={signingOut} onClick={() => { void confirmLogout(); }}>
+              <LogOut aria-hidden />{signingOut ? (isKo ? "로그아웃 중…" : "Signing out…") : (isKo ? "로그아웃" : "Sign out")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

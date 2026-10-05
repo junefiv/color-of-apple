@@ -1,4 +1,5 @@
 import type { Copy } from "./ko";
+import { extendedTokenDetails } from "./extended-token-details";
 
 export const en: Copy = {
   meta: {
@@ -611,6 +612,7 @@ export const en: Copy = {
       all: "All semantic",
     },
     labels: {
+      ...extendedTokenDetails("en").labels,
       primary: "Primary",
       secondary: "Secondary",
       accent: "Accent",
@@ -657,6 +659,7 @@ export const en: Copy = {
       disabledBorder: "Disabled Border",
     },
     guides: {
+      ...extendedTokenDetails("en").guides,
       primary: {
         role: "The brand identity color. Use it for the most important actions and selections.",
         uses: "Primary CTA buttons, active tabs, key icons, checked states",

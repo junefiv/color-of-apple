@@ -1,3 +1,5 @@
+import { extendedTokenDetails } from "./extended-token-details";
+
 export const ko = {
   meta: {
     title: "Color of Apple — 색 하나로 완성하는 UI 컬러 시스템",
@@ -609,6 +611,7 @@ export const ko = {
       all: "All semantic",
     },
     labels: {
+      ...extendedTokenDetails("ko").labels,
       primary: "Primary",
       secondary: "Secondary",
       accent: "Accent",
@@ -655,6 +658,7 @@ export const ko = {
       disabledBorder: "Disabled Border",
     },
     guides: {
+      ...extendedTokenDetails("ko").guides,
       primary: {
         role: "서비스의 정체성을 나타내는 대표 색상. 가장 중요한 행동과 선택을 강조합니다.",
         uses: "주요 CTA 버튼, 활성 탭, 핵심 아이콘, 체크 상태",

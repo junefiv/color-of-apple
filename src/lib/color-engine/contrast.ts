@@ -1,5 +1,6 @@
 import { AAA_TEXT_MIN, CONTRAST_PAIRS } from "./constants";
 import { contrastRatio, setChroma, shiftLightness } from "./color-utils";
+import { getOnColor } from "@/lib/palette/on-color";
 import type {
   AccessibilityReport,
   AccessibilityTarget,
@@ -95,6 +96,9 @@ export function fixContrastFailures(
     if (pair.passed) continue;
     const fg = getToken(next, pair.foreground);
     const bg = getToken(next, pair.background);
+    // Preserve deliberately selected white brand ink, while reporting AA failure.
+    if (target !== "AAA" && ["primary.onPrimary", "secondary.onSecondary", "accent.onAccent"].includes(pair.foreground)
+      && fg === "#ffffff" && getOnColor(bg) === fg) continue;
     const adjusted = adjustUntilPass(fg, bg, pair.minimum, true);
     let result = adjusted;
     if (contrastRatio(result.foreground, result.background) < pair.minimum) {

@@ -3,6 +3,32 @@ import { contrastRatio, parseToOklch } from "@/lib/color-engine/color-utils";
 import { extractOnColor, generatePaletteTokens, getAdaptiveThreshold } from "@/lib/palette";
 
 describe("extractOnColor", () => {
+  it.each(["#ff015c", "#ff0000", "#ff0060", "#ff00aa"])(
+    "keeps white ink on vivid reds and pinks (%s)",
+    (background) => {
+      expect(extractOnColor(background).hex).toBe("#ffffff");
+      const tokens = generatePaletteTokens(background, "balance");
+      expect(tokens.core.primary).toBe(background);
+      expect(tokens.core.onPrimary).toBe("#ffffff");
+    },
+  );
+  it.each(["#cc0000", "#0000ff", "#8000ff", "#b000bb"])(
+    "prefers readable light ink on saturated picker colors (%s)",
+    (background) => {
+      const result = extractOnColor(background);
+      expect(result.mode).toBe("light");
+      expect(contrastRatio(result.hex, background)).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it.each(["#ffff00", "#00ff00", "#00ffff", "#ffaaaa"])(
+    "uses dark ink when white cannot be read (%s)",
+    (background) => {
+      const result = extractOnColor(background);
+      expect(result.mode).toBe("dark");
+      expect(contrastRatio(result.hex, background)).toBeGreaterThanOrEqual(4.5);
+    },
+  );
   it("uses hue-adaptive thresholds", () => {
     expect(getAdaptiveThreshold(105)).toBe(0.52);
     expect(getAdaptiveThreshold(255)).toBe(0.68);
@@ -17,18 +43,16 @@ describe("extractOnColor", () => {
     expect(result.oklch.c).toBe(0);
   });
 
-  it("corrects magenta ink for readable contrast while retaining its hue", () => {
+  it("keeps white ink on vivid magenta", () => {
     const result = extractOnColor("#d43cc1");
-    expect(contrastRatio(result.hex, "#d43cc1")).toBeGreaterThanOrEqual(4.5);
-    expect(result.oklch.c).toBeCloseTo(0.015, 5);
-    expect(result.oklch.h).toBeCloseTo(parseToOklch("#d43cc1").h, 0);
+    expect(result.hex).toBe("#ffffff");
+    expect(contrastRatio(result.hex, "#d43cc1")).toBeGreaterThanOrEqual(3);
   });
 
-  it("corrects cobalt ink for readable contrast while retaining its hue", () => {
+  it("keeps white ink on vivid cobalt", () => {
     const result = extractOnColor("#3c8aff");
-    expect(contrastRatio(result.hex, "#3c8aff")).toBeGreaterThanOrEqual(4.5);
-    expect(result.oklch.c).toBeCloseTo(0.015, 5);
-    expect(result.oklch.h).toBeCloseTo(parseToOklch("#3c8aff").h, 0);
+    expect(result.hex).toBe("#ffffff");
+    expect(contrastRatio(result.hex, "#3c8aff")).toBeGreaterThanOrEqual(3);
   });
 
   it("puts tinted dark ink on vivid yellow", () => {

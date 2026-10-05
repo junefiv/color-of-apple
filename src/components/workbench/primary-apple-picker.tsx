@@ -6,7 +6,7 @@ import { ColorPickerPopover } from "@/components/flow/color-picker-popover";
 import { useAppleHop } from "@/hooks/use-apple-hop";
 import { useMatchuStore } from "@/lib/store";
 
-export function PrimaryApplePicker({ hex, locale, onGenerate }: { hex: string; locale: "ko" | "en"; onGenerate: (hex: string) => void }) {
+export function PrimaryApplePicker({ hex, locale, savedProject = false, onGenerate }: { hex: string; locale: "ko" | "en"; savedProject?: boolean; onGenerate: (hex: string) => void }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(hex);
   const anchorRef = useRef<HTMLButtonElement>(null);
@@ -30,17 +30,21 @@ export function PrimaryApplePicker({ hex, locale, onGenerate }: { hex: string; l
         type="button"
         className="studio-apple token-primary-apple"
         data-hop={hopping ? "true" : "false"}
-        aria-label={locale === "ko" ? "새 Primary 컬러 선택" : "Choose a new Primary color"}
-        aria-haspopup="dialog"
-        aria-expanded={open}
+        aria-label={savedProject ? (locale === "ko" ? "이 Primary로 새 팔레트 만들기" : "Create a new palette from this Primary") : (locale === "ko" ? "새 Primary 컬러 선택" : "Choose a new Primary color")}
+        aria-haspopup={savedProject ? undefined : "dialog"}
+        aria-expanded={savedProject ? undefined : open}
         onClick={() => {
+          if (savedProject) {
+            onGenerate(hex);
+            return;
+          }
           setDraft(hex);
           setOpen((value) => !value);
         }}
       >
         <LogoApple hex={open ? draft : hex} />
       </button>
-      {open ? (
+      {open && !savedProject ? (
         <ColorPickerPopover
           anchorRef={anchorRef}
           color={draft}

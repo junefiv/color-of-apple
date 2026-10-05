@@ -29,6 +29,16 @@ vi.mock("react-colorful", () => ({
 let root: Root;
 let container: HTMLDivElement;
 
+it("generates a fresh palette directly from a project's current Primary", async () => {
+  const onGenerate = vi.fn();
+  await act(() => root.render(createElement(PrimaryApplePicker, { hex: "#ff015c", locale: "ko", savedProject: true, onGenerate })));
+  const apple = container.querySelector<HTMLButtonElement>('[aria-label="이 Primary로 새 팔레트 만들기"]')!;
+  expect(apple.hasAttribute("aria-haspopup")).toBe(false);
+  await act(() => apple.click());
+  expect(onGenerate).toHaveBeenCalledWith("#ff015c");
+  expect(container.querySelector('[data-testid="pick-blue"]')).toBeNull();
+});
+
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   useMatchuStore.setState(useMatchuStore.getInitialState(), true);

@@ -17,7 +17,7 @@ import {
 import { uiToast } from "@/components/ui/toast";
 import { trackProductEvent } from "@/lib/analytics";
 import { generateColorSystem } from "@/lib/color-engine";
-import { deleteProject, subscribeProjects, type SavedProject } from "@/lib/firebase/data";
+import { FREE_PROJECT_LIMIT, deleteProject, subscribeProjects, type SavedProject } from "@/lib/firebase/data";
 import { encodeShare } from "@/lib/share/encode";
 import { useMatchuStore } from "@/lib/store";
 
@@ -25,10 +25,14 @@ export function ProjectLibraryDialog({
   open,
   onOpenChange,
   currentProjectId,
+  freeSlot = false,
+  onSlotFreed,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentProjectId: string | null;
+  freeSlot?: boolean;
+  onSlotFreed?: () => void;
 }) {
   const router = useRouter();
   const { user } = useAuth();
@@ -38,6 +42,7 @@ export function ProjectLibraryDialog({
   const [loading, setLoading] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<SavedProject | null>(null);
   const [historyProject, setHistoryProject] = useState<SavedProject | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!open || !user) {
@@ -47,10 +52,18 @@ export function ProjectLibraryDialog({
     }
     setLoading(true);
     return subscribeProjects(user.uid, (next) => {
-      setProjects(next);
+      const slotIds = new Set(Array.from({ length: FREE_PROJECT_LIMIT }, (_, i) => `slot-${i + 1}`));
+      setProjects(freeSlot ? next.filter(project => slotIds.has(project.id)) : next);
       setLoading(false);
     });
-  }, [open, user]);
+  }, [freeSlot, open, user]);
+
+  useEffect(() => {
+    if (!open) {
+      setProjectToDelete(null);
+      setHistoryProject(null);
+    }
+  }, [open]);
 
   const projectColors = useMemo(() => Object.fromEntries(
     projects.map((project) => [project.id, projectColorSummary(project)]),
@@ -70,28 +83,37 @@ export function ProjectLibraryDialog({
   }
 
   async function removeProject(project: SavedProject) {
-    if (!user) return;
+    if (!user || deleting) return;
+    setDeleting(true);
     try {
       await deleteProject(user.uid, project.id);
       setProjectToDelete(null);
       uiToast.success(isKo ? "저장한 컬러를 삭제했어요." : "Saved colors deleted.", locale);
+      if (freeSlot) {
+        onSlotFreed?.();
+        return;
+      }
       if (project.id === currentProjectId) router.replace("/result");
     } catch {
       uiToast.error(isKo ? "저장한 컬러를 삭제하지 못했습니다." : "Could not delete the saved colors.", locale);
+    } finally {
+      setDeleting(false);
     }
   }
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={(next) => { if (!deleting) onOpenChange(next); }}>
         <DialogContent className="max-h-[88dvh] overflow-hidden sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Library className="size-4" aria-hidden />
-              {isKo ? "저장한 컬러" : "Saved colors"}
+              {freeSlot ? (isKo ? "새 컬러북을 저장할 공간이 필요해요" : "Make room for a new colorbook") : (isKo ? "저장한 컬러" : "Saved colors")}
             </DialogTitle>
             <DialogDescription>
-              {isKo ? "저장한 컬러를 선택해 현재 작업 화면에서 엽니다." : "Choose saved colors to open in the current workspace."}
+              {freeSlot
+                ? (isKo ? "폴더 한도를 모두 사용했어요. 삭제할 컬러북을 선택하면 새 컬러북 이름을 설정하고 저장할 수 있어요." : "Your folder is full. Choose a colorbook to delete, then name and save your new colorbook.")
+                : (isKo ? "저장한 컬러를 선택해 현재 작업 화면에서 엽니다." : "Choose saved colors to open in the current workspace.")}
             </DialogDescription>
           </DialogHeader>
 
@@ -114,7 +136,7 @@ export function ProjectLibraryDialog({
                   return (
                     <article key={project.id} className={`rounded-xl border p-3 ${isCurrent ? "border-[var(--color-primary-default)] bg-[var(--color-primary-selected)]" : "border-border"}`}>
                       <div className="flex items-start justify-between gap-2">
-                        <button type="button" className="min-w-0 flex-1 text-left" onClick={() => isCurrent ? onOpenChange(false) : openProject(project)}>
+                        <button type="button" className="min-w-0 flex-1 text-left" onClick={() => freeSlot ? setProjectToDelete(project) : isCurrent ? onOpenChange(false) : openProject(project)}>
                           <span className="flex items-center gap-2">
                             <strong className="truncate text-sm">{project.title}</strong>
                             {isCurrent ? <span className="shrink-0 rounded-full bg-background px-2 py-0.5 text-[9px] font-semibold">{isKo ? "현재 컬러" : "Current"}</span> : null}
@@ -137,8 +159,8 @@ export function ProjectLibraryDialog({
                         <Button size="sm" variant="outline" className="flex-1" disabled={project.colorHistory.length === 0} onClick={() => setHistoryProject(project)}>
                           {isKo ? `변경 이력${project.colorHistory.length ? ` ${project.colorHistory.length}` : ""}` : `History${project.colorHistory.length ? ` ${project.colorHistory.length}` : ""}`}
                         </Button>
-                        <Button size="sm" className="flex-1" disabled={isCurrent} onClick={() => openProject(project)}>
-                          <Library aria-hidden />{isCurrent ? (isKo ? "열려 있음" : "Open") : (isKo ? "열기" : "Open")}
+                        <Button size="sm" variant={freeSlot ? "destructive" : "default"} className="flex-1" disabled={!freeSlot && isCurrent} onClick={() => freeSlot ? setProjectToDelete(project) : openProject(project)}>
+                          {freeSlot ? <Trash2 aria-hidden /> : <Library aria-hidden />}{freeSlot ? (isKo ? "이 컬러북 선택" : "Select this colorbook") : isCurrent ? (isKo ? "열려 있음" : "Open") : (isKo ? "열기" : "Open")}
                         </Button>
                       </div>
                     </article>
@@ -173,8 +195,8 @@ export function ProjectLibraryDialog({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(projectToDelete)} onOpenChange={(next) => { if (!next) setProjectToDelete(null); }}>
-        <DialogContent>
+      <Dialog open={Boolean(projectToDelete)} onOpenChange={(next) => { if (!next && !deleting) setProjectToDelete(null); }}>
+        <DialogContent showCloseButton={!deleting}>
           <DialogHeader>
             <DialogTitle>{isKo ? "저장한 컬러를 삭제할까요?" : "Delete these saved colors?"}</DialogTitle>
             <DialogDescription>{isKo
@@ -182,9 +204,9 @@ export function ProjectLibraryDialog({
               : `“${projectToDelete?.title ?? ""}” and its color history will be permanently deleted.`}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <DialogClose render={<Button variant="outline" autoFocus />}>{isKo ? "취소" : "Cancel"}</DialogClose>
-            <Button variant="destructive" onClick={() => projectToDelete && removeProject(projectToDelete)}>
-              <Trash2 aria-hidden />{isKo ? "영구 삭제" : "Delete permanently"}
+            <DialogClose render={<Button variant="outline" autoFocus disabled={deleting} />}>{isKo ? "취소" : "Cancel"}</DialogClose>
+            <Button variant="destructive" disabled={deleting} onClick={() => projectToDelete && removeProject(projectToDelete)}>
+              <Trash2 aria-hidden />{deleting ? (isKo ? "삭제 중…" : "Deleting…") : freeSlot ? (isKo ? "삭제 후 새 컬러북 저장" : "Delete and save new colorbook") : (isKo ? "영구 삭제" : "Delete permanently")}
             </Button>
           </DialogFooter>
         </DialogContent>

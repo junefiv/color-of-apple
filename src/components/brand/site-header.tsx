@@ -9,17 +9,19 @@ export function SiteHeader({
   endAction,
   remakeWordmark = false,
   onRemake,
+  compact = false,
 }: {
   children?: React.ReactNode;
   endAction?: React.ReactNode;
   remakeWordmark?: boolean;
   onRemake?: () => void;
+  compact?: boolean;
 }) {
   return (
     <header
       className={
-        children
-          ? "studio-gnb flex shrink-0 items-center gap-2 overflow-visible border-b border-[var(--border-default)] px-3 py-2 md:px-4"
+        children || compact
+          ? "studio-gnb flex shrink-0 items-center justify-between gap-2 overflow-visible border-b border-[var(--border-default)] px-3 py-2 md:px-4"
           : "flex items-center justify-between gap-4 px-5 py-4 md:px-8"
       }
     >

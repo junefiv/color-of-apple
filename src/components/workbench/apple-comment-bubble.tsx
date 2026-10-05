@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type AnimationEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type AnimationEvent, type CSSProperties } from "react";
 import { appleCommentLines, colorsFromTheme } from "@/lib/color-commentary";
-import type { SemanticTokens } from "@/lib/color-engine";
+import { contrastRatio, resolveSurfaceInk, type SemanticTokens } from "@/lib/color-engine";
+import { ensureReadable } from "@/lib/palette/adaptive";
 import { prefersReducedMotion } from "@/lib/match-reveal";
 
 const HOLD_MS = 4200;
@@ -12,14 +13,43 @@ export function AppleCommentBubble({
   resetNonce,
   locale,
   prompt,
+  intermittent = false,
 }: {
   theme: SemanticTokens;
   resetNonce: number;
   locale: "ko" | "en";
   prompt: string;
+  intermittent?: boolean;
 }) {
   const comment = useSettledComment(theme, resetNonce, locale);
-  return <FlipBubble prompt={prompt} comment={comment} />;
+  const [visible, setVisible] = useState(!intermittent);
+  useEffect(() => {
+    if (!intermittent) { setVisible(true); return; }
+    let timer: number;
+    const show = () => {
+      setVisible(true);
+      timer = window.setTimeout(() => {
+        setVisible(false);
+        timer = window.setTimeout(show, 20000);
+      }, 5000);
+    };
+    if (comment) show();
+    else { setVisible(false); timer = window.setTimeout(show, 1800); }
+    return () => window.clearTimeout(timer);
+  }, [comment, intermittent, prompt]);
+  const style = useMemo(() => {
+    const surface = theme.surface.default;
+    const brandColors = [theme.accent.default, theme.primary.default, theme.secondary.default];
+    const strongest = brandColors.reduce((best, color) => contrastRatio(color, surface) > contrastRatio(best, surface) ? color : best);
+    const fill = ensureReadable(strongest, [surface], 3);
+    const bubble = resolveSurfaceInk(fill, 4.5);
+    return {
+      "--apple-bubble-fill": bubble.background,
+      "--apple-bubble-ink": bubble.on,
+      "--apple-bubble-accent": theme.accent.default,
+    } as CSSProperties;
+  }, [theme]);
+  return <FlipBubble prompt={prompt} comment={comment} style={style} visible={visible} />;
 }
 
 function useSettledComment(theme: SemanticTokens, resetNonce: number, locale: "ko" | "en") {
@@ -60,7 +90,7 @@ function useSettledComment(theme: SemanticTokens, resetNonce: number, locale: "k
   return comment;
 }
 
-function FlipBubble({ prompt, comment }: { prompt: string; comment: { id: number; text: string } | null }) {
+function FlipBubble({ prompt, comment, style, visible }: { prompt: string; comment: { id: number; text: string } | null; style: CSSProperties; visible: boolean }) {
   const [text, setText] = useState(prompt);
   const [flip, setFlip] = useState("idle");
   const messageRef = useRef<HTMLParagraphElement>(null);
@@ -82,8 +112,8 @@ function FlipBubble({ prompt, comment }: { prompt: string; comment: { id: number
     if (!box || !label) return;
 
     const fit = () => {
-      const max = 12;
-      const min = 7;
+      const max = 13;
+      const min = text === prompt ? 11 : 7;
       const style = getComputedStyle(box);
       const available = box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
       let size = max;
@@ -98,7 +128,7 @@ function FlipBubble({ prompt, comment }: { prompt: string; comment: { id: number
     const observer = new ResizeObserver(fit);
     observer.observe(box);
     return () => observer.disconnect();
-  }, [text]);
+  }, [prompt, text]);
 
   useEffect(() => {
     if (!comment) return;
@@ -153,7 +183,7 @@ function FlipBubble({ prompt, comment }: { prompt: string; comment: { id: number
   }
 
   return (
-    <div className="token-apple-message-stage">
+    <div className="token-apple-message-stage" aria-hidden={!visible} style={{ ...style, visibility: visible ? "visible" : "hidden", opacity: visible ? 1 : 0 }}>
       <p
         ref={messageRef}
         className="token-apple-message"

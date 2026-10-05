@@ -286,7 +286,7 @@ export function ensureReadable(seed: string, against: string[], minimum = 4.5) {
   }
   return options.sort((a, b) => a.delta - b.delta)[0]?.hex ?? (["#000000", "#ffffff"].find(passes) || seed);
 }
-export function onColor(hex: string) { return ensureReadable(getOnColor(hex), [hex]); }
+export function onColor(hex: string) { return getOnColor(hex); }
 export function actionTokens(base: string, character: BrandCharacter, neutral: ColorScale<NeutralStep>, surfaces: string[], mode: ThemeMode): ActionTokens {
   const c = parseToOklch(base), direction = c.l < 0.35 ? 1 : -1;
   const hover = toHex(fitCandidate(colorAt(c.l + direction * lerp(0.025, 0.06, character.contrast), c.c * 1.02, c.h)));
