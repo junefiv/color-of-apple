@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { Palette } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/auth-provider";
+import { PlanUpgradeDialog } from "@/components/billing/plan-upgrade-dialog";
 import { SiteHeader } from "@/components/brand/site-header";
 import { ChromeChip } from "@/components/chrome/chrome-chip";
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,7 @@ export function Workbench({
   const [savedSignature, setSavedSignature] = useState<string | null>(null);
   const [checkingSave, setCheckingSave] = useState(false);
   const [freeingProjectSlot, setFreeingProjectSlot] = useState(false);
+  const [upgradeDialog, setUpgradeDialog] = useState<"limit" | "plan" | null>(null);
   const [projectLibraryOpen, setProjectLibraryOpen] = useState(false);
   const [mobilePreviewOnly, setMobilePreviewOnly] = useState(false);
   const [tokenPanelOpen, setTokenPanelOpen] = useState(false);
@@ -284,8 +286,7 @@ export function Workbench({
     } catch (error) {
       if (isPlanRequiredError(error)) {
         setSaveDialogOpen(false);
-        setFreeingProjectSlot(true);
-        setProjectLibraryOpen(true);
+        setUpgradeDialog("limit");
         void trackProductEvent("limit_reached", { kind: "project" });
         return false;
       }
@@ -332,8 +333,7 @@ export function Workbench({
       if (!user) void trackProductEvent("user_login", { source: "project_save" });
       setProjectNameDraft(projectTitle);
       if (!savedProjectId && !await hasAvailableProjectSlot(currentUser.uid)) {
-        setFreeingProjectSlot(true);
-        setProjectLibraryOpen(true);
+        setUpgradeDialog("limit");
         void trackProductEvent("limit_reached", { kind: "project" });
         return;
       }
@@ -356,44 +356,46 @@ export function Workbench({
       >
         <div className="workbench-preview min-h-0 min-w-0" data-token-focus={tokenFocus ?? undefined}>
           <div className="workbench-preview-toolbar">
-            {!savedProjectId ? <PalettePicker hex={input.hex} variant="panel" /> : null}
-            <div
-              className="studio-nav"
-              role="radiogroup"
-              aria-label={copy.result.platforms}
-              data-view={view}
-              data-mobile-preview={mobilePreviewOnly || undefined}
-              style={{
-                "--studio-switch-fill": effectivePrimary,
-                "--studio-switch-on": chooseOnColor(effectivePrimary),
-              } as CSSProperties}
-            >
-              {!mobilePreviewOnly ? (
+            <div className="workbench-preview-toolbar-end">
+              <div
+                className="studio-nav"
+                role="radiogroup"
+                aria-label={copy.result.platforms}
+                data-view={view}
+                data-mobile-preview={mobilePreviewOnly || undefined}
+                style={{
+                  "--studio-switch-fill": effectivePrimary,
+                  "--studio-switch-on": chooseOnColor(effectivePrimary),
+                } as CSSProperties}
+              >
+                {!mobilePreviewOnly ? (
+                  <ChromeChip
+                    active={view === "web"}
+                    matched={hasMatched}
+                    onClick={() => {
+                      setPlatform("web");
+                      setPreviewTab("overview");
+                    }}
+                    label={copy.result.web}
+                  />
+                ) : null}
                 <ChromeChip
-                  active={view === "web"}
+                  active={view === "app"}
                   matched={hasMatched}
                   onClick={() => {
-                    setPlatform("web");
+                    setPlatform("app");
                     setPreviewTab("overview");
                   }}
-                  label={copy.result.web}
+                  label={copy.result.app}
                 />
-              ) : null}
-              <ChromeChip
-                active={view === "app"}
-                matched={hasMatched}
-                onClick={() => {
-                  setPlatform("app");
-                  setPreviewTab("overview");
-                }}
-                label={copy.result.app}
-              />
-              <ChromeChip
-                active={view === "components"}
-                matched={hasMatched}
-                onClick={() => setPreviewTab("components")}
-                label={copy.preview.components}
-              />
+                <ChromeChip
+                  active={view === "components"}
+                  matched={hasMatched}
+                  onClick={() => setPreviewTab("components")}
+                  label={copy.preview.components}
+                />
+              </div>
+              {!savedProjectId ? <PalettePicker hex={input.hex} variant="panel" /> : null}
             </div>
           </div>
           <ThemeScope result={result} extraVars={overrideVars} className="flex min-h-0 flex-1 flex-col bg-transparent p-2">
@@ -462,6 +464,7 @@ export function Workbench({
             projectTitle={projectTitle || null}
             savedProject={Boolean(savedProjectId)}
             onOpenProjects={() => { void openProjectLibrary(); }}
+            onUpgradePlan={() => setUpgradeDialog("plan")}
             onSave={requestProjectSave}
             onShare={share}
             undoableTokens={Array.from(new Set(tokenHistory.flatMap(entry => Object.keys(entry)).concat(Object.keys(tokenOverrides))))
@@ -531,6 +534,16 @@ export function Workbench({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PlanUpgradeDialog
+        open={upgradeDialog !== null}
+        onOpenChange={(open) => { if (!open) setUpgradeDialog(null); }}
+        storageFull={upgradeDialog === "limit"}
+        onManageProjects={() => {
+          setFreeingProjectSlot(upgradeDialog === "limit");
+          setProjectLibraryOpen(true);
+        }}
+      />
 
       <ProjectLibraryDialog
         open={projectLibraryOpen}

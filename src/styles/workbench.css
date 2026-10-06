@@ -223,6 +223,41 @@
   height: 0.85rem;
 }
 
+.gift-support-button {
+  display: inline-flex;
+  height: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--text-primary);
+  color: var(--surface);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.gift-support-button:hover {
+  opacity: 0.85;
+}
+
+.gift-support-button:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 3px;
+}
+
+.gift-support-button svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.gift-support-label-short {
+  display: none;
+}
+
 .locale-toggle {
   width: 5.25rem;
   padding: 0 0.35rem;
@@ -586,15 +621,23 @@
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.65rem;
   padding: 0.85rem 0.75rem 0.15rem;
 }
 
-.workbench-preview-toolbar .studio-nav {
+.workbench-preview-toolbar-end {
+  display: flex;
+  max-width: 100%;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.workbench-preview-toolbar-end .studio-nav {
   width: 12.5rem;
   flex: 0 1 12.5rem;
-  margin-left: auto;
   height: 2.15rem;
   min-width: 0;
   border-color: color-mix(in oklab, var(--text-primary) 12%, transparent);
@@ -612,8 +655,9 @@
   min-width: 0;
 }
 .palette-control-comment .token-apple-message { box-shadow: none; }
-.workbench-preview-toolbar > .token-palette-styles {
+.workbench-preview-toolbar-end > .token-palette-styles {
   flex: 0 1 15rem;
+  width: min(15rem, 42vw);
   min-width: 0;
   position: relative;
 }
@@ -649,7 +693,9 @@
 @media (max-width: 480px) {
   .workbench-preview-toolbar { gap: 0.4rem; padding-inline: 0.5rem; }
   .workbench-preview-toolbar .token-palette-trigger { gap: 0.35rem; font-size: 11px; }
-  .workbench-preview-toolbar .studio-nav { flex: 0 0 48%; width: 48%; }
+  .workbench-preview-toolbar-end { flex-wrap: wrap; justify-content: flex-end; }
+  .workbench-preview-toolbar-end .studio-nav { flex: 1 1 9.5rem; width: auto; min-width: 9.5rem; }
+  .workbench-preview-toolbar-end > .token-palette-styles { flex: 1 1 9.5rem; width: auto; min-width: 9.5rem; }
 }
 .token-inspector-dismiss {
   position: fixed;
@@ -785,6 +831,29 @@
 }
 
 @media (max-width: 720px) {
+  .site-header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.65rem;
+  }
+
+  .site-header .studio-gnb-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
+  .site-header .studio-gnb-center {
+    grid-row: 3;
+  }
+
+  .gift-support-label-full {
+    display: none;
+  }
+
+  .gift-support-label-short {
+    display: inline;
+  }
+
   .workbench-main {
     --token-inspector-width: min(82vw, 18rem);
   }
@@ -807,7 +876,7 @@
     display: grid !important;
     width: 100%;
     grid-column: 1 / -1;
-    grid-row: 2;
+    grid-row: 3;
     grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
     gap: 0.45rem;
   }
@@ -1325,9 +1394,15 @@
   flex: 1;
   min-width: 0;
   perspective: 720px;
+  transform-origin: left center;
+}
+
+.token-apple-message-stage[data-wobble="true"] {
+  animation: token-apple-bubble-wobble 0.9s ease-in-out 2;
 }
 
 .token-apple-message {
+  position: relative;
   display: grid;
   align-items: center;
   box-sizing: border-box;
@@ -1335,21 +1410,46 @@
   margin: 0;
   padding: 0.65rem 0.7rem 0.65rem 0.75rem;
   border: 2px solid var(--apple-bubble-fill);
-  border-radius: 1rem 1rem 1rem 0.15rem;
+  border-radius: 1rem;
   background: var(--apple-bubble-fill);
   color: var(--apple-bubble-ink);
   box-shadow: 0 4px 12px color-mix(in oklab, var(--apple-bubble-fill) 25%, transparent),
     0 0 0 3px color-mix(in oklab, var(--apple-bubble-accent) 20%, transparent);
+  transition:
+    background-color 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 480ms cubic-bezier(0.22, 1, 0.36, 1);
   font-size: 13px;
   font-weight: 700;
   line-height: 1.55;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   transform-origin: center center;
 }
 
+.token-apple-message::before {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: 54%;
+  z-index: 0;
+  width: 12px;
+  height: 12px;
+  border-left: 2px solid var(--apple-bubble-fill);
+  border-bottom: 2px solid var(--apple-bubble-fill);
+  background: var(--apple-bubble-fill);
+  transform: translateY(-50%) rotate(45deg);
+  transition:
+    background-color 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 480ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .token-apple-message span {
+  position: relative;
+  z-index: 1;
   min-width: 0;
+  overflow: hidden;
   overflow-wrap: anywhere;
 }
 
@@ -1371,10 +1471,35 @@
   to { transform: rotateX(0deg); }
 }
 
+@keyframes token-apple-bubble-wobble {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  20% {
+    transform: translate3d(-2px, 1px, 0) rotate(-1.5deg);
+  }
+  40% {
+    transform: translate3d(2px, -1px, 0) rotate(1.5deg);
+  }
+  60% {
+    transform: translate3d(-1px, -1px, 0) rotate(-1deg);
+  }
+  80% {
+    transform: translate3d(1px, 1px, 0) rotate(1deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
 
   .token-apple-message[data-flip^="out"],
   .token-apple-message[data-flip^="in"] { animation: none; }
+
+  .token-apple-message-stage[data-wobble="true"] { animation: none; }
+
+  .token-apple-message {
+    transition-duration: 0ms;
+  }
 }
 
 .token-palette-title {

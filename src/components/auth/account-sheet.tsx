@@ -2,8 +2,8 @@
 
 import { useRef, useState } from "react";
 import { Crown, LogIn, LogOut, UserRoundCheck } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/auth-provider";
+import { PlanUpgradeDialog } from "@/components/billing/plan-upgrade-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,11 +20,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export function AccountButton() {
-  const router = useRouter();
   const locale = useMatchuStore((state) => state.locale);
   const { user, profile, loading, signIn, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const accountButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -98,7 +98,7 @@ export function AccountButton() {
                 </DropdownMenuLabel>
               </DropdownMenuGroup>
               {!isPro ? (
-                <DropdownMenuItem className="py-2" onClick={() => { setOpen(false); router.push("/coming-soon"); }}>
+                <DropdownMenuItem className="py-2" onClick={() => { setOpen(false); setUpgradeOpen(true); }}>
                   <Crown aria-hidden />{isKo ? "플랜 업그레이드" : "Upgrade plan"}
                   <span className="ml-auto text-[10px] text-muted-foreground">₩990/{isKo ? "월" : "mo"}</span>
                 </DropdownMenuItem>
@@ -111,6 +111,7 @@ export function AccountButton() {
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+      <PlanUpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} finalFocus={accountButtonRef} />
       <Dialog open={logoutOpen} onOpenChange={(next) => { if (!signingOut) setLogoutOpen(next); }}>
         <DialogContent finalFocus={accountButtonRef} showCloseButton={!signingOut}>
           <DialogHeader>

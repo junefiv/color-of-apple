@@ -2,27 +2,58 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type AnimationEvent, type CSSProperties } from "react";
 import { appleCommentLines, colorsFromTheme } from "@/lib/color-commentary";
-import { contrastRatio, resolveSurfaceInk, type SemanticTokens } from "@/lib/color-engine";
+import { resolveSurfaceInk, type SemanticTokens } from "@/lib/color-engine";
 import { ensureReadable } from "@/lib/palette/adaptive";
 import { prefersReducedMotion } from "@/lib/match-reveal";
 
 const HOLD_MS = 4200;
+const BRAND_ROLES = ["primary", "secondary", "accent"] as const;
+type BrandRole = (typeof BRAND_ROLES)[number];
+
+function pickNextBrandRole(current: BrandRole): BrandRole {
+  const options = BRAND_ROLES.filter((role) => role !== current);
+  return options[Math.floor(Math.random() * options.length)];
+}
+
+function bubbleStyleForRole(theme: SemanticTokens, role: BrandRole): CSSProperties {
+  const surface = theme.surface.default;
+  const brand = theme[role].default;
+  const fill = ensureReadable(brand, [surface], 3);
+  const bubble = resolveSurfaceInk(fill, 4.5);
+  return {
+    "--apple-bubble-fill": bubble.background,
+    "--apple-bubble-ink": bubble.on,
+    "--apple-bubble-accent": theme.accent.default,
+  } as CSSProperties;
+}
 
 export function AppleCommentBubble({
   theme,
   resetNonce,
+  hopNonce = 0,
+  wobble = false,
   locale,
   prompt,
   intermittent = false,
 }: {
   theme: SemanticTokens;
   resetNonce: number;
+  hopNonce?: number;
+  wobble?: boolean;
   locale: "ko" | "en";
   prompt: string;
   intermittent?: boolean;
 }) {
   const comment = useSettledComment(theme, resetNonce, locale);
+  const [brandRole, setBrandRole] = useState<BrandRole>("primary");
+  const lastHopNonce = useRef(0);
   const [visible, setVisible] = useState(!intermittent);
+
+  useEffect(() => {
+    if (hopNonce < 1 || hopNonce === lastHopNonce.current) return;
+    lastHopNonce.current = hopNonce;
+    setBrandRole((current) => pickNextBrandRole(current));
+  }, [hopNonce]);
   useEffect(() => {
     if (!intermittent) { setVisible(true); return; }
     let timer: number;
@@ -37,19 +68,9 @@ export function AppleCommentBubble({
     else { setVisible(false); timer = window.setTimeout(show, 1800); }
     return () => window.clearTimeout(timer);
   }, [comment, intermittent, prompt]);
-  const style = useMemo(() => {
-    const surface = theme.surface.default;
-    const brandColors = [theme.accent.default, theme.primary.default, theme.secondary.default];
-    const strongest = brandColors.reduce((best, color) => contrastRatio(color, surface) > contrastRatio(best, surface) ? color : best);
-    const fill = ensureReadable(strongest, [surface], 3);
-    const bubble = resolveSurfaceInk(fill, 4.5);
-    return {
-      "--apple-bubble-fill": bubble.background,
-      "--apple-bubble-ink": bubble.on,
-      "--apple-bubble-accent": theme.accent.default,
-    } as CSSProperties;
-  }, [theme]);
-  return <FlipBubble prompt={prompt} comment={comment} style={style} visible={visible} />;
+  const style = useMemo(() => bubbleStyleForRole(theme, brandRole), [theme, brandRole]);
+  const showWobble = wobble && !prefersReducedMotion();
+  return <FlipBubble prompt={prompt} comment={comment} style={style} visible={visible} wobble={showWobble} />;
 }
 
 function useSettledComment(theme: SemanticTokens, resetNonce: number, locale: "ko" | "en") {
@@ -90,7 +111,7 @@ function useSettledComment(theme: SemanticTokens, resetNonce: number, locale: "k
   return comment;
 }
 
-function FlipBubble({ prompt, comment, style, visible }: { prompt: string; comment: { id: number; text: string } | null; style: CSSProperties; visible: boolean }) {
+function FlipBubble({ prompt, comment, style, visible, wobble }: { prompt: string; comment: { id: number; text: string } | null; style: CSSProperties; visible: boolean; wobble: boolean }) {
   const [text, setText] = useState(prompt);
   const [flip, setFlip] = useState("idle");
   const messageRef = useRef<HTMLParagraphElement>(null);
@@ -183,7 +204,12 @@ function FlipBubble({ prompt, comment, style, visible }: { prompt: string; comme
   }
 
   return (
-    <div className="token-apple-message-stage" aria-hidden={!visible} style={{ ...style, visibility: visible ? "visible" : "hidden", opacity: visible ? 1 : 0 }}>
+    <div
+      className="token-apple-message-stage"
+      data-wobble={wobble ? "true" : "false"}
+      aria-hidden={!visible}
+      style={{ ...style, visibility: visible ? "visible" : "hidden", opacity: visible ? 1 : 0 }}
+    >
       <p
         ref={messageRef}
         className="token-apple-message"

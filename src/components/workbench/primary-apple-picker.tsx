@@ -6,11 +6,25 @@ import { ColorPickerPopover } from "@/components/flow/color-picker-popover";
 import { useAppleHop } from "@/hooks/use-apple-hop";
 import { useMatchuStore } from "@/lib/store";
 
-export function PrimaryApplePicker({ hex, locale, savedProject = false, onGenerate }: { hex: string; locale: "ko" | "en"; savedProject?: boolean; onGenerate: (hex: string) => void }) {
+export function PrimaryApplePicker({ hex, locale, savedProject = false, onGenerate, onHop, onHoppingChange }: { hex: string; locale: "ko" | "en"; savedProject?: boolean; onGenerate: (hex: string) => void; onHop?: () => void; onHoppingChange?: (hopping: boolean) => void }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(hex);
   const anchorRef = useRef<HTMLButtonElement>(null);
-  const { hopping } = useAppleHop(!open);
+  const { hopping, hopId } = useAppleHop(!open);
+  const onHopRef = useRef(onHop);
+  onHopRef.current = onHop;
+
+  useEffect(() => {
+    if (hopId < 1) return;
+    onHopRef.current?.();
+  }, [hopId]);
+
+  const onHoppingChangeRef = useRef(onHoppingChange);
+  onHoppingChangeRef.current = onHoppingChange;
+  useEffect(() => {
+    onHoppingChangeRef.current?.(hopping);
+  }, [hopping]);
+
   const setPrimaryDraftHex = useMatchuStore((state) => state.setPrimaryDraftHex);
 
   useEffect(() => {

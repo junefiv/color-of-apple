@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Copy, Download, Library, Save, Share2, Undo2 } from "lucide-react";
+import { Copy, Crown, Download, Library, Save, Share2, Undo2 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/auth/auth-provider";
 import { FREE_PROJECT_LIMIT, subscribeProjects } from "@/lib/firebase/data";
@@ -32,6 +32,7 @@ export function TokenPanel({
   savedProject,
   paletteControls,
   onOpenProjects,
+  onUpgradePlan,
   onSave,
   onShare,
   onTokenChange,
@@ -50,6 +51,7 @@ export function TokenPanel({
   savedProject: boolean;
   paletteControls: ReactNode;
   onOpenProjects: () => void;
+  onUpgradePlan: () => void;
   onSave: () => void;
   onShare: () => void;
   onTokenChange: (path: string, value: string) => void;
@@ -66,6 +68,7 @@ export function TokenPanel({
   const [exportOpen, setExportOpen] = useState(false);
 
   const [projectCount, setProjectCount] = useState(0);
+  const [occupiedFreeSlots, setOccupiedFreeSlots] = useState(0);
 
   const [format, setFormat] = useState<ExportFormat>("css");
   const tokens = result.semantic.light;
@@ -77,9 +80,14 @@ export function TokenPanel({
   useEffect(() => {
     if (!user) {
       setProjectCount(0);
+      setOccupiedFreeSlots(0);
       return;
     }
-    return subscribeProjects(user.uid, (projects) => setProjectCount(projects.length));
+    return subscribeProjects(user.uid, (projects) => {
+      const slotIds = new Set(Array.from({ length: FREE_PROJECT_LIMIT }, (_, i) => `slot-${i + 1}`));
+      setProjectCount(projects.length);
+      setOccupiedFreeSlots(projects.filter((project) => slotIds.has(project.id)).length);
+    });
   }, [user]);
 
   const projectSlots = profile?.plan === "pro" ? "∞" : String(FREE_PROJECT_LIMIT);
@@ -223,6 +231,14 @@ export function TokenPanel({
       </DialogContent>
 
       <footer className="token-panel-footer">
+        {user && profile?.plan === "free" && occupiedFreeSlots >= FREE_PROJECT_LIMIT ? (
+          <div className="flex items-center justify-between gap-2 px-1 pb-2 text-[11px] text-muted-foreground">
+            <span>{locale === "ko" ? "무료 저장 공간을 모두 사용했어요." : "All free slots are in use."}</span>
+            <button type="button" className="inline-flex shrink-0 items-center gap-1 underline underline-offset-2" onClick={onUpgradePlan}>
+              <Crown className="size-3" aria-hidden />{locale === "ko" ? "Pro 혜택 보기" : "Explore Pro"}
+            </button>
+          </div>
+        ) : null}
         <div className="token-panel-project-actions">
           <button
             type="button"

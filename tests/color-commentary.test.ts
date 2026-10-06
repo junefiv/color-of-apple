@@ -25,7 +25,7 @@ function korean(colors: CommentaryColors, previous?: CommentaryColors | null, re
 describe("apple color commentary", () => {
   it("keeps every apple line the copy asked for", () => {
     expect(phrases.size).toBe(Object.keys(COMMENT_PHRASES).length);
-    expect(phrases.has("저를 클릭해서 새로운 Primary 컬러를 선택하세요!")).toBe(false);
+    expect(phrases.has("저를 클릭해서 새로운 Primary 컬러로 바꿔보세요!")).toBe(false);
   });
 
   it("speaks in at most two sentences", () => {

@@ -108,7 +108,7 @@ export function ProjectLibraryDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Library className="size-4" aria-hidden />
-              {freeSlot ? (isKo ? "새 컬러북을 저장할 공간이 필요해요" : "Make room for a new colorbook") : (isKo ? "저장한 컬러" : "Saved colors")}
+              {freeSlot ? (isKo ? "기존 컬러북 정리하기" : "Manage existing colorbooks") : (isKo ? "저장한 컬러" : "Saved colors")}
             </DialogTitle>
             <DialogDescription>
               {freeSlot
