@@ -6,14 +6,14 @@ Color of Apple은 기준색 하나를 역할이 부여된 UI 컬러 시스템으
 
 ## 집에서 이어서 작업하기 — 2026-10-06 인수인계
 
-현재 작업 브랜치는 `main`이며 저장소는 <https://github.com/junefiv/matchu>입니다. **Paddle 연동 코드와 Sandbox 상품 설정을 진행한 상태이며, 실제 결제 운영과 요율 협의는 아직 완료하지 않았습니다.** 아래 순서로 이어서 작업합니다.
+현재 작업 브랜치는 `main`이며 저장소는 <https://github.com/junefiv/color-of-apple>입니다(기존 `junefiv/matchu`에서 이동). **Paddle 연동 코드와 Sandbox 상품 설정을 진행한 상태이며, 실제 결제 운영과 요율 협의는 아직 완료하지 않았습니다.** 아래 순서로 이어서 작업합니다.
 
 ### 집 PC 준비
 
 Node.js **22 이상**을 사용합니다. 저장소가 없으면 다음과 같이 받습니다.
 
 ```powershell
-git clone https://github.com/junefiv/matchu.git
+git clone https://github.com/junefiv/color-of-apple.git matchu
 cd matchu
 ```
 
