@@ -8,6 +8,28 @@ Color of Apple은 기준색 하나를 역할이 부여된 UI 컬러 시스템으
 
 현재 작업 브랜치는 `main`이며 저장소는 <https://github.com/junefiv/color-of-apple>입니다(기존 `junefiv/matchu`에서 이동). **Paddle 연동 코드와 Sandbox 상품 설정을 진행한 상태이며, 실제 결제 운영과 요율 협의는 아직 완료하지 않았습니다.** 아래 순서로 이어서 작업합니다.
 
+### 집 PC 재개 확인 — 2026-10-07
+
+- 가져온 `.env.local`로 Firebase Admin 인증과 Paddle Sandbox 가격 검사가 성공했습니다. 월 KRW 990·세금 포함·무료 체험 없음·수량 1 설정을 확인했습니다. 실제 키는 출력하거나 저장소에 추가하지 않았습니다.
+- 사용자 요청에 따라 로컬 `BILLING_OPERATOR_NAME=GIT_IN`을 설정했습니다. Sandbox 초안 표기이며, Live 심사 정보와 공개 운영자 표기의 적합성은 운영 전 확인해야 합니다.
+- Vercel과 Gmail 플러그인의 설치 상태를 확인했습니다. 이 재개 세션에는 두 서비스의 계정 조회 도구가 아직 나타나지 않았으며, 실제 계정 접근·OAuth 연결 완료는 검증하지 못했습니다. Codex 브라우저의 Paddle Sandbox와 Vercel은 로그인 화면입니다.
+- Sandbox API로 조회한 웹훅 목적지는 0개입니다. `PADDLE_WEBHOOK_SECRET`도 비어 있습니다. 웹훅은 아직 생성하지 않았습니다.
+- 공개 `/pricing` 페이지는 열리지만 결제 UI는 출시 준비 중입니다. 공개 `/api/billing/webhook`에 서명 없는 빈 요청을 보낸 결과 **HTTP 500, JSON이 아닌 응답**을 받았습니다. 로컬 구현의 예상 응답은 HTTP 400의 `invalid_signature`이므로, Vercel 배포·서버 로그·환경 변수부터 확인하고 정상 endpoint를 확보한 뒤 목적지를 등록해야 합니다.
+- 시스템 Node는 20이지만 Codex에 포함된 Node 24.19.0으로 연결 검사와 테스트를 실행했습니다. 기존 네이티브 패키지 파일 잠금으로 `npm ci`가 실패해 `npm install --ignore-scripts --no-audit --no-fund --package-lock=false`로 의존성을 복구했습니다. `package.json`과 lockfile은 변경하지 않았지만 설치 결과는 lockfile의 완전 재현 검증이 아닙니다. 깨끗한 환경에서 Node 22 이상으로 `npm ci` 및 배포 빌드를 확인해야 합니다.
+- 결제 관련 3개 테스트 파일, **29개 테스트 통과**. 이번 재개에서는 전체 테스트와 빌드를 다시 실행하지 않았으며, 실제 Sandbox 결제·웹훅 수신·기본 결제 링크·Firestore 규칙 배포·요율 문의 발송은 아직 완료하지 않았습니다. Live는 비활성화 상태로 유지했습니다.
+
+### 로그인 후 진행 결과 — 2026-10-07
+
+- Paddle Sandbox와 Vercel 브라우저 계정 접근을 확인했습니다. Git 커밋 `21cb27c`의 기존 배포가 Ready인 상태였지만 결제 API는 Firebase Admin → `jwks-rsa` → `jose`의 `ERR_REQUIRE_ESM` 로딩 오류로 HTTP 500을 반환했습니다.
+- Vercel 공식 문서에 따라 `NODE_OPTIONS=--experimental-require-module`을 등록했습니다. Paddle/Firebase/Billing 설정 12개도 Production 배포 환경에 Secret 유형으로 저장했습니다. `BILLING_APP_URL=https://color-of-apple.vercel.app`, `PADDLE_ENVIRONMENT=sandbox`, `PADDLE_LIVE_ENABLED=false`로 설정했습니다. Preview에는 아직 설정하지 않았습니다.
+- 동일 소스로 캐시 없이 재배포한 `hqEiEe2PYQBKexmVr4kntrAghnDL`은 Ready입니다. 공개 `/api/billing/config`는 HTTP 200, enabled=true, sandbox, KRW 990을 반환합니다. 서명 없는 웹훅 요청은 HTTP 400 `invalid_signature`로 정상 거부합니다.
+- Sandbox 웹훅 `ntfset_01m48xen1z65jd7qytd213e907`을 생성했습니다. URL은 `https://color-of-apple.vercel.app/api/billing/webhook`, Active, Usage Both, `transaction.completed`·모든 `subscription.*`·`adjustment.created`·`adjustment.updated` 총 12개입니다. secret은 `.env.local`과 Vercel Secret에만 저장했습니다. 기존 API 키의 웹훅 생성/개별 조회 권한이 부족해 관리자 화면으로 생성·저장했으며 키 권한은 확대하지 않았습니다.
+- Sandbox 기본 결제 링크 `https://color-of-apple.vercel.app/billing/checkout` 저장을 확인했습니다.
+- 권한을 부여하지 않는 `customer.created` 테스트 payload를 로컬에서 서명해 공개 서버에 보낸 결과 HTTP 200 `received=true`입니다. body 변조 요청은 HTTP 400으로 거부했습니다. 이 검사는 배포된 secret·Firebase 읽기·서명 검증을 확인한 것이며, Paddle 서버가 직접 보낸 알림이나 결제 성공을 검증한 것은 아닙니다.
+- 앱 Google 로그인과 실제 Sandbox Checkout 결제를 완료했습니다. 거래 `txn_01m48xvcxegej0ay8p80wc1yve`는 KRW 990·completed, 구독 `sub_01m48xx4ghpmz0ynews3nzgeb3`는 active입니다. Paddle의 `subscription.created`, `subscription.activated`, `transaction.completed` 알림이 Delivered이고 Firestore에도 처리 기록이 있습니다. 실제 `users/{uid}.plan`은 `free`로 유지됐습니다.
+- 앱에서 생성한 고객 포털에서 해지를 예약했습니다. `subscription.updated` 웹훅이 Delivered이고 앱·서버의 해지 예약일과 결제한 이용 기간 종료는 모두 **2026-11-07 00:39:20 KST**입니다. 종료 전 테스트 Pro는 유지됩니다. `transaction.completed` 알림의 Replay도 Delivered이며 처리 이벤트는 4개로 유지돼 중복 기록이 생기지 않았습니다.
+- **남은 검증은 갱신·결제 실패·기간 만료·전액/일부 환불입니다.** Firestore 규칙 배포, 요율 문의 발송, Live 심사·활성화도 미완료입니다. 문의 초안은 아직 보내지 않았으며 Gmail 계정 접근 도구는 이 세션에 나타나지 않았습니다.
+
 ### 집 PC 준비
 
 Node.js **22 이상**을 사용합니다. 저장소가 없으면 다음과 같이 받습니다.
@@ -54,6 +76,8 @@ npm run dev
 | API 키 만료 | **2026-11-05** — 이후 교체 필요 |
 
 ### 다음 작업 순서
+
+아래 1–4와 5의 최초 결제·해지 예약·실제 계정 Free 유지 검사는 2026-10-07에 완료했습니다. 위 최신 진행 결과부터 확인하고, 5의 나머지 검증과 6–8을 이어갑니다. 아래 미완료 표현은 2026-10-06 인수인계 당시 상태입니다.
 
 1. 가져온 `.env.local`로 검사 스크립트를 실행하고, 공개 운영자 이름을 `BILLING_OPERATOR_NAME`에 확정합니다. `BILLING_SUPPORT_EMAIL=dasawafa@gmail.com`을 유지합니다.
 2. **Sandbox 웹훅 목적지는 아직 생성하지 않았습니다.** 회사 브라우저에서는 생성 폼을 준비하던 중 중단했습니다. Sandbox의 Events → Notifications → New destination에서 배포된 테스트 서버의 `/api/billing/webhook`을 등록합니다. 이벤트는 `transaction.completed`, 모든 `subscription.*`, `adjustment.created`, `adjustment.updated`, Usage는 Both를 선택합니다. 생성 후 서명 secret을 `.env.local`의 `PADDLE_WEBHOOK_SECRET`에 저장합니다. 회사 PC에는 이 값이 아직 없습니다.

@@ -1,10 +1,12 @@
 # Paddle 구독 연동과 선물 후원
 
-2026-10-06 작업 상태. 한국 소재 **사업자등록이 없는 개인 개발자**가 월 **990원** SaaS 구독을 글로벌로 판매하는 방향이다. 실행 순서와 중단 지점은 [README 인수인계](../README.md)에 기록한다.
+2026-10-07 작업 상태. 한국 소재 **사업자등록이 없는 개인 개발자**가 월 **990원** SaaS 구독을 글로벌로 판매하는 방향이다. 실행 순서와 중단 지점은 [README 인수인계](../README.md)에 기록한다.
 
 ## 현재 상태
 
-Paddle Node SDK, Paddle.js, Firebase Admin SDK와 checkout/confirm/status/portal/webhook API를 구현했다. Sandbox 상품과 가격, API 키, 클라이언트 토큰을 생성했고 Firebase Admin/Paddle 가격 API 연결도 확인했다. 웹훅 목적지 생성, 서명 secret, 기본 결제 링크, 변경 배포, 실제 Sandbox Checkout 결제 완료는 아직 남아 있다. Live 결제와 선물 수납은 활성화하지 않았다.
+Paddle Node SDK, Paddle.js, Firebase Admin SDK와 checkout/confirm/status/portal/webhook API를 구현했다. Sandbox 상품·가격·키·웹훅·기본 결제 링크와 Vercel 환경 변수를 설정하고 재배포했다. 앱 Google 로그인 후 실제 Sandbox Checkout에서 KRW 990 테스트 결제를 완료했다. Paddle 서버가 보낸 구독 생성·활성화·거래 완료·해지 예약 알림은 Delivered이며 Firestore 처리 기록과 앱 상태를 확인했다. 실제 사용자 plan은 free로 유지됐다. 정상 서명의 비권한 이벤트 요청은 HTTP 200, 서명 없는 요청과 변조 요청은 HTTP 400으로 확인했다. Live 결제와 선물 수납은 활성화하지 않았다.
+
+검증 거래는 `txn_01m48xvcxegej0ay8p80wc1yve`(completed), 구독은 `sub_01m48xx4ghpmz0ynews3nzgeb3`(active)이다. 고객 포털에서 해지를 예약했고 유료 기간 종료와 해지 예약 시각은 모두 `2026-11-06T15:39:20.99688Z`(KST 11월 7일 00:39:20)이다. 기간 종료 전 테스트 Pro는 유지된다. 결제 완료 알림 Replay도 Delivered이고 처리 이벤트는 4개로 유지돼 중복 기록이 생기지 않았다. 갱신·결제 실패·기간 만료·전액/일부 환불 종단 검증과 Firestore 규칙 배포는 아직 남아 있다.
 
 | 설정 | Sandbox |
 | --- | --- |
@@ -12,8 +14,8 @@ Paddle Node SDK, Paddle.js, Firebase Admin SDK와 checkout/confirm/status/portal
 | Price | `pri_01m483zd2z7qgjwjcjq7e6qacj` |
 | 월 가격 | KRW 990, tax mode `internal`(세금 포함), 무료 체험 없음, 수량 1 |
 | API 키 만료 | 2026-11-05 |
-| 웹훅 | 아직 미생성, 서버 endpoint는 `/api/billing/webhook` |
-| 기본 결제 링크 | 아직 미설정, 앱 endpoint는 `/billing/checkout` |
+| 웹훅 | `ntfset_01m48xen1z65jd7qytd213e907`, `https://color-of-apple.vercel.app/api/billing/webhook`, Active, 12개 이벤트, Usage Both |
+| 기본 결제 링크 | `https://color-of-apple.vercel.app/billing/checkout`, Sandbox 설정 저장 완료 |
 
 ## 서버와 권한
 
@@ -42,6 +44,8 @@ npm run dev
 `PADDLE_ENVIRONMENT=sandbox`가 기본이며 Live는 `production`을 사용한다. Live를 켜려면 `PADDLE_LIVE_ENABLED=true`와 운영자 이름·문의 이메일도 필요하다. 이 스위치는 SDK 설정 완료나 Paddle 계정 심사 승인을 자동 검증하지 않으므로, 실제 심사·요율·테스트 확인을 별도로 완료해야 한다.
 
 `BILLING_APP_URL`은 끝 슬래시와 경로 없는 origin이다. Sandbox 로컬은 `http://localhost:43123`, 배포는 실제 HTTPS origin을 사용한다. Production에서 localhost는 허용하지 않는다. Paddle가 호출할 웹훅은 외부 접근 가능한 서버에 있어야 한다.
+
+Vercel의 Node 24 배포에서 Firebase Admin → `jwks-rsa` → `jose` 로딩이 `ERR_REQUIRE_ESM`으로 실패해 결제 API가 HTTP 500을 반환했다. [Vercel 공식 설정](https://vercel.com/docs/functions/runtimes/node-js/advanced-node-configuration)에 따라 서버 환경 변수 `NODE_OPTIONS=--experimental-require-module`을 등록하고 재배포해 해결했다. Paddle/Firebase/Billing 변수 12개와 이 옵션을 Vercel의 Production 환경에 Secret 유형으로 저장했다. 여기서 Production은 Vercel 배포 환경이며, 결제 제공자는 `PADDLE_ENVIRONMENT=sandbox`, `PADDLE_LIVE_ENABLED=false`이다. Preview 환경에는 아직 등록하지 않았다. 공개 운영자 이름 `GIT_IN`은 사용자 지정 Sandbox 초안이며 Live 심사 정보와의 적합성은 운영 전 확인한다.
 
 Firebase의 `private_key_id`는 비밀 키가 아니다. 서비스 계정 JSON의 `client_email`, `private_key`를 사용한다. `private_key`는 `-----BEGIN PRIVATE KEY-----`로 시작하는 전체 PEM 문자열이며 `\n` 줄바꿈을 유지한다. [Firebase Admin 공식 설정](https://firebase.google.com/docs/admin/setup).
 

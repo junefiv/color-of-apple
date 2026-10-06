@@ -224,7 +224,8 @@
 }
 
 .gift-support-button {
-  display: inline-flex;
+  /* Keep the gift flow available while payment integration is pending. */
+  display: none;
   height: 2rem;
   flex-shrink: 0;
   align-items: center;

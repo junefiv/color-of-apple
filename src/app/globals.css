@@ -3,6 +3,7 @@
 @import "shadcn/tailwind.css";
 @import "../styles/workbench.css";
 @import "../styles/ui-kit.css";
+@import "../styles/concept-samples.css";
 
 @property --wash-fade {
   syntax: "<percentage>";

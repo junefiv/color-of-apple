@@ -1,0 +1,70 @@
+.concept-lab {
+  --sample-brand: var(--color-primary-default, #bd4749);
+  --sample-on: var(--color-primary-on, #fff);
+  --sample-selected: var(--color-primary-selected, color-mix(in srgb, var(--sample-brand) 15%, white));
+  --sample-disabled: var(--color-text-disabled, #8b8c8d);
+  --sample-paper: var(--color-surface-default, #fff);
+  --sample-ink: var(--color-text-primary, #252525);
+  --sample-muted: var(--color-text-secondary, #646464);
+  padding: 22px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  background: var(--color-bg-canvas);
+  container-type: inline-size;
+  color: var(--sample-ink);
+}
+.concept-lab-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px; margin-bottom: 20px; }
+.concept-lab-heading > div > span { font-family: var(--font-geist-mono), monospace; font-size: 9px; letter-spacing: .12em; color: var(--sample-muted); }
+.concept-lab-heading h3 { margin: 8px 0 0; font-size: 18px; letter-spacing: -.04em; font-weight: 600; }
+.concept-lab-heading > p { margin: 0; font-size: 10px; color: var(--sample-muted); }
+.concept-samples-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.concept-lab .concept-sample { min-width: 0; padding: 20px 18px; border: 1px solid var(--color-border-subtle); border-radius: 10px; background: var(--sample-paper); }
+.concept-sample header { position: relative; }
+.concept-number { position: absolute; right: 0; top: 4px; font-size: 9px; color: var(--sample-muted); font-family: monospace; }
+.concept-sample h4 { margin: 0; font-size: 21px; letter-spacing: -.04em; font-weight: 600; }
+.concept-sample header p { font-size: 10px; margin: 8px 0 0; line-height: 1.6; color: var(--sample-muted); }
+.concept-button-stage { display: flex; justify-content: center; align-items: center; height: 126px; }
+.concept-lab .concept-button { position: relative; isolation: isolate; width: 180px; height: 52px; padding: 0; border: none; background: transparent; font-size: 11px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.concept-button-surface { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; }
+.concept-button-label { position: relative; z-index: 2; }
+.concept-input-label { display: block; margin-bottom: 9px; font-size: 10px; font-weight: 550; }
+.concept-input-shell { position: relative; }
+.concept-lab .concept-input { position: relative; width: 100%; min-width: 0; height: 44px; padding: 0 13px; font-size: 11px; color: var(--sample-ink); outline: none; }
+.concept-input::placeholder { color: var(--color-text-tertiary); }
+.concept-sample-note { display: block; font-size: 9px; color: var(--sample-muted); line-height: 1.7; margin-top: 16px; }
+/* 2D outline: gentle local pressure reaches all four edges. */
+.concept-lab [data-concept="cushion"] .concept-button { border-radius: 26px; }
+.concept-lab [data-concept="cushion"] .concept-button-surface {
+  border: none;
+  border-radius: 24px;
+  color: var(--sample-on);
+  background: transparent;
+}
+.concept-cushion-outline { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.concept-cushion-outline path { fill: var(--sample-brand); stroke: color-mix(in srgb, var(--sample-brand) 75%, #000); stroke-width: 1; d: var(--cushion-rest); transition: d 850ms cubic-bezier(.4,0,.2,1); }
+.concept-button[data-pressed] .concept-cushion-outline path { d: var(--cushion-pressed); transition-duration: 100ms; }
+.concept-lab [data-concept="cushion"] .concept-input {
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+}
+.concept-input-outline path { fill: color-mix(in srgb, var(--sample-brand) 5%, var(--sample-paper)); stroke: color-mix(in srgb, var(--sample-brand) 20%, var(--sample-paper)); }
+.concept-input-shell[data-typing] .concept-input-outline path { d: var(--cushion-pressed); transition-duration: 90ms; }
+.concept-lab [data-concept="cushion"] .concept-input-shell:focus-within .concept-input-outline path { stroke: color-mix(in srgb, var(--sample-brand) 45%, var(--sample-paper)); }
+/* Button ink uses Primary Selected; typed ink uses Disabled Text. */
+.concept-lab [data-concept="ink"] .concept-button { border-radius: 8px; }
+.concept-lab [data-concept="ink"] .concept-button-surface { border: 1px solid var(--sample-brand); border-radius: 8px; background: var(--sample-brand); color: var(--sample-on); }
+.concept-ink-spread { position: absolute; left: var(--press-x,50%); top: var(--press-y,50%); width: 60px; height: 60px; border-radius: 50%; pointer-events: none; background: var(--sample-selected); opacity: 0; animation: concept-ink-bloom 1200ms ease-out both; }
+.concept-input-ink-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.concept-input-ink-layer .concept-ink-spread { width: 26px; height: 26px; background: var(--sample-disabled); animation-name: concept-input-ink-bloom; }
+@keyframes concept-input-ink-bloom { 0% { transform: translate(-50%,-50%) scale(.08); opacity: .45; } 25% { transform: translate(-50%,-50%) scale(.75); opacity: .35; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 0; } }
+@keyframes concept-ink-bloom { 0% { transform: translate(-50%,-50%) scale(.08); opacity: .9; } 18% { transform: translate(-50%,-50%) scale(.65); opacity: .85; } 45% { transform: translate(-50%,-50%) scale(.95); opacity: .55; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 0; } }
+.concept-lab [data-concept="ink"] .concept-input-shell { isolation: isolate; border-bottom: 1px solid var(--color-border-default); background: var(--sample-paper); }
+.concept-lab [data-concept="ink"] .concept-input-shell::after { content: ""; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: var(--sample-brand); transform: scaleX(0); transform-origin: left; transition: transform 700ms cubic-bezier(.16,1,.3,1); }
+.concept-lab [data-concept="ink"] .concept-input-shell:focus-within::after { transform: scaleX(1); }
+.concept-lab [data-concept="ink"] .concept-input { border: none; border-radius: 0; background: transparent; }
+.concept-lab .concept-button:focus-visible { outline: 2px solid var(--sample-brand); outline-offset: 5px; }
+.concept-lab [data-concept="ink"] .concept-input-shell:focus-within { outline: 2px solid var(--sample-brand); outline-offset: 3px; }
+@container (max-width: 640px) { .concept-samples-grid { grid-template-columns: 1fr; } .concept-button-stage { height: 100px; } }
+@media (prefers-reduced-motion: reduce) { .concept-lab *, .concept-lab *::before, .concept-lab *::after { transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { .concept-ink-spread { animation-duration: 150ms; } }
