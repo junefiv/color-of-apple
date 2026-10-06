@@ -7,7 +7,10 @@ service cloud.firestore {
     }
 
     function isPro(uid) {
-      return get(/databases/$(database)/documents/users/$(uid)).data.plan == "pro";
+      let profile = get(/databases/$(database)/documents/users/$(uid)).data;
+      return profile.plan == "pro"
+        && (!("proExpiresAt" in profile)
+          || (profile.proExpiresAt is timestamp && profile.proExpiresAt > request.time));
     }
 
     function validProfileCreate() {

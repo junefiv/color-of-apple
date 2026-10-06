@@ -4,6 +4,83 @@
 
 Color of Apple은 기준색 하나를 역할이 부여된 UI 컬러 시스템으로 바꿉니다. 작업대는 끝까지 무채색이고, 색은 Generate를 누른 뒤에 미리보기와 핵심 CTA에만 퍼집니다. Google 로그인과 Cloud Firestore를 사용해 프로젝트와 무료 사용량을 관리합니다.
 
+## 집에서 이어서 작업하기 — 2026-10-06 인수인계
+
+현재 작업 브랜치는 `main`이며 저장소는 <https://github.com/junefiv/matchu>입니다. **Paddle 연동 코드와 Sandbox 상품 설정을 진행한 상태이며, 실제 결제 운영과 요율 협의는 아직 완료하지 않았습니다.** 아래 순서로 이어서 작업합니다.
+
+### 집 PC 준비
+
+Node.js **22 이상**을 사용합니다. 저장소가 없으면 다음과 같이 받습니다.
+
+```powershell
+git clone https://github.com/junefiv/matchu.git
+cd matchu
+```
+
+이미 받은 저장소가 있으면 해당 폴더에서 `git switch main`과 `git pull --ff-only`로 최신 코드를 받습니다. 로컬 변경이 있으면 먼저 보존합니다.
+
+```powershell
+npm ci
+# .env.local이 없고 가져온 설정을 아직 붙여넣지 않은 경우에만 템플릿 생성
+if (!(Test-Path .env.local)) { Copy-Item .env.example .env.local }
+```
+
+회사 PC의 `.env.local` 전체 내용을 집 PC의 프로젝트 루트에 있는 `.env.local`에 붙여넣습니다. **Git에는 이 파일이 포함되지 않습니다.** `.env.example`은 이름만 적힌 템플릿이며 실제 키는 들어 있지 않습니다. 특히 Firebase JSON의 `private_key_id`가 아니라 `private_key` 전체 PEM 값을 사용해야 합니다. 키의 줄바꿈은 `\n`을 포함한 따옴표 문자열 형태로 유지합니다. 키 값을 채팅, README, 커밋에 넣지 않습니다.
+
+```powershell
+node scripts/check-billing.mjs
+npm run dev
+```
+
+검사 스크립트는 키 값을 출력하지 않고 Firebase Admin 인증과 Paddle 가격을 확인합니다. 회사 PC에서는 두 검사 모두 성공했습니다. 앱은 <http://localhost:43123>, 플랜은 <http://localhost:43123/pricing>, 구독 관리는 <http://localhost:43123/billing>에서 확인합니다.
+
+### 완료한 것
+
+- 기존 Pro 비교 모달의 **플랜 결제하기**를 Paddle 테스트 결제창에 연결했습니다. 설정이 부족하면 준비 안내를 유지합니다. 기존 컬러북 정리하기, X·오버레이·Esc 닫기도 유지합니다.
+- 인증된 Firebase 사용자에 대해 서버에서 거래를 생성합니다. 가격과 수량은 서버에서 결정하며, 이미 구독이 있으면 중복 구매 대신 Paddle 구독 관리로 이동합니다.
+- 결제 확인, 구독 상태·고객 포털, 서명 검증 웹훅 API를 구현했습니다. 브라우저 성공 콜백만으로 Pro를 부여하지 않습니다.
+- 해지 예약, 결제 기간 만료, 전액 환불·차지백, 중복·역순 이벤트를 처리하고 `proExpiresAt`를 Firestore 규칙과 클라이언트에서 확인합니다. 기존 컬러북은 자동 삭제하지 않습니다.
+- Sandbox 기록은 `billing/sandbox`에 분리되며 **테스트 결제는 실제 `users/{uid}.plan`을 바꾸지 않습니다.** 실제 운영 활성화는 별도 설정으로 잠겨 있습니다.
+- `/pricing`, `/billing`, `/billing/checkout`, `/terms`, `/privacy`, `/refund-policy`를 추가했습니다. 약관·개인정보·환불 페이지는 운영자 이름 미확정으로 아직 초안입니다. 공개 문의 이메일은 `dasawafa@gmail.com`입니다.
+- Sandbox에 아래 상품·가격, API 키, 공개 클라이언트 토큰을 생성했고 키와 토큰을 회사 PC의 `.env.local`에 저장했습니다.
+
+| Sandbox 항목 | 값 |
+| --- | --- |
+| 상품 | Color of Apple Pro / SaaS |
+| Product ID | `pro_01m483wmpr2hbjdmrf2vv51grx` |
+| Price ID | `pri_01m483zd2z7qgjwjcjq7e6qacj` |
+| 가격 | KRW 990 / 매월 / 세금 포함 |
+| 무료 체험·수량 | 없음 / 최소·최대 모두 1 |
+| API 키 만료 | **2026-11-05** — 이후 교체 필요 |
+
+### 다음 작업 순서
+
+1. 가져온 `.env.local`로 검사 스크립트를 실행하고, 공개 운영자 이름을 `BILLING_OPERATOR_NAME`에 확정합니다. `BILLING_SUPPORT_EMAIL=dasawafa@gmail.com`을 유지합니다.
+2. **Sandbox 웹훅 목적지는 아직 생성하지 않았습니다.** 회사 브라우저에서는 생성 폼을 준비하던 중 중단했습니다. Sandbox의 Events → Notifications → New destination에서 배포된 테스트 서버의 `/api/billing/webhook`을 등록합니다. 이벤트는 `transaction.completed`, 모든 `subscription.*`, `adjustment.created`, `adjustment.updated`, Usage는 Both를 선택합니다. 생성 후 서명 secret을 `.env.local`의 `PADDLE_WEBHOOK_SECRET`에 저장합니다. 회사 PC에는 이 값이 아직 없습니다.
+3. Sandbox Checkout → Checkout settings/configuration에서 기본 결제 링크를 설정합니다. 로컬 테스트에는 `http://localhost:43123/billing/checkout`을, 배포된 테스트에는 실제 HTTPS URL의 `/billing/checkout`을 사용합니다. **이 설정도 아직 완료하지 않았습니다.** localhost로는 Paddle 서버가 웹훅을 전달할 수 없으므로 외부에서 접근 가능한 테스트 배포가 필요합니다.
+4. Vercel 연결/접근을 확보해 이 변경을 배포하고 서버 환경 변수를 설정합니다. **이번 인수인계 푸시와 Vercel 배포 성공 확인은 별개입니다.** 기존 Git 연동 자동 배포가 있으면 배포 결과를 확인합니다. 현재 공개 URL은 <https://color-of-apple.vercel.app/>이며 공식 도메인은 아직 구매하지 않았습니다. 테스트 서버에는 `PADDLE_ENVIRONMENT=sandbox`, 해당 서버 origin의 `BILLING_APP_URL`, 서버 전용 Paddle/Firebase 값이 필요합니다. 실제 키에 `NEXT_PUBLIC_`를 붙이지 않습니다. 새 테스트 도메인을 쓰면 Firebase Google 로그인 허용 도메인도 확인합니다.
+5. Google로 앱에 로그인한 뒤 실제 Sandbox 테스트 결제를 수행합니다. 최초 성공, 갱신, 실패, 해지 예약, 만료, 전액·일부 환불, 중복 알림 및 웹훅 재전송을 확인합니다. **Paddle Checkout에서 결제 완료까지 진행하는 실제 종단 테스트는 아직 하지 않았습니다.** 테스트 구독 상태는 `/billing`에서 보고 실제 계정이 Free로 남는지도 확인합니다.
+6. `firestore.rules` 변경은 로컬 파일만 수정했습니다. 실제 규칙 배포는 아직 하지 않았습니다. 유료 기능 운영 전에 배포하고 만료된 Pro 계정의 신규 저장을 서버 규칙으로 차단하는지 확인합니다.
+7. [Paddle 요율 문의 초안](docs/paddle-fee-inquiry.md)을 **Paddle 가입 이메일**에서 `sellers@paddle.com`으로 보냅니다. 아직 발송하지 않았습니다. Gmail·Vercel 연결을 제안했지만 연결 완료는 확인되지 않았습니다. 예상 결제량은 미정으로 밝히고 월 100·500·1,000건은 견적 비교 시나리오로만 사용합니다. 월 **990원을 유지**하며 연간 요금으로 임의 변경하지 않습니다. 공식 표준은 5% + USD 0.50이고, USD 10 미만 상품의 별도 요율은 서면 승인 전까지 적용된 것으로 간주하지 않습니다.
+8. Live 계정의 도메인·본인 확인과 상품/가격/웹훅 설정을 완료하고 실제 운영 조건을 검토합니다. **Live 키와 가격 ID는 Sandbox와 별도**이며 아직 준비하지 않았습니다. 테스트·심사·요율 확인 후 운영 활성화를 결정하기 전까지 `PADDLE_LIVE_ENABLED=false`를 유지합니다.
+
+선물 후원(BIC 볼펜 1,000원·라떼 4,700원·빅맥 5,700원)은 여전히 준비 안내만 제공합니다. 순수 후원을 Paddle 상품으로 등록하지 않으며 별도 수납 제공자를 정해야 합니다.
+
+관련 구현·운영 세부 사항은 [billing.md](docs/billing.md), 요율 문의 내용은 [paddle-fee-inquiry.md](docs/paddle-fee-inquiry.md), 환경 변수 이름은 [.env.example](.env.example)을 참고합니다.
+
+### 인수인계 시 검증 결과
+
+- `npm test`: **27개 파일, 157개 테스트 통과**.
+- `npm run build` 및 TypeScript: 통과.
+- 이번에 변경한 결제 관련 파일의 ESLint: 통과.
+- 전체 `npm run lint`에는 기존 `tests/refresh-transition.test.ts:11`의 `react-hooks/globals` 오류 1개와 기존 경고 8개가 남아 있습니다. 결제 파일 오류는 아닙니다.
+- 패키지 검사에서 취약점 19개(중간 3·높음 13·심각 3)가 보고되었습니다. 실제 운영 전 의존성 검토가 필요하며, 인수인계 중 임의로 `npm audit fix --force`를 실행하지 않았습니다.
+- 위 결과는 자동 테스트·빌드·연결 검사입니다. 실제 Paddle 결제 완료와 외부 웹훅 전달까지 검증한 결과는 아닙니다.
+
+집에서 새 Codex 대화를 열면 다음처럼 요청하면 됩니다.
+
+> README의 2026-10-06 Paddle 인수인계를 읽고 현재 상태부터 이어서 작업해 줘. .env.local은 가져왔어. 월 990원 구독을 유지하고 Sandbox 웹훅·기본 결제 링크·Vercel 테스트 배포와 실제 Sandbox 결제부터 검증해 줘. Paddle 요율 문의는 초안을 사용하되 미정 판매량을 약속하지 말고, 실제 결제 운영은 테스트와 심사 완료 후 검토해 줘.
+
 ## Windows (C: / Documents)
 
 클라우드 에이전트는 **당신 PC의 `C:\`에 파일을 쓸 수 없습니다.** 로컬에 같은 구조를 받으려면 **WSL**에서 Origin으로 클론합니다.

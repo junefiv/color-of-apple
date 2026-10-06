@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { Crown, LogIn, LogOut, UserRoundCheck } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { PlanUpgradeDialog } from "@/components/billing/plan-upgrade-dialog";
@@ -103,6 +104,9 @@ export function AccountButton() {
                   <span className="ml-auto text-[10px] text-muted-foreground">₩990/{isKo ? "월" : "mo"}</span>
                 </DropdownMenuItem>
               ) : null}
+              <DropdownMenuItem className="py-2" render={<Link href="/billing" />} onClick={() => setOpen(false)}>
+                <Crown aria-hidden />{isKo ? "구독 관리" : "Manage subscription"}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" className="py-2" onClick={() => { setOpen(false); setLogoutOpen(true); }}>
                 <LogOut aria-hidden />{isKo ? "로그아웃" : "Sign out"}

@@ -3,9 +3,12 @@
 import { ArrowRight, FolderOpen, ShieldCheck } from "lucide-react";
 import type { Locale } from "@/lib/copy";
 import { FREE_PROJECT_LIMIT } from "@/lib/firebase/data";
+import type { BillingConfiguration } from "@/lib/billing/types";
 
-export function ProPlanDetails({ locale, compact = false }: { locale: Locale; compact?: boolean }) {
+export function ProPlanDetails({ locale, compact = false, billing }: { locale: Locale; compact?: boolean; billing?: BillingConfiguration }) {
   const isKo = locale === "ko";
+  const ready = billing?.enabled === true;
+  const sandbox = ready && billing.environment === "sandbox";
   const comparison = [
     { feature: isKo ? "컬러북 저장" : "Saved colorbooks", free: isKo ? `최대 ${FREE_PROJECT_LIMIT}개` : `Up to ${FREE_PROJECT_LIMIT}`, pro: isKo ? "무제한" : "Unlimited", upgraded: true },
     { feature: isKo ? "광고 (도입 예정)" : "Ads (planned)", free: isKo ? "노출 예정" : "With ads", pro: isKo ? "광고 제거" : "No ads", upgraded: true },
@@ -17,10 +20,12 @@ export function ProPlanDetails({ locale, compact = false }: { locale: Locale; co
   return (
     <div className={compact ? "grid gap-4" : "mt-5 grid gap-6"}>
       <div className="text-center">
-        {compact ? <p className="mb-2 flex items-center justify-center gap-2 text-xs font-semibold text-[var(--text-secondary)]">Color of Apple Pro<span className="rounded-full bg-muted px-2 py-0.5 font-normal">{isKo ? "출시 준비 중" : "Coming soon"}</span></p> : null}
+        {compact ? <p className="mb-2 flex items-center justify-center gap-2 text-xs font-semibold text-[var(--text-secondary)]">Color of Apple Pro{!ready || sandbox ? <span className="rounded-full bg-muted px-2 py-0.5 font-normal">{sandbox ? (isKo ? "테스트 결제" : "Test checkout") : (isKo ? "출시 준비 중" : "Coming soon")}</span> : null}</p> : null}
         <p className="text-3xl font-semibold tracking-tight text-[var(--text-primary)]">
-          ₩990<span className="ml-1.5 text-sm font-normal tracking-normal text-[var(--text-secondary)]">{isKo ? "/ 월 · 예정" : "/ month · planned"}</span>
+          ₩990<span className="ml-1.5 text-sm font-normal tracking-normal text-[var(--text-secondary)]">{ready ? (isKo ? "/ 월" : "/ month") : (isKo ? "/ 월 · 예정" : "/ month · planned")}</span>
         </p>
+        {ready ? <p className="mt-2 text-xs text-[var(--text-secondary)]">{isKo ? "세금 포함 · 매월 자동 결제 · 구독 관리에서 해지 가능" : "Tax included · Renews monthly · Cancel in subscription settings"}</p> : null}
+        {sandbox ? <p className="mt-2 text-xs text-[var(--text-secondary)]">{isKo ? "실제 청구되지 않으며 테스트 결제로 실제 Pro 권한이 변경되지 않아요." : "No real charge. Test payments do not change your live Pro access."}</p> : null}
       </div>
       {!compact ? <section aria-label={isKo ? "Pro 업그레이드 혜택" : "Pro upgrade benefits"} className="grid gap-3 sm:grid-cols-2">
         <article className={`rounded-2xl border border-[var(--border-default)] bg-[var(--surface)] ${compact ? "p-4" : "p-5"}`}>
@@ -46,13 +51,13 @@ export function ProPlanDetails({ locale, compact = false }: { locale: Locale; co
       </section> : null}
       <section className="overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface)]">
         <table className="w-full table-fixed text-left text-sm">
-          <caption className="sr-only">{isKo ? "Free와 출시 예정 Pro 플랜 비교" : "Free and upcoming Pro plan comparison"}</caption>
+          <caption className="sr-only">{isKo ? "Free와 Pro 플랜 비교" : "Free and Pro plan comparison"}</caption>
           <thead>
             <tr className="border-b border-[var(--border-default)]">
               <th scope="col" className="w-[42%] px-4 py-4 font-medium text-[var(--text-secondary)]">{isKo ? "기능 비교" : "Compare features"}</th>
               <th scope="col" className="px-2 py-4 text-center font-semibold text-[var(--text-primary)]">Free</th>
               <th scope="col" className="bg-[var(--surface-subtle)] px-2 py-4 text-center font-semibold text-[var(--text-primary)]">
-                Pro<span className="mt-0.5 block text-[11px] font-normal text-[var(--text-tertiary)]">{isKo ? "출시 예정" : "Coming soon"}</span>
+                Pro{!ready || sandbox ? <span className="mt-0.5 block text-[11px] font-normal text-[var(--text-tertiary)]">{sandbox ? (isKo ? "테스트" : "Test") : (isKo ? "출시 예정" : "Coming soon")}</span> : null}
               </th>
             </tr>
           </thead>

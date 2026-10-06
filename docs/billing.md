@@ -1,57 +1,66 @@
-# 글로벌 구독과 선물 후원 결제 도입안
+# Paddle 구독 연동과 선물 후원
 
-2026-10-06 기준, 한국 소재 수취 사업자를 전제로 한다. 아래는 도입 설계이며 현재 SDK, checkout API, webhook 또는 실결제는 구현되어 있지 않다.
+2026-10-06 작업 상태. 한국 소재 **사업자등록이 없는 개인 개발자**가 월 **990원** SaaS 구독을 글로벌로 판매하는 방향이다. 실행 순서와 중단 지점은 [README 인수인계](../README.md)에 기록한다.
 
-## 월 990원에 맞는 제공자 선택
+## 현재 상태
 
-월 990원을 유지하려면 건당 USD 0.50이 붙는 MoR 표준 요율보다 **국내 PG + 해외 PayPal 소액 결제 요율**을 우선 검토한다. 아직 제공자를 확정하거나 실결제를 연동한 것은 아니다.
+Paddle Node SDK, Paddle.js, Firebase Admin SDK와 checkout/confirm/status/portal/webhook API를 구현했다. Sandbox 상품과 가격, API 키, 클라이언트 토큰을 생성했고 Firebase Admin/Paddle 가격 API 연결도 확인했다. 웹훅 목적지 생성, 서명 secret, 기본 결제 링크, 변경 배포, 실제 Sandbox Checkout 결제 완료는 아직 남아 있다. Live 결제와 선물 수납은 활성화하지 않았다.
 
-| 후보 | 공개 요율 | 적용 범위와 제약 |
-| --- | --- | --- |
-| 페이플(Payple) | 국내 카드 1.0~2.9%, 수수료 VAT 별도 | 한국 사업자등록 필수, 가입비 220,000원. 공개 가입 화면에 해외 구독 업종 불가로 명시되어 있으므로 국내 구독 후보로 검토 |
-| 토스페이먼츠 | 국내 일반 카드 3.4%, 수수료 VAT 별도 | 가입비 220,000원, 연관리비 110,000원, 계약별 상이. 자동결제는 국내 발급 카드만 지원 |
-| PayPal 소액 결제 | 해외 6% + USD 0.05, 디지털 상품 해외 5.5% + USD 0.05 | 한국 계정 기준 사전 신청·승인 필요. 해당 구독/후원에 적용되는 요율과 구독 API 적용 여부를 확인. 환전·인출 비용 별도 |
-| Paddle 표준 | 5% + USD 0.50 | 판매세 대행의 장점이 있지만 990원 월별 결제에서는 고정 수수료 비중이 큼 |
+| 설정 | Sandbox |
+| --- | --- |
+| Product | `pro_01m483wmpr2hbjdmrf2vv51grx` |
+| Price | `pri_01m483zd2z7qgjwjcjq7e6qacj` |
+| 월 가격 | KRW 990, tax mode `internal`(세금 포함), 무료 체험 없음, 수량 1 |
+| API 키 만료 | 2026-11-05 |
+| 웹훅 | 아직 미생성, 서버 endpoint는 `/api/billing/webhook` |
+| 기본 결제 링크 | 아직 미설정, 앱 endpoint는 `/billing/checkout` |
 
-출처: [Payple 가입/요율/제한](https://payple.kr/onboarding/), [토스 요율](https://www.tosspayments.com/about/fee), [토스 자동결제 제한](https://docs.tosspayments.com/guides/v2/billing/integration), [한국 PayPal 소액 요율](https://www.paypal.com/kr/business/paypal-business-fees), [Paddle 요율](https://www.paddle.com/pricing).
+## 서버와 권한
 
-단순 비교 예시로 USD 1 = KRW 1,400을 가정하면, 990원 결제에서 Paddle 표준 수수료 차감 후 약 241원, PayPal 해외 소액 6% 요율 차감 후 약 861원이 남는다. 국내 토스 일반 카드 3.4%에 수수료 VAT 10%를 포함하면 약 953원이 남는다. 이는 현재 환율/실제 정산 견적이 아니며 판매 관련 세금, 환전·인출, 가입·연관리비, 서버비를 제외한 건별 계산이다. PayPal 실제 checkout은 지원 통화의 고정 가격을 별도로 정해야 한다.
+- 서버는 Firebase ID token의 서명·만료·폐기 상태와 인증된 이메일을 확인한다. 요청 body의 uid·이메일·가격은 사용하지 않는다.
+- `POST /api/billing/checkout`은 서버 가격 ID를 조회해 KRW 990·월 주기·세금 포함·무료 체험 없음 조건을 검증한다. 계정별 Firestore 트랜잭션 lease로 동시 생성 요청을 막고 진행 중 거래를 재사용한다. 기존 구독이 있으면 고객 포털을 제공한다.
+- 서버에서 생성한 Paddle 고객 ID → Firebase uid와 checkout attempt를 저장한다. 브라우저에서 보낼 수 있는 `custom_data`만으로 권한을 부여하지 않는다.
+- `POST /api/billing/confirm`은 서버 고객/거래/구독 연결과 Paddle API 결제 완료 상태를 확인한다. `checkout.completed` 이벤트는 확인 요청을 시작하는 신호일 뿐이다.
+- `GET /api/billing/status`는 Paddle 현재 구독과 최근 완료 거래를 확인해 누락된 갱신 알림을 보정한다. `POST /api/billing/portal`은 로그인 사용자 소유 구독의 Paddle 포털 세션을 만든다.
+- `POST /api/billing/webhook`은 변형하지 않은 raw body와 Paddle 서명을 공식 SDK로 검증한다. event ID로 중복을 막고 Paddle API의 현재 구독/거래 정보와 시각으로 이벤트 순서 역전을 처리한다.
+- 저장 위치는 `billing/{sandbox|production}/accounts`, `customers`, `subscriptions`, `events`이다. 기존 Firestore 규칙에서 이 경로는 클라이언트에 공개하지 않는다.
+- **Sandbox는 `users` 문서를 변경하지 않는다.** Production만 Admin SDK로 `plan`과 `proExpiresAt`을 기록한다. 클라이언트는 이 필드를 변경할 수 없다.
+- 결제가 완료된 이용 기간에만 권한을 준다. 해지 예약은 유료 기간 종료까지 유지하며, 즉시 해지·일시 정지는 권한을 중단한다. 실패한 갱신은 유료 기간을 연장하지 않는다. 현재 결제의 전액 환불·차지백은 권한을 중단하고 일부 환불은 유지한다. 이전 기간 환불은 이후 정상 갱신 권한을 취소하지 않는다.
+- Firestore 규칙과 클라이언트 모두 만료 시각을 확인한다. 관리자가 기존 방식으로 부여한 `proExpiresAt` 필드 없는 Pro는 유지한다. Free 전환 시 기존 컬러북을 삭제하지 않는다.
 
-한국 PayPal 계정 사이의 국내 거래는 지원되지 않는다. 따라서 PayPal 하나로 국내와 해외를 모두 처리하는 설계는 사용하지 않는다. [국내 거래 제한](https://www.paypal.com/kr/digital-wallet/system-enhancement-faq?locale.x=ko_KR), [PayPal 정기결제](https://www.paypal.com/kr/business/accept-payments/checkout/recurring).
+웹훅 설정에서는 `transaction.completed`, 모든 `subscription.*`, `adjustment.created`, `adjustment.updated`를 구독한다. Usage는 Both로 설정해 플랫폼 이벤트와 시뮬레이션을 테스트한다. 배포한 서버에서 정상 수신되는지 확인하고 실패 알림 재전송도 검증해야 한다. 아직 별도 정기 전체 계정 재동기화 작업은 없다. 구독 관리 조회 시 보정과 웹훅만 구현한 상태다.
 
-국내 PG와 PayPal은 MoR 판매세 대행을 전제하지 않는다. 해외 소비자 판매세 신고·납부와 증빙 관리 비용을 함께 비교한다. 소액 요율 승인이 안 되면 공개 표준 요율로 다시 계산하며, 해외 연간 결제 또는 MoR 저가 상품 협상안을 검토한다.
+## 환경 변수와 실행
 
-## 판매세 대행이 필요한 대안
+필요한 이름은 [`.env.example`](../.env.example)에 있다. 실제 값은 로컬 `.env.local` 또는 배포 서버의 환경 변수에만 저장한다. Node.js 22 이상이 필요하다. API 키·웹훅 secret·Firebase private key에는 `NEXT_PUBLIC_`를 사용하지 않는다.
 
-- 판매세 대행이 필요하면 Paddle을 검토한다. 소프트웨어 판매자의 지원 제외 국가에 한국은 포함되지 않으며, 실제 가입은 사업자·상품 심사를 거친다. [판매자 지원 국가](https://www.paddle.com/help/start/intro-to-paddle/which-countries-are-supported-by-paddle)
-- 대안은 Lemon Squeezy다. 한국이 지원 국가에 명시되어 있다. [지원 국가](https://docs.lemonsqueezy.com/help/getting-started/supported-countries)
-- Merchant of Record는 해외 소비자 판매에 대한 판매세/VAT 처리 부담을 줄인다. 한국 사업자의 소득·법인세 등 전체 세무를 대신한다는 의미는 아니다. [Paddle 판매 국가 및 세금](https://developer.paddle.com/concepts/sell/supported-countries-locales/)
-- Paddle 표준 수수료는 거래당 5% + USD 0.50이다. 월 990원은 고정 수수료 비중이 크므로 저가 상품 요율 협의 또는 연간 결제를 검토한다. 기존 표시 가격은 아직 변경하지 않는다. KRW 지원 여부와 별도로 최소 결제금액·정산통화를 실제 승인 계정에서 확인한다. [요율](https://www.paddle.com/pricing), [통화 API](https://developer.paddle.com/api-reference/currencies/list-currencies/)
+```powershell
+node scripts/check-billing.mjs
+npm run dev
+```
 
-## Pro 구독 연결 (Paddle 후보 기준)
+`PADDLE_ENVIRONMENT=sandbox`가 기본이며 Live는 `production`을 사용한다. Live를 켜려면 `PADDLE_LIVE_ENABLED=true`와 운영자 이름·문의 이메일도 필요하다. 이 스위치는 SDK 설정 완료나 Paddle 계정 심사 승인을 자동 검증하지 않으므로, 실제 심사·요율·테스트 확인을 별도로 완료해야 한다.
 
-1. 승인 계정에서 Pro 상품과 월/연 가격을 생성하고 sandbox와 production 설정을 분리한다. 서버 전용 API 키와 webhook secret은 클라이언트에 노출하지 않는다.
-2. `/api/billing/checkout`에서 Firebase ID token을 검증한다. 서버의 허용된 price ID만 사용하며 클라이언트 금액을 신뢰하지 않는다. 서버에서 인증된 uid와 checkout 주문을 연결한다. 사용자 구독이 이미 존재하면 중복 구독 대신 구독 관리 화면으로 보낸다.
-3. 모달의 플랜 결제하기를 hosted checkout에 연결한다. 국가, 통화, 세금, 최종 결제금액은 checkout에서 확정한다. 화면 언어만으로 구매자 국가를 정하지 않는다.
-4. `/api/billing/webhook`은 raw body의 서명을 검증하고 event ID를 저장해 중복 처리를 방지한다. provider customer/subscription ID와 uid의 서버 측 연결을 확인하고 공급자 API의 현재 상태 및 이벤트 발생 시각으로 순서 역전을 처리한다. [서명 검증](https://developer.paddle.com/webhooks/about/signature-verification/)
-5. 검증된 유료 구독 상태를 Admin SDK로 기록한다. 서버 전용 구독 문서에 provider, customerId, subscriptionId, status, priceId, currentPeriodEnd, scheduledChange, lastEventAt을 관리하고 `users/{uid}.plan`에 권한을 반영한다. 클라이언트가 plan을 변경할 수 없는 기존 Firestore 규칙을 유지한다.
-6. 해지 예약은 paid period 종료 시까지 권한을 유지한다. 즉시 해지·환불·연체 시 권한 정책은 출시 전에 확정한다. Free로 돌아가도 기존 컬러북을 자동 삭제하지 않으며 새 저장 제한과 충돌하지 않도록 확인한다. [권한 부여 웹훅 가이드](https://developer.paddle.com/build/subscriptions/provision-access-webhooks/)
-7. 결제 완료 화면은 서버 반영 상태를 조회한다. 브라우저 성공 callback만으로 Pro로 바꾸지 않는다. 구독 관리에서 해지·결제수단 변경·청구 내역을 제공한다.
+`BILLING_APP_URL`은 끝 슬래시와 경로 없는 origin이다. Sandbox 로컬은 `http://localhost:43123`, 배포는 실제 HTTPS origin을 사용한다. Production에서 localhost는 허용하지 않는다. Paddle가 호출할 웹훅은 외부 접근 가능한 서버에 있어야 한다.
 
-실결제 전에 sandbox로 성공, 갱신, 실패, 해지 예약, 기간 만료, 환불, 중복/역순 webhook 및 다른 uid의 구독 접근 차단을 확인한다.
+Firebase의 `private_key_id`는 비밀 키가 아니다. 서비스 계정 JSON의 `client_email`, `private_key`를 사용한다. `private_key`는 `-----BEGIN PRIVATE KEY-----`로 시작하는 전체 PEM 문자열이며 `\n` 줄바꿈을 유지한다. [Firebase Admin 공식 설정](https://firebase.google.com/docs/admin/setup).
 
-## 선물 후원 연결
+## 앱 화면
 
-볼펜·라떼·빅맥은 후원금을 친숙하게 표현하는 선택 항목이다. 실제 물품이나 기프티콘을 제공하지 않으며 구독이나 Pro 권한과 연결하지 않는다. 브랜드의 공식 판매 또는 제휴로 표현하지 않는다.
+플랜 비교 모달에는 가격·갱신·해지 조건과 약관 링크를 표시한다. Sandbox 표시와 실제 권한이 바뀌지 않는 안내를 구분한다. 기존 컬러북 정리하기 흐름은 그대로 제공한다. `/pricing`은 공개 비교, `/billing`은 구독 관리, `/billing/checkout`은 결제 링크와 완료 확인 화면이다.
 
-Paddle은 실질적인 소프트웨어/서비스 판매가 없는 donation을 금지한다. 따라서 선물 이름을 붙인 후원을 Paddle 구독 상품으로 등록하지 않는다. [허용 사용 정책](https://www.paddle.com/help/start/intro-to-paddle/what-am-i-not-allowed-to-sell-on-paddle)
+약관·개인정보·환불 페이지는 운영자 이름이 없어 현재 초안이다. 실제 운영 전에 신원·연락처·정책 내용과 처리 업체를 확인해야 한다. 환불은 [Paddle 현재 환불 정책](https://www.paddle.com/legal/refund-policy)과 해당 국가 소비자 권리에 따라 처리하며 일률적인 환불 불가 정책을 넣지 않는다.
 
-후원 수납을 승인하는 별도 결제 제공자를 선정한다. 국내 PG(예: Toss Payments)에 개발자 자발적 후원 모델, 국내·해외 카드 수납 및 정산 가능 여부를 확인한다. Toss의 해외 결제는 별도 계약과 카드사 승인이 필요하고 원화로 결제된다. [해외 결제 안내](https://docs.tosspayments.com/resources/glossary/international-payment)
+## 요율 협의
 
-해외 후원 링크를 빨리 열려면 Ko-fi와 PayPal도 검토할 수 있다. Ko-fi는 연결된 PayPal/Stripe로 직접 수납한다. 한국 수취 계정과 한국 구매자의 지원 범위는 별도로 확인해야 하며 Pro의 MoR와 같은 세금 대행을 전제하지 않는다. [Ko-fi 결제 안내](https://help.ko-fi.com/hc/en-us/articles/360013140633-Supporter-payments-FAQ)
+공개 표준은 거래당 **5% + USD 0.50**이다. 매월 결제와 갱신마다 적용된다. [공식 요율](https://www.paddle.com/pricing)은 USD 10 미만 상품에 대해 별도 요율 문의를 허용하지만, 낮은 가격이라고 자동 인하되는 것은 아니다.
 
-PayPal로 직접 해외 선물 후원을 받는 경우, 디지털 상품 5.5% 요율을 순수 후원에 임의 적용하지 않는다. 일반 해외 소액 6% 요율의 승인 및 후원 수납 허용 여부를 확인하고, 국내 후원은 PG의 해당 모델 승인 후 연결한다.
+문의 초안은 [paddle-fee-inquiry.md](paddle-fee-inquiry.md)에 있으며 **아직 발송하지 않았다.** Paddle 계정에 연결된 이메일에서 `sellers@paddle.com`으로 보낸다. 실제 판매량은 미정이며 100·500·1,000건은 견적 비교 시나리오다. 매월 요율, 최소 수수료/거래량/약정, 세금 기준, 환전·정산·환불·차지백 비용과 한국 개인 판매자의 심사 가능 여부를 서면으로 확인한다. [판매자 지원 연락처](https://www.paddle.com/help/start/intro-to-paddle/how-do-i-contact-support).
 
-카드는 운영자가 지정한 고정 KRW 금액(BIC 볼펜 1,000원, 스타벅스 카페라떼 4,700원, 빅맥 5,700원)이다. 공식 판매가 또는 국가별 가격 데이터는 아니다. 국가별 상품가를 적용하려면 국가·통화·품목 규격·가격 확인일이 있는 서버 가격표가 필요하다. 환율 환산만으로 현지 상품가라고 표시하지 않는다.
+월 990원 가격을 연간 가격으로 임의 변경하지 않는다. 실제 요율 승인이나 순수익을 확정한 것으로 표현하지 않는다.
 
-후원 checkout 서버는 gift ID로 금액을 결정하고 일회성 주문을 만든다. 승인된 결제의 서버 검증·중복 방지 후에만 완료를 표시하며 구독 문서나 plan은 변경하지 않는다. 로그인 없이 받는 경우 임의 uid를 신뢰하지 않는다. 영수증, 취소·환불 및 연락처는 제공자 승인 조건에 맞춘다.
+## 선물 후원
+
+BIC 볼펜 1,000원, 스타벅스 카페라떼 4,700원, 빅맥 5,700원은 운영자가 정한 고정 일회성 후원 금액이다. 실제 상품·기프티콘을 제공하거나 브랜드 공식 판매·제휴를 의미하지 않는다. 구독/Pro 권한을 부여하지 않으며 현재 결제 버튼은 준비 안내만 표시한다.
+
+소프트웨어·서비스 판매가 없는 donation은 [Paddle 허용 사용 정책](https://www.paddle.com/help/start/intro-to-paddle/what-am-i-not-allowed-to-sell-on-paddle)에 따라 Paddle 상품으로 등록하지 않는다. 한국 소재 개인의 국내·해외 후원 수납을 승인하는 별도 제공자 검토가 남아 있다.

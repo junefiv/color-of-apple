@@ -32,6 +32,14 @@ export type UserProfile = {
   plan: Plan;
 };
 
+export function effectiveProfilePlan(value: { plan?: unknown; proExpiresAt?: unknown }, now = Date.now()): Plan {
+  if (value.plan !== "pro") return "free";
+  // Preserve existing administrator-assigned Pro accounts without a billing expiry.
+  if (!("proExpiresAt" in value)) return "pro";
+  const expiry = value.proExpiresAt as { toMillis?: () => number } | null;
+  return expiry && typeof expiry.toMillis === "function" && expiry.toMillis() > now ? "pro" : "free";
+}
+
 export type SavedProject = {
   id: string;
   title: string;
@@ -78,23 +86,35 @@ export async function ensureUserProfile(user: User) {
 }
 
 export function subscribeUserProfile(uid: string, onValue: (profile: UserProfile | null) => void): Unsubscribe {
-  return onSnapshot(
+  let expiryTimer: ReturnType<typeof setTimeout> | undefined;
+  const unsubscribe = onSnapshot(
     doc(getFirebaseDb(), "users", uid),
     (snapshot) => {
+      clearTimeout(expiryTimer);
       if (!snapshot.exists()) {
         onValue(null);
         return;
       }
       const value = snapshot.data();
-      onValue({
+      const profile: UserProfile = {
         displayName: typeof value.displayName === "string" ? value.displayName : null,
         email: typeof value.email === "string" ? value.email : null,
         photoURL: typeof value.photoURL === "string" ? value.photoURL : null,
-        plan: value.plan === "pro" ? "pro" : "free",
-      });
+        plan: effectiveProfilePlan(value),
+      };
+      onValue(profile);
+      if (profile.plan === "pro" && value.proExpiresAt) {
+        const expire = () => {
+          const remaining = value.proExpiresAt.toMillis() - Date.now();
+          if (remaining <= 0) onValue({ ...profile, plan: "free" });
+          else expiryTimer = setTimeout(expire, Math.min(remaining, 2_147_483_647));
+        };
+        expire();
+      }
     },
-    () => onValue(null),
+    () => { clearTimeout(expiryTimer); onValue(null); },
   );
+  return () => { clearTimeout(expiryTimer); unsubscribe(); };
 }
 
 function projectFromDocument(snapshot: QuerySnapshot<DocumentData>["docs"][number]): SavedProject {
@@ -131,7 +151,7 @@ export async function hasAvailableProjectSlot(uid: string) {
     getDocs(collection(database, "users", uid, "projects")),
   ]);
   if (!profile.exists()) throw new Error("user profile is missing");
-  if (profile.data().plan === "pro") return true;
+  if (effectiveProfilePlan(profile.data()) === "pro") return true;
   const occupied = new Set(projects.docs.map(project => project.id));
   return Array.from({ length: FREE_PROJECT_LIMIT }, (_, i) => `slot-${i + 1}`)
     .some(id => !occupied.has(id));
@@ -185,7 +205,7 @@ export async function saveProject({
     const userSnapshot = await transaction.get(doc(database, "users", uid));
     if (!userSnapshot.exists()) throw new Error("user profile is missing");
 
-    if (userSnapshot.data().plan === "pro") {
+    if (effectiveProfilePlan(userSnapshot.data()) === "pro") {
       const reference = doc(collection(database, "users", uid, "projects"));
       transaction.set(reference, { ...projectData, colorHistory: historyEntries.slice(-500), createdAt: serverTimestamp() });
       return reference.id;

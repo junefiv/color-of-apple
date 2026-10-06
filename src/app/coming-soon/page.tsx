@@ -6,11 +6,13 @@ import { ProPlanDetails } from "@/components/billing/pro-plan-details";
 import { SiteHeader } from "@/components/brand/site-header";
 import { Button } from "@/components/ui/button";
 import { useMatchuStore } from "@/lib/store";
+import { useBillingConfiguration } from "@/lib/billing/client";
 
 export default function ComingSoonPage() {
   const router = useRouter();
   const locale = useMatchuStore((state) => state.locale);
   const isKo = locale === "ko";
+  const billing = useBillingConfiguration();
 
   function goBack() {
     if (window.history.length > 1) router.back();
@@ -32,7 +34,7 @@ export default function ComingSoonPage() {
             {isKo ? "더 많은 컬러북을 모으고, 광고 없이 작업하세요." : "Keep more colorbooks and work without ads."}
           </p>
         </div>
-        <ProPlanDetails locale={locale} />
+        <ProPlanDetails locale={locale} billing={billing} />
         <Button variant="outline" className="mx-auto mt-6 flex" onClick={goBack}>
           <ArrowLeft aria-hidden />{isKo ? "뒤로가기" : "Go back"}
         </Button>
