@@ -28,16 +28,18 @@ export function PolicyDocument({ kind }: { kind: PolicyKind }) {
   const content = documents[kind];
   const operator = process.env.BILLING_OPERATOR_NAME;
   const email = process.env.BILLING_SUPPORT_EMAIL;
-  return <div className="graph-paper-page min-h-dvh"><SiteHeader />
-    <main className="mx-auto max-w-3xl px-5 py-10">
-      <h1 className="text-2xl font-semibold">{content.title}</h1>
+  return <div className="min-h-dvh bg-background text-foreground"><SiteHeader />
+    <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-10">
+      <article className="rounded-2xl border bg-card px-5 py-7 text-card-foreground sm:px-10 sm:py-10">
+      <h1 className="text-2xl font-semibold leading-snug tracking-tight sm:text-3xl">{content.title}</h1>
       {!operator || !email ? <p className="mt-4 rounded-xl border p-3 text-sm">출시 전 검토용 초안입니다. 운영자와 고객 문의 연락처 확정 후 게시합니다. / Prelaunch draft pending operator identity and support contact.</p> : <p className="mt-4 text-sm">운영자 / Operator: {operator} · 문의 / Contact: <a className="underline" href={`mailto:${email}`}>{email}</a></p>}
-      {content.sections.map(([title, body]) => <section key={title} className="mt-8"><h2 className="font-semibold">{title}</h2><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">{body}</p></section>)}
-      <nav className="mt-8 flex flex-wrap gap-4 text-sm underline" aria-label="Legal policies">
+      {content.sections.map(([title, body]) => <section key={title} className="mt-9"><h2 className="text-lg font-semibold leading-relaxed">{title}</h2>{body.split(" / ").map((paragraph, index) => <p key={index} lang={index === 0 ? "ko" : "en"} className={`mt-3 whitespace-pre-wrap break-words text-base leading-8 ${index === 0 ? "text-card-foreground" : "text-muted-foreground"}`}>{paragraph}</p>)}</section>)}
+      <nav className="mt-10 flex flex-wrap gap-x-5 gap-y-3 border-t pt-6 text-sm leading-6 underline underline-offset-4" aria-label="Legal policies">
         <Link href="/pricing">플랜 / Plans</Link><Link href="/terms">약관 / Terms</Link><Link href="/privacy">개인정보 / Privacy</Link><Link href="/refund-policy">환불 / Refunds</Link>
         <a href="https://www.paddle.com/legal/buyer-terms">Paddle Buyer Terms</a><a href="https://www.paddle.com/legal/refund-policy">Paddle Refund Policy</a><a href="https://paddle.net">Paddle support</a>
         {kind === "privacy" ? <><a href="https://firebase.google.com/support/privacy">Firebase Privacy</a><a href="https://vercel.com/legal/privacy-policy">Vercel Privacy</a><a href="https://www.paddle.com/legal/privacy">Paddle Privacy</a></> : null}
       </nav>
+      </article>
     </main>
   </div>;
 }
