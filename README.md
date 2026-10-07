@@ -6,6 +6,17 @@ Color of Apple은 기준색 하나를 역할이 부여된 UI 컬러 시스템으
 
 ## 집에서 이어서 작업하기 — 2026-10-06 인수인계
 
+### 최신 운영 상태 — 2026-10-07 Live 연결 완료
+
+이 절이 아래 과거 진행 기록보다 우선합니다. Paddle 계정 검증은 Complete이며 정산 정보도 저장됐습니다. 사용자 진행 승인 후 Vercel Production의 일반 Paddle 변수 네 개를 Live 키·토큰·가격·서명 키로 교체하고 `PADDLE_ENVIRONMENT=production`, `PADDLE_LIVE_ENABLED=true`로 재배포했습니다. 배포 `5TnyuGHybZZwa2sR1USS9KHCt9qA`는 Ready이며 공개 `/api/billing/config`가 HTTP 200, enabled=true, production, KRW 990 및 Live 토큰 형식을 반환합니다. 공개 가격 페이지도 세금 포함·매월 자동 결제·해지 안내와 활성 결제 CTA를 표시합니다.
+
+- Live 웹훅 `ntfset_01m4aah3ct49rknm2endnjnqxn`은 Active, 기존 Sandbox 목적지는 Inactive입니다. 공용 URL의 Live 서명 키로 서명한 비권한 `customer.created` 요청은 HTTP 200 `received=true`, body 변조 및 무서명 요청은 HTTP 400 `invalid_signature`였습니다. 이는 서버 서명 검증이며 Paddle 발신 결제 이벤트·권한 부여 검증과 구별합니다.
+- Paddle Live 시뮬레이션 `ntfsim_01m4ad9r2zxn01qdmnmzd0bv64`를 생성·실행·Replay했습니다. 화면의 Response는 `{}`이며 전달 성공 상태를 확인하지 못했으므로 Paddle 발신 전달 검증 완료로 간주하지 않습니다. 실제 결제 이벤트에서 Delivered와 서버 반영을 확인해야 합니다.
+- 최초 로컬 전달 도구의 password 필드가 실제 키 대신 마스킹 문자열을 반환한 문제를 발견해 운영 및 대기용 세 Secret을 실제 값으로 다시 저장했습니다. 공개 서버의 Live 토큰과 올바른 Live secret 서명 수신까지 확인했습니다. 임시 전달 서버와 파일은 정리합니다. 키를 출력하거나 Git에 넣지 않았습니다.
+- `PADDLE_LIVE_*` 네 별도 변수는 백업 보관용이며 앱은 일반 이름의 변수를 읽습니다. 로컬 `.env.local`은 Sandbox를 유지하고 `.env.paddle-live.local`은 별도 보관합니다. 로컬의 false 스위치는 운영 Vercel의 true와 별개입니다.
+- 사용자에게 공개 가격 페이지에서 Google 로그인 후 월 990원 실제 카드 결제를 직접 완료하도록 요청했습니다. **실제 결제·구독 생성·Production Pro 권한·결제 이벤트 전달은 아직 미확인**입니다. 결제 완료 후 Live 거래/구독, Firestore `billing/production`, 실제 사용자 `plan`/`proExpiresAt`, 인증된 상태 API와 앱을 확인합니다. 개인 카드·인증 정보는 사용자 직접 입력합니다.
+- 요율 문의 답변과 협상 요율 승인은 아직 확인되지 않았습니다. 선물 수납은 미구현 상태입니다.
+
 현재 작업 브랜치는 `main`이며 저장소는 <https://github.com/junefiv/color-of-apple>입니다(기존 `junefiv/matchu`에서 이동). **Paddle 연동 코드와 Sandbox 상품 설정을 진행한 상태이며, 실제 결제 운영과 요율 협의는 아직 완료하지 않았습니다.** 아래 순서로 이어서 작업합니다.
 
 ### 집 PC 재개 확인 — 2026-10-07

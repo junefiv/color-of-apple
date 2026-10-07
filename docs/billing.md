@@ -4,6 +4,8 @@
 
 ## 현재 상태
 
+**최신 상태 — Live 연결 완료:** Paddle `Verify your account`는 Complete입니다. Vercel 일반 Paddle 변수들을 Live 값으로 연결하고 `PADDLE_ENVIRONMENT=production`, `PADDLE_LIVE_ENABLED=true`로 배포했습니다. 배포 `5TnyuGHybZZwa2sR1USS9KHCt9qA`는 Ready이며 공개 config API는 enabled=true, production, KRW 990, Live 토큰을 반환합니다. Live 목적지는 Active, 동일 URL의 Sandbox 목적지는 Inactive입니다. Live secret으로 서명한 비권한 이벤트는 HTTP 200, 변조·무서명은 HTTP 400입니다. 최초 마스킹 값 전달 오류는 실제 키를 재저장해 수정했습니다. Paddle 시뮬레이션 `ntfsim_01m4ad9r2zxn01qdmnmzd0bv64`의 Response는 `{}`로, 실제 전달 성공은 확인되지 않았습니다. 사용자 직접 실결제 및 실제 구독/Production Pro 권한/결제 웹훅 검증은 대기 중입니다. 아래 Sandbox 및 Live 준비 절은 당시 진행 기록입니다. 요율 협상 승인은 아직 확인되지 않았습니다.
+
 Paddle Node SDK, Paddle.js, Firebase Admin SDK와 checkout/confirm/status/portal/webhook API를 구현했다. Sandbox 상품·가격·키·웹훅·기본 결제 링크와 Vercel 환경 변수를 설정하고 재배포했다. 앱 Google 로그인 후 실제 Sandbox Checkout에서 KRW 990 테스트 결제를 완료했다. Paddle 서버가 보낸 구독 생성·활성화·거래 완료·해지 예약 알림은 Delivered이며 Firestore 처리 기록과 앱 상태를 확인했다. 실제 사용자 plan은 free로 유지됐다. 정상 서명의 비권한 이벤트 요청은 HTTP 200, 서명 없는 요청과 변조 요청은 HTTP 400으로 확인했다. Live 결제와 선물 수납은 활성화하지 않았다.
 
 최초 검증 거래는 `txn_01m48xvcxegej0ay8p80wc1yve`(completed), 구독은 `sub_01m48xx4ghpmz0ynews3nzgeb3`이다. 최초 고객 포털 해지 예약과 결제 완료 알림 Replay를 확인했다. Replay 당시 이벤트 4개가 유지돼 중복 기록이 생기지 않았다.
