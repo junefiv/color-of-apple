@@ -6,7 +6,13 @@
 
 Paddle Node SDK, Paddle.js, Firebase Admin SDK와 checkout/confirm/status/portal/webhook API를 구현했다. Sandbox 상품·가격·키·웹훅·기본 결제 링크와 Vercel 환경 변수를 설정하고 재배포했다. 앱 Google 로그인 후 실제 Sandbox Checkout에서 KRW 990 테스트 결제를 완료했다. Paddle 서버가 보낸 구독 생성·활성화·거래 완료·해지 예약 알림은 Delivered이며 Firestore 처리 기록과 앱 상태를 확인했다. 실제 사용자 plan은 free로 유지됐다. 정상 서명의 비권한 이벤트 요청은 HTTP 200, 서명 없는 요청과 변조 요청은 HTTP 400으로 확인했다. Live 결제와 선물 수납은 활성화하지 않았다.
 
-검증 거래는 `txn_01m48xvcxegej0ay8p80wc1yve`(completed), 구독은 `sub_01m48xx4ghpmz0ynews3nzgeb3`(active)이다. 고객 포털에서 해지를 예약했고 유료 기간 종료와 해지 예약 시각은 모두 `2026-11-06T15:39:20.99688Z`(KST 11월 7일 00:39:20)이다. 기간 종료 전 테스트 Pro는 유지된다. 결제 완료 알림 Replay도 Delivered이고 처리 이벤트는 4개로 유지돼 중복 기록이 생기지 않았다. 갱신·결제 실패·기간 만료·전액/일부 환불 종단 검증과 Firestore 규칙 배포는 아직 남아 있다.
+최초 검증 거래는 `txn_01m48xvcxegej0ay8p80wc1yve`(completed), 구독은 `sub_01m48xx4ghpmz0ynews3nzgeb3`이다. 최초 고객 포털 해지 예약과 결제 완료 알림 Replay를 확인했다. Replay 당시 이벤트 4개가 유지돼 중복 기록이 생기지 않았다.
+
+2026-10-07 회사 재개 검증에서 Firestore 규칙 게시(10:47 KST)와 실제 클라이언트 권한 시나리오 8개를 확인했다. 전체 157개 테스트와 빌드도 통과했다. 실제 Sandbox 500원 일부 환불 승인 시 권한 유지, 추가 490원 승인으로 누적 전액 환불 시 `paymentRevoked=true`를 확인했다. 별도 테스트 거래 `txn_01m4a1hp480exrf5vrhdvybmpw`는 최초 카드 거절 시 구독이 생성되지 않았고, 동일 거래 재시도 완료 후 구독 `sub_01m4a1q0ngr8te7hhg0c2p46xr`가 생성됐다. 인증된 공개 status/confirm API도 정상 Sandbox Pro를 반환했으며 실제 사용자 plan은 Free를 유지했다.
+
+11:35 KST 실제 자동 갱신 거래 `txn_01m4a3dqhaxj7ha1a0ep86kdqj`가 990원으로 완료됐다. 실제 웹훅이 이용 기간을 `2026-11-07T02:35:00Z`로 연장하고 `paymentRevoked=false`로 이전 전액 환불 후 테스트 권한을 복구했다. 원래 구독의 해당 기간 종료 해지 예약을 복원했고 `nextBilledAt=null`과 서버 `cancelAt` 반영을 확인했다.
+
+11:40 KST 별도 구독의 실제 갱신 거래 `txn_01m4a3px94nwcv80pger3sr0sh`는 카드 인증 실패(`authentication_failed`)로 `past_due`가 됐다. 구독의 `subscription.past_due` 웹훅이 처리됐고 기존 `paidThrough=2026-11-07T02:05:09.278381Z`가 연장되지 않았다. 인증된 status/confirm API는 HTTP 200, past_due, 기존 기간 내 테스트 Pro를 반환했다. 검증을 위해 청구일을 앞당겨 기존 영수증의 기간이 실패 시각 이후까지 남은 조건이다. 이후 즉시 해지했고 `subscription.canceled` 처리와 API의 canceled/Free 및 다음 청구 없음도 확인했다. 기간 만료 권한 판정은 자동 테스트와 실제 게시된 규칙으로 확인했지만, Paddle의 실제 시간 경과에 따른 기간 종료는 아직 검증하지 않았다.
 
 | 설정 | Sandbox |
 | --- | --- |
@@ -53,13 +59,13 @@ Firebase의 `private_key_id`는 비밀 키가 아니다. 서비스 계정 JSON�
 
 플랜 비교 모달에는 가격·갱신·해지 조건과 약관 링크를 표시한다. Sandbox 표시와 실제 권한이 바뀌지 않는 안내를 구분한다. 기존 컬러북 정리하기 흐름은 그대로 제공한다. `/pricing`은 공개 비교, `/billing`은 구독 관리, `/billing/checkout`은 결제 링크와 완료 확인 화면이다.
 
-약관·개인정보·환불 페이지는 운영자 이름이 없어 현재 초안이다. 실제 운영 전에 신원·연락처·정책 내용과 처리 업체를 확인해야 한다. 환불은 [Paddle 현재 환불 정책](https://www.paddle.com/legal/refund-policy)과 해당 국가 소비자 권리에 따라 처리하며 일률적인 환불 불가 정책을 넣지 않는다.
+약관·개인정보·환불 페이지는 현재 Sandbox 초안이며 운영자 표기는 `GIT_IN`이다. 실제 운영 전에 신원·연락처·정책 내용과 처리 업체를 확인해야 한다. 환불은 [Paddle 현재 환불 정책](https://www.paddle.com/legal/refund-policy)과 해당 국가 소비자 권리에 따라 처리하며 일률적인 환불 불가 정책을 넣지 않는다.
 
 ## 요율 협의
 
 공개 표준은 거래당 **5% + USD 0.50**이다. 매월 결제와 갱신마다 적용된다. [공식 요율](https://www.paddle.com/pricing)은 USD 10 미만 상품에 대해 별도 요율 문의를 허용하지만, 낮은 가격이라고 자동 인하되는 것은 아니다.
 
-문의 초안은 [paddle-fee-inquiry.md](paddle-fee-inquiry.md)에 있으며 **아직 발송하지 않았다.** Paddle 계정에 연결된 이메일에서 `sellers@paddle.com`으로 보낸다. 실제 판매량은 미정이며 100·500·1,000건은 견적 비교 시나리오다. 매월 요율, 최소 수수료/거래량/약정, 세금 기준, 환전·정산·환불·차지백 비용과 한국 개인 판매자의 심사 가능 여부를 서면으로 확인한다. [판매자 지원 연락처](https://www.paddle.com/help/start/intro-to-paddle/how-do-i-contact-support).
+문의는 [paddle-fee-inquiry.md](paddle-fee-inquiry.md)의 내용으로 **2026-10-07 10:55 KST에 발송했다.** 발신자는 `dasawafa@gmail.com`, 수신자는 `sellers@paddle.com`이며 Gmail 보낸편지함에서 확인했다. 답변과 요율 승인은 대기 중이다. 실제 판매량은 미정이며 100·500·1,000건은 견적 비교 시나리오다. 매월 요율, 최소 수수료/거래량/약정, 세금 기준, 환전·정산·환불·차지백 비용과 한국 개인 판매자의 심사 가능 여부를 서면으로 확인한다. [판매자 지원 연락처](https://www.paddle.com/help/start/intro-to-paddle/how-do-i-contact-support).
 
 월 990원 가격을 연간 가격으로 임의 변경하지 않는다. 실제 요율 승인이나 순수익을 확정한 것으로 표현하지 않는다.
 

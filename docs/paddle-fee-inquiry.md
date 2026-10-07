@@ -32,6 +32,6 @@ Color of Apple
 
 ---
 
-Status: Draft prepared. Not sent yet. Negotiated pricing is not approved until Paddle confirms it in writing.
+Status: Sent on 2026-10-07 at 10:55 KST from dasawafa@gmail.com to sellers@paddle.com. Confirmed in Gmail Sent. The message used the draft above, with Markdown emphasis removed for plain-text email. Negotiated pricing is not approved until Paddle confirms it in writing.
 
 Sources: [Paddle pricing](https://www.paddle.com/pricing), [Seller support contact](https://www.paddle.com/help/start/intro-to-paddle/how-do-i-contact-support).
