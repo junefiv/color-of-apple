@@ -47,12 +47,15 @@ Color of Apple은 기준색 하나를 역할이 부여된 UI 컬러 시스템으
 
 ### Live 전환 준비 — 2026-10-07
 
-- 사용자 요청으로 Live 계정에 접근해 판매자 심사를 시작했습니다. 심사 2/5 단계에 서비스 설명과 사업자등록 없는 한국 개인 개발자라는 맥락을 작성했습니다. 한국 화면에는 `개인사업자 / Single ownership business`가 표시됩니다. 등록되지 않은 사업자를 등록됐다고 기재하지 않습니다.
-- `Yes, I confirm` 허용 사용 정책 준수 확인은 사용자 직접 처리 대기입니다. 이후 개인 정보·본인 인증·약관 동의·정산 정보를 완료해야 합니다. 심사 신청 완료나 승인을 받은 상태는 아닙니다.
+- 사용자가 Live 판매자 심사 정보와 정책 준수·정확성 확인을 직접 제출했습니다. 대시보드에는 `We're reviewing your details`, 현재 추가 작업 없음, 필요 시 이메일 연락으로 표시됩니다. 판매자 계정의 최종 승인 완료는 아직 확인되지 않았습니다. 한국 화면에는 `개인사업자 / Single ownership business`가 표시됐으며, 상품 설명에 사업자등록 없는 한국 개인 개발자라는 맥락을 명시했습니다.
 - Live Pro SaaS 상품 `pro_01m4a4h941cfsmnvz8mhv9hmfj`, 가격 `pri_01m4a4k5y9kgr2ecwn2j34w9hz`를 생성했습니다. 월 KRW 990, 세금 포함, 무료 체험 없음, 수량 1입니다. 아직 앱은 Sandbox 가격을 사용합니다.
 - 홈페이지 하단에 플랜·이용약관·개인정보·환불·문의 링크를 추가했습니다. 로컬 화면과 TypeScript 및 해당 파일 ESLint 검사를 통과했습니다. `ed29540`을 main에 푸시했고 공개 배포에서 링크 반영을 확인했습니다.
-- Live 웹사이트 승인에 `color-of-apple.vercel.app`을 제출했습니다. 도메인 ID는 `chedom_01m4a4px7dt55z36ej4b56pmg0`, 상태는 `In review`입니다. 계정의 판매자·본인 심사는 별도로 남아 있습니다.
-- Live 키·클라이언트 토큰·웹훅·승인된 기본 결제 링크 및 정산 설정은 아직 없습니다. 새로운 접근 키 생성에는 해당 시점의 확인이 필요합니다. Live 활성화와 실제 카드 결제는 진행하지 않았습니다.
+- Live 웹사이트 `color-of-apple.vercel.app`(ID `chedom_01m4a4px7dt55z36ej4b56pmg0`)은 `Checkout approved`, `Apple Pay approved`입니다. 판매자 계정 심사와는 별개입니다.
+- 사용자 승인 후 Live API 키·결제창 토큰·웹훅 서명 키를 생성해 **로컬 `.env.paddle-live.local`에 따로 저장**했습니다. Git에서 제외되며 Next.js가 자동 로드하는 `.env.local`의 Sandbox 값은 유지했습니다. 다른 PC로 옮길 때 이 별도 파일도 안전하게 가져와야 합니다. 실제 값은 채팅이나 Git에 넣지 않습니다.
+- Live API 키는 5 read / 3 write(가격·구독·환불 조회, 고객·거래 조회/생성, 고객 포털 세션 생성)이며 만료일은 **2026-11-05**입니다. 최초 키는 만료일이 잘못 반영돼 폐기하고 올바른 날짜의 키로 대체했습니다. Live 가격 조회가 성공했고 월 990원·세금 포함·체험 없음·수량 1을 API로 확인했습니다.
+- Live 웹훅 ID `ntfset_01m4aah3ct49rknm2endnjnqxn`, URL `https://color-of-apple.vercel.app/api/billing/webhook`, 12개 이벤트, Usage Both를 생성했습니다. 현재 **Inactive**로 준비했으며, 실제 Live 전환 시 서버 secret 교체와 함께 활성화해야 합니다. Sandbox 목적지와 같은 URL이므로 기존 Sandbox 목적지는 전환 시 비활성화해야 합니다. 공식 SDK를 이용한 로컬 서명 검증과 변조 거부는 성공했으나 Live 서버 알림 전달은 아직 검증하지 않았습니다.
+- Live 기본 결제 링크 `https://color-of-apple.vercel.app/billing/checkout`을 저장했습니다. 앱과 Vercel은 아직 Sandbox 설정입니다. Vercel 브라우저 세션이 로그아웃되어 사용자 재로그인을 요청했습니다. Live 값을 Vercel에 보관·연결하는 작업은 미완료입니다.
+- Paddle 정산 설정은 아직 비어 있습니다. `Payout Settings`에 Payoneer / Wire transfer가 표시되며 사용자에게 본인 정보·정산 수단을 직접 입력하도록 요청했습니다. Live 활성화와 실제 카드 결제는 진행하지 않았습니다.
 
 ### 집 PC 준비 (환경 설정)
 
