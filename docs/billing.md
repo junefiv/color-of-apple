@@ -33,7 +33,7 @@ Live 웹훅 `ntfset_01m4aah3ct49rknm2endnjnqxn`은 기존 `/api/billing/webhook`
 
 Vercel 로그인 후 Production Secret에 전환 대기용 `PADDLE_LIVE_API_KEY`, `PADDLE_LIVE_CLIENT_TOKEN`, `PADDLE_LIVE_WEBHOOK_SECRET`, `PADDLE_LIVE_PRO_MONTHLY_PRICE_ID`를 등록하고 저장 성공 및 네 변수의 등록을 확인했다. 앱은 이 별도 이름을 읽지 않으므로 현재 Sandbox 동작은 유지한다. 최종 전환 시 각각 기존 일반 이름의 변수에 연결하고 `PADDLE_ENVIRONMENT=production`, `PADDLE_LIVE_ENABLED=true`와 함께 재배포해야 한다. 현재 저장만으로 결제가 Live로 전환되지는 않는다.
 
-사용자가 정산 설정을 저장했고 성공 메시지, `Individual / Sole Proprietorship`, Payoneer 선택을 확인했다. 이후 판매자 검증 상태는 **Action required → Verify your identity**로 바뀌었으며 사용자에게 `Complete identity checks`를 통한 직접 본인 인증을 요청했다. 본인 인증·최종 판매자 승인·Live 서버 알림 및 실제 결제 검증은 남아 있다.
+사용자가 정산 설정을 저장했고 성공 메시지, `Individual / Sole Proprietorship`, Payoneer 선택을 확인했다. 추가 신분증·주소 문서 제출 후 Sumsub 프로필 인증이 완료됐으며 Paddle 대시보드를 새로고침해 **02 Verify your account — Complete**를 확인했다. `Set up your live account`, `Test and go live`는 In progress이며 운영 설정 연결·Live 서버 알림 및 실제 결제 검증은 남아 있다. 현재 앱은 Sandbox 상태다. 요율 문의 답변은 아직 확인되지 않았다.
 
 - 서버는 Firebase ID token의 서명·만료·폐기 상태와 인증된 이메일을 확인한다. 요청 body의 uid·이메일·가격은 사용하지 않는다.
 - `POST /api/billing/checkout`은 서버 가격 ID를 조회해 KRW 990·월 주기·세금 포함·무료 체험 없음 조건을 검증한다. 계정별 Firestore 트랜잭션 lease로 동시 생성 요청을 막고 진행 중 거래를 재사용한다. 기존 구독이 있으면 고객 포털을 제공한다.

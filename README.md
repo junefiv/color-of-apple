@@ -56,7 +56,7 @@ Color of Apple은 기준색 하나를 역할이 부여된 UI 컬러 시스템으
 - Live 웹훅 ID `ntfset_01m4aah3ct49rknm2endnjnqxn`, URL `https://color-of-apple.vercel.app/api/billing/webhook`, 12개 이벤트, Usage Both를 생성했습니다. 현재 **Inactive**로 준비했으며, 실제 Live 전환 시 서버 secret 교체와 함께 활성화해야 합니다. Sandbox 목적지와 같은 URL이므로 기존 Sandbox 목적지는 전환 시 비활성화해야 합니다. 공식 SDK를 이용한 로컬 서명 검증과 변조 거부는 성공했으나 Live 서버 알림 전달은 아직 검증하지 않았습니다.
 - Live 기본 결제 링크 `https://color-of-apple.vercel.app/billing/checkout`을 저장했습니다. Vercel 로그인 후 Production Secret에 `PADDLE_LIVE_API_KEY`, `PADDLE_LIVE_CLIENT_TOKEN`, `PADDLE_LIVE_WEBHOOK_SECRET`, `PADDLE_LIVE_PRO_MONTHLY_PRICE_ID`를 별도 저장하고 성공 메시지와 네 변수의 등록을 확인했습니다. 이 네 변수는 전환 대기용으로 현재 앱에서 읽지 않습니다. 최종 전환 시 기존 `PADDLE_API_KEY`, `PADDLE_CLIENT_TOKEN`, `PADDLE_WEBHOOK_SECRET`, `PADDLE_PRO_MONTHLY_PRICE_ID`에 대응 값을 연결하고 환경·활성화 스위치를 함께 변경해 배포해야 합니다. 앱과 배포는 아직 Sandbox이며 이번 저장만으로 Live가 활성화되지는 않습니다.
 - 사용자가 Paddle 정산 정보를 저장했고 `Payout settings have been successfully updated` 메시지를 확인했습니다. 계정 유형은 `Individual / Sole Proprietorship`, 정산 방식은 Payoneer입니다. 정산 설정 저장은 판매자 심사 승인과 별개입니다.
-- 이후 Paddle 심사 상태가 **Action required → Verify your identity**로 바뀌었습니다. `Complete identity checks`를 통한 사용자 직접 본인 인증이 필요합니다. 인증 완료·판매자 최종 승인·실제 Live 서버 알림 검증과 실결제 확인이 남아 있으며 Live는 비활성 상태입니다.
+- 이후 Paddle 심사 상태가 **Action required → Verify your identity**로 바뀌었으나, 사용자가 신분증·주소 문서를 제출해 Sumsub 프로필 인증을 완료했습니다. Paddle 대시보드를 새로고침해 **02 Verify your account — Complete**, 진행률 1/3 완료를 확인했습니다. `Set up your live account`와 `Test and go live`는 In progress입니다. 운영 설정 연결·Live 서버 알림 검증·실결제 확인은 남아 있으며 앱의 Live는 비활성 상태입니다. 요율 문의 답변도 아직 확인되지 않았습니다.
 
 ### 집 PC 준비 (환경 설정)
 
