@@ -28,7 +28,7 @@ export function PolicyDocument({ kind }: { kind: PolicyKind }) {
   const content = documents[kind];
   const operator = process.env.BILLING_OPERATOR_NAME;
   const email = process.env.BILLING_SUPPORT_EMAIL;
-  return <div className="flex min-h-dvh flex-col bg-background text-foreground"><SiteHeader />
+  return <div className="graph-paper-page flex min-h-dvh flex-col text-foreground"><SiteHeader />
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-6 sm:py-10">
       <article className="rounded-2xl border bg-card px-5 py-7 text-card-foreground sm:px-10 sm:py-10">
       <h1 className="text-2xl font-semibold leading-snug tracking-tight sm:text-3xl">{content.title}</h1>
