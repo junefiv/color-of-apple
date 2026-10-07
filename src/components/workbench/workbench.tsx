@@ -18,6 +18,7 @@ import { useCopy } from "@/hooks/use-copy";
 import { chooseOnColor, deriveBrandTokenOverrides, tokenPathToCssVar } from "@/lib/color-engine";
 import { undoToken } from "@/lib/token-undo";
 import { encodeShare } from "@/lib/share/encode";
+import { writePreviewDraft } from "@/lib/preview-draft";
 import { hasAvailableProjectSlot, isPlanRequiredError, quotaErrorMessage, saveProject } from "@/lib/firebase/data";
 import { trackProductEvent } from "@/lib/analytics";
 import { applyTokenSnapshot, createTokenSnapshot, diffTokenSnapshots, type ColorHistoryEntry } from "@/lib/project-tokens";
@@ -109,6 +110,12 @@ export function Workbench({
     () => JSON.stringify({ input, selectedPaletteId, tokens: effectiveSnapshot }),
     [effectiveSnapshot, input, selectedPaletteId],
   );
+  useEffect(() => {
+    if (!hasMatched) return;
+    writePreviewDraft({ input, selectedPaletteId, overrides: tokenOverrides,
+      tokenSnapshot: effectiveSnapshot, platform, previewTab, projectTitle,
+      engineVersion: result.meta.engineVersion }, savedProjectId);
+  }, [effectiveSnapshot, hasMatched, input, platform, previewTab, projectTitle, result.meta.engineVersion, savedProjectId, selectedPaletteId, tokenOverrides]);
   async function openProjectLibrary() {
     try {
       if (!user) {

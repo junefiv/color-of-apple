@@ -6,6 +6,7 @@ import type { Locale } from "@/lib/copy";
 import type { MatchStage } from "@/lib/match-reveal";
 import { FALLBACK_HEX } from "@/lib/picked-color";
 import { DEFAULT_PALETTE_ID, resolvePaletteId } from "@/lib/space-palettes";
+import { clearPreviewDraft } from "@/lib/preview-draft";
 
 export type PreviewTab = "overview" | "components";
 export type PlatformView = "web" | "app";
@@ -102,7 +103,8 @@ export const useMatchuStore = create<MatchuState>((set) => ({
       pendingBleed: true,
       bleedKey: state.bleedKey + 1,
     })),
-  resetMatch: () =>
+  resetMatch: () => {
+    clearPreviewDraft();
     set((state) => ({
       hasMatched: false,
       matchedHex: null,
@@ -112,8 +114,10 @@ export const useMatchuStore = create<MatchuState>((set) => ({
       palettesRevealed: false,
       selectedPaletteId: DEFAULT_PALETTE_ID,
       matchNonce: state.matchNonce + 1,
-    })),
-  resetSession: () =>
+    }));
+  },
+  resetSession: () => {
+    clearPreviewDraft();
     set((state) => ({
       primaryDraftHex: null,
       input: EMPTY_INPUT,
@@ -127,7 +131,8 @@ export const useMatchuStore = create<MatchuState>((set) => ({
       selectedPaletteId: DEFAULT_PALETTE_ID,
       palettesRevealed: false,
       locale: state.locale,
-    })),
+    }));
+  },
   hydrate: (value) =>
     set((state) => ({
       locale: value.locale ?? state.locale,

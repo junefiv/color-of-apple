@@ -11,13 +11,17 @@ import { Workbench } from "@/components/workbench/workbench";
 import { useCopy } from "@/hooks/use-copy";
 import { parseToOklch } from "@/lib/color-engine";
 import { decodeShare } from "@/lib/share/encode";
+import { readPreviewDraft } from "@/lib/preview-draft";
 import { useMatchuStore } from "@/lib/store";
 
 function ResultContent() {
   const router = useRouter();
   const params = useSearchParams();
-  const payload = params.get("d");
-  const projectId = params.get("p");
+  const [previewDraft] = useState(readPreviewDraft);
+  const query = params.toString();
+  const sessionDraft = previewDraft?.source === `/result${query ? `?${query}` : ""}` ? previewDraft : null;
+  const payload = sessionDraft?.payload ?? params.get("d");
+  const projectId = params.get("p") ?? sessionDraft?.projectId ?? null;
   const decoded = useMemo(() => payload ? decodeShare(payload) : null, [payload]);
   const skipLoader = useMatchuStore((state) => state.skipLoader);
   const matchNonce = useMatchuStore((state) => state.matchNonce);
