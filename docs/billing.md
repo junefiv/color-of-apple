@@ -88,4 +88,3 @@ Firebase의 `private_key_id`는 비밀 키가 아니다. 서비스 계정 JSON�
 BIC 볼펜 1,000원, 스타벅스 카페라떼 4,700원, 빅맥 5,700원은 운영자가 정한 고정 일회성 후원 금액이다. 실제 상품·기프티콘을 제공하거나 브랜드 공식 판매·제휴를 의미하지 않는다. 구독/Pro 권한을 부여하지 않으며 현재 결제 버튼은 준비 안내만 표시한다.
 
 소프트웨어·서비스 판매가 없는 donation은 [Paddle 허용 사용 정책](https://www.paddle.com/help/start/intro-to-paddle/what-am-i-not-allowed-to-sell-on-paddle)에 따라 Paddle 상품으로 등록하지 않는다. 한국 소재 개인의 국내·해외 후원 수납을 승인하는 별도 제공자 검토가 남아 있다.
-

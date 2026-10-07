@@ -232,4 +232,3 @@ Color is the result, not the decoration.
 - Neutral / Secondary / Status는 별도 생성하고, 상태색은 메인 색에서 파생하지 않습니다
 - 맞닿는 토큰 쌍만 WCAG 대비 검사 후 자동 보정
 - 결과는 결정적입니다. `ENGINE_VERSION`이 JSON에 포함됩니다.
-
