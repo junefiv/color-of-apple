@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/auth-provider";
 import { PlanUpgradeDialog } from "@/components/billing/plan-upgrade-dialog";
 import { SiteHeader } from "@/components/brand/site-header";
+import { SiteFooter } from "@/components/brand/site-footer";
 import { ChromeChip } from "@/components/chrome/chrome-chip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -485,6 +486,8 @@ export function Workbench({
           />
         </aside>
       </div>
+
+      <SiteFooter />
 
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent>

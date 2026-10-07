@@ -13,7 +13,8 @@ export function SiteFooter({ variant = "document" }: { variant?: "document" | "h
       <Link className={linkClass} href="/terms">{isKo ? "이용약관" : "Terms"}</Link>
       <Link className={linkClass} href="/privacy">{isKo ? "개인정보 처리방침" : "Privacy"}</Link>
       <Link className={linkClass} href="/refund-policy">{isKo ? "환불 정책" : "Refunds"}</Link>
-      <a className={linkClass} href="mailto:dasawafa@gmail.com">{isKo ? "문의" : "Contact"}</a>
+      <Link className={linkClass} href="/about">About us</Link>
+      <Link className={linkClass} href="/contact">Contact us</Link>
     </nav>
   </footer>;
 }

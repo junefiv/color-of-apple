@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Check, Dice5, Heart } from "lucide-react";
+import { ArrowUpRight, Check, Dice5, Heart, Mail, Apple } from "lucide-react";
 import { ColorApple } from "@/components/flow/color-apple";
 import { MatchButton } from "@/components/flow/match-button";
 import { useCopy } from "@/hooks/use-copy";
@@ -170,7 +171,15 @@ export function Hero() {
         </div>
       </div>
 
-      <div className="landing-hero-center">
+        <nav className="landing-navigation-stickers" aria-label="About and contact">
+          <Link href="/about" className="landing-navigation-sticker landing-about-sticker">
+            <Apple aria-hidden /><span>ABOUT US<small>One apple. Many colors.</small></span><ArrowUpRight aria-hidden />
+          </Link>
+          <Link href="/contact" className="landing-navigation-sticker landing-contact-sticker">
+            <Mail aria-hidden /><span>CONTACT US<small>Say hello!</small></span><ArrowUpRight aria-hidden />
+          </Link>
+        </nav>
+        <div className="landing-hero-center">
         <ColorApple
           hex={hex}
           onChange={(nextHex) => {

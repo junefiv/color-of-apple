@@ -2901,3 +2901,27 @@
 .kit-docs .kit-product-action {
   font-size: var(--kit-fs);
 }
+
+.landing-navigation-stickers { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.landing-navigation-sticker { position: absolute; bottom: 15%; display: flex; align-items: center; gap: 0.8rem; padding: 1rem 1.2rem; border: 2px solid #252525; border-radius: 1rem; color: #252525; box-shadow: 4px 5px 0 #252525; pointer-events: auto; transition: translate 160ms ease, box-shadow 160ms ease; }
+.landing-navigation-sticker > svg { width: 1.5rem; height: 1.5rem; flex-shrink: 0; }
+.landing-navigation-sticker > svg:last-child { width: 1rem; }
+.landing-navigation-sticker span { font-size: 0.85rem; font-weight: 800; letter-spacing: 0.04em; }
+.landing-navigation-sticker small { display: block; margin-top: 0.3rem; font-size: 0.65rem; font-weight: 500; letter-spacing: 0; }
+.landing-about-sticker { left: 9%; background: #f9df81; transform: rotate(-6deg); }
+.landing-contact-sticker { right: 8%; bottom: 19%; background: #cbe7fb; transform: rotate(5deg); }
+.landing-navigation-sticker:hover { translate: 0 -3px; box-shadow: 5px 8px 0 #252525; }
+.landing-navigation-sticker:focus-visible { outline: 3px solid #252525; outline-offset: 6px; }
+@media (max-width: 1000px) {
+  .landing-about-sticker { left: 2%; }
+  .landing-contact-sticker { right: 2%; }
+  .landing-navigation-sticker { padding: 0.75rem; gap: 0.5rem; }
+}
+@media (max-width: 720px) {
+  .landing-navigation-sticker { bottom: auto; top: 43%; padding: 0.6rem; gap: 0.4rem; }
+  .landing-navigation-sticker span { font-size: 0.65rem; }
+  .landing-navigation-sticker small { font-size: 0.55rem; }
+  .landing-navigation-sticker > svg { width: 1rem; height: 1rem; }
+  .landing-about-sticker { left: 0; }
+  .landing-contact-sticker { right: 0; }
+}

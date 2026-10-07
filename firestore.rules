@@ -80,5 +80,17 @@ service cloud.firestore {
         allow delete: if owns(uid);
       }
     }
+
+    match /inquiries/{id} {
+      allow read, write: if false;
+    }
+
+    match /joinRequests/{id} {
+      allow read, write: if false;
+    }
+
+    match /inboxCooldowns/{id} {
+      allow read, write: if false;
+    }
   }
 }
