@@ -14,7 +14,8 @@ Color of Apple은 기준색 하나를 역할이 부여된 UI 컬러 시스템으
 - Paddle Live 시뮬레이션 `ntfsim_01m4ad9r2zxn01qdmnmzd0bv64`를 생성·실행·Replay했습니다. 화면의 Response는 `{}`이며 전달 성공 상태를 확인하지 못했으므로 Paddle 발신 전달 검증 완료로 간주하지 않습니다. 실제 결제 이벤트에서 Delivered와 서버 반영을 확인해야 합니다.
 - 최초 로컬 전달 도구의 password 필드가 실제 키 대신 마스킹 문자열을 반환한 문제를 발견해 운영 및 대기용 세 Secret을 실제 값으로 다시 저장했습니다. 공개 서버의 Live 토큰과 올바른 Live secret 서명 수신까지 확인했습니다. 임시 전달 서버와 파일은 정리합니다. 키를 출력하거나 Git에 넣지 않았습니다.
 - `PADDLE_LIVE_*` 네 별도 변수는 백업 보관용이며 앱은 일반 이름의 변수를 읽습니다. 로컬 `.env.local`은 Sandbox를 유지하고 `.env.paddle-live.local`은 별도 보관합니다. 로컬의 false 스위치는 운영 Vercel의 true와 별개입니다.
-- 사용자에게 공개 가격 페이지에서 Google 로그인 후 월 990원 실제 카드 결제를 직접 완료하도록 요청했습니다. **실제 결제·구독 생성·Production Pro 권한·결제 이벤트 전달은 아직 미확인**입니다. 결제 완료 후 Live 거래/구독, Firestore `billing/production`, 실제 사용자 `plan`/`proExpiresAt`, 인증된 상태 API와 앱을 확인합니다. 개인 카드·인증 정보는 사용자 직접 입력합니다.
+- 사용자가 월 990원 실제 카드 결제를 직접 완료했습니다. Live 거래 `txn_01m4adqfbxvtwx69pnbwq56p9c`는 completed, KRW 990이며 구독 `sub_01m4advd6fdwe42wk84gtresdt`는 active입니다. 이용 기간은 `2026-10-07T05:37:16.057702Z`부터 `2026-11-07T05:37:16.057702Z`까지이며 다음 자동 청구는 **2026-11-07 14:37:16 KST**, 해지 예약은 없습니다. Live 고객과 사용자 연결, `billing/production` 구독 상태·완료 거래·미회수 권한, 실제 사용자 `plan=pro`, `proExpiresAt=2026-11-07T05:37:16.057Z`를 조회 확인했습니다. 공개 구매 완료 화면과 구독 관리 화면도 Pro/이용 중/동일 종료일을 표시합니다. Production 처리 이벤트는 3개입니다.
+- `transaction.completed` 알림은 최초 시도 Delivered입니다. `subscription.activated`는 최초 HTTP 503 후 자동 재시도 HTTP 200을 확인했습니다. 목록을 새로고침해 구독 생성·활성화·거래 완료 세 알림 모두 Delivered(구독 알림 각 2회, 거래 완료 1회)를 확인했습니다. 실제 갱신·해지·환불은 Sandbox에서 검증했고 Live에서는 사용자 승인 없는 추가 청구·해지·환불을 하지 않았습니다.
 - 요율 문의 답변과 협상 요율 승인은 아직 확인되지 않았습니다. 선물 수납은 미구현 상태입니다.
 
 현재 작업 브랜치는 `main`이며 저장소는 <https://github.com/junefiv/color-of-apple>입니다(기존 `junefiv/matchu`에서 이동). **Paddle 연동 코드와 Sandbox 상품 설정을 진행한 상태이며, 실제 결제 운영과 요율 협의는 아직 완료하지 않았습니다.** 아래 순서로 이어서 작업합니다.
@@ -231,3 +232,4 @@ Color is the result, not the decoration.
 - Neutral / Secondary / Status는 별도 생성하고, 상태색은 메인 색에서 파생하지 않습니다
 - 맞닿는 토큰 쌍만 WCAG 대비 검사 후 자동 보정
 - 결과는 결정적입니다. `ENGINE_VERSION`이 JSON에 포함됩니다.
+

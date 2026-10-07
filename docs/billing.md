@@ -4,7 +4,9 @@
 
 ## 현재 상태
 
-**최신 상태 — Live 연결 완료:** Paddle `Verify your account`는 Complete입니다. Vercel 일반 Paddle 변수들을 Live 값으로 연결하고 `PADDLE_ENVIRONMENT=production`, `PADDLE_LIVE_ENABLED=true`로 배포했습니다. 배포 `5TnyuGHybZZwa2sR1USS9KHCt9qA`는 Ready이며 공개 config API는 enabled=true, production, KRW 990, Live 토큰을 반환합니다. Live 목적지는 Active, 동일 URL의 Sandbox 목적지는 Inactive입니다. Live secret으로 서명한 비권한 이벤트는 HTTP 200, 변조·무서명은 HTTP 400입니다. 최초 마스킹 값 전달 오류는 실제 키를 재저장해 수정했습니다. Paddle 시뮬레이션 `ntfsim_01m4ad9r2zxn01qdmnmzd0bv64`의 Response는 `{}`로, 실제 전달 성공은 확인되지 않았습니다. 사용자 직접 실결제 및 실제 구독/Production Pro 권한/결제 웹훅 검증은 대기 중입니다. 아래 Sandbox 및 Live 준비 절은 당시 진행 기록입니다. 요율 협상 승인은 아직 확인되지 않았습니다.
+**실결제 검증 — 2026-10-07 14:37 KST:** 사용자가 직접 결제한 Live 거래 `txn_01m4adqfbxvtwx69pnbwq56p9c`는 completed/KRW 990이며 구독 `sub_01m4advd6fdwe42wk84gtresdt`는 active다. 다음 청구 및 이용 기간 종료는 `2026-11-07T05:37:16.057702Z`(한국 시간 14:37:16)이며 해지 예약은 없다. Production 고객-사용자 연결, 구독 상태·영수증 기간·미회수 결제, 실제 프로필 plan=pro 및 동일 proExpiresAt을 API/Firestore에서 확인했다. 앱 구매 완료 및 구독 관리 화면도 Pro 이용 중으로 확인했다. Production 처리 이벤트 3개가 존재한다. 거래 완료 알림은 최초 Delivered, 구독 활성화 알림은 최초 503 후 자동 재시도 200으로 확인했고 목록 새로고침 후 구독 생성·활성화·거래 완료 세 알림 모두 Delivered이며 시도 횟수는 각각 2·2·1이다. Live 갱신·해지·환불은 이번 구매 검증 범위에 포함하지 않는다.
+
+**실결제 직전 기록 — Live 연결 완료:** Paddle `Verify your account`는 Complete입니다. Vercel 일반 Paddle 변수들을 Live 값으로 연결하고 `PADDLE_ENVIRONMENT=production`, `PADDLE_LIVE_ENABLED=true`로 배포했습니다. 배포 `5TnyuGHybZZwa2sR1USS9KHCt9qA`는 Ready이며 공개 config API는 enabled=true, production, KRW 990, Live 토큰을 반환합니다. Live 목적지는 Active, 동일 URL의 Sandbox 목적지는 Inactive입니다. Live secret으로 서명한 비권한 이벤트는 HTTP 200, 변조·무서명은 HTTP 400입니다. 최초 마스킹 값 전달 오류는 실제 키를 재저장해 수정했습니다. Paddle 시뮬레이션 `ntfsim_01m4ad9r2zxn01qdmnmzd0bv64`의 Response는 `{}`로, 실제 전달 성공은 확인되지 않았습니다. 사용자 직접 실결제 및 실제 구독/Production Pro 권한/결제 웹훅 검증은 대기 중입니다. 아래 Sandbox 및 Live 준비 절은 당시 진행 기록입니다. 요율 협상 승인은 아직 확인되지 않았습니다.
 
 Paddle Node SDK, Paddle.js, Firebase Admin SDK와 checkout/confirm/status/portal/webhook API를 구현했다. Sandbox 상품·가격·키·웹훅·기본 결제 링크와 Vercel 환경 변수를 설정하고 재배포했다. 앱 Google 로그인 후 실제 Sandbox Checkout에서 KRW 990 테스트 결제를 완료했다. Paddle 서버가 보낸 구독 생성·활성화·거래 완료·해지 예약 알림은 Delivered이며 Firestore 처리 기록과 앱 상태를 확인했다. 실제 사용자 plan은 free로 유지됐다. 정상 서명의 비권한 이벤트 요청은 HTTP 200, 서명 없는 요청과 변조 요청은 HTTP 400으로 확인했다. Live 결제와 선물 수납은 활성화하지 않았다.
 
@@ -86,3 +88,4 @@ Firebase의 `private_key_id`는 비밀 키가 아니다. 서비스 계정 JSON�
 BIC 볼펜 1,000원, 스타벅스 카페라떼 4,700원, 빅맥 5,700원은 운영자가 정한 고정 일회성 후원 금액이다. 실제 상품·기프티콘을 제공하거나 브랜드 공식 판매·제휴를 의미하지 않는다. 구독/Pro 권한을 부여하지 않으며 현재 결제 버튼은 준비 안내만 표시한다.
 
 소프트웨어·서비스 판매가 없는 donation은 [Paddle 허용 사용 정책](https://www.paddle.com/help/start/intro-to-paddle/what-am-i-not-allowed-to-sell-on-paddle)에 따라 Paddle 상품으로 등록하지 않는다. 한국 소재 개인의 국내·해외 후원 수납을 승인하는 별도 제공자 검토가 남아 있다.
+
