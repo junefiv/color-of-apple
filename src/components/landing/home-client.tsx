@@ -11,7 +11,7 @@ export default function HomeClient() {
       <main className="min-h-0 flex-1">
         <Hero />
       </main>
-      <SiteFooter />
+      <SiteFooter variant="home" />
     </div>
   );
 }
