@@ -8,7 +8,6 @@ import { FeedbackShowcase, type AlertTone } from "@/components/preview/catalog-f
 import { SelectableTableShowcase } from "@/components/preview/catalog-table";
 import { CatalogExtendedShowcase } from "@/components/preview/catalog-extended";
 import { CatalogProductShowcase } from "@/components/preview/catalog-products";
-import { ConceptSamples } from "@/components/preview/concept-samples";
 import { useCopy } from "@/hooks/use-copy";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -239,7 +238,6 @@ export function CatalogBoard({ platform }: { platform: "web" | "app" }) {
   return (
     <div ref={viewportRef} className="preview-viewport">
       <div ref={portalRef} className="preview-scroll kit-docs" data-platform={platform}>
-        <ConceptSamples />
         <article className="kit-tile">
           <ButtonRow look="solid" tones={COLOR_TONES} labels={labels} onToneAction={showToneAlert} />
         </article>

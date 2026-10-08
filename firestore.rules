@@ -31,10 +31,33 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
     }
 
+    function validProjectSource() {
+      return !request.resource.data.keys().hasAny(["source"])
+        || (
+          request.resource.data.source is map
+          && request.resource.data.source.keys().hasOnly(["kind", "postId", "authorName", "href"])
+          && request.resource.data.source.kind == "community"
+          && request.resource.data.source.postId is string
+          && request.resource.data.source.postId.size() >= 8
+          && request.resource.data.source.postId.size() <= 128
+          && request.resource.data.source.authorName is string
+          && request.resource.data.source.authorName.size() >= 1
+          && request.resource.data.source.authorName.size() <= 30
+          && request.resource.data.source.href is string
+          && request.resource.data.source.href.size() <= 180
+        );
+    }
+
     function validProject() {
-      return request.resource.data.keys().hasOnly([
-        "title", "input", "selectedPaletteId", "overrides", "tokenSnapshot", "colorHistory", "createdAt", "updatedAt"
-      ])
+      return (
+        request.resource.data.keys().hasOnly([
+          "title", "input", "selectedPaletteId", "overrides", "tokenSnapshot", "colorHistory", "createdAt", "updatedAt"
+        ])
+        || request.resource.data.keys().hasOnly([
+          "title", "input", "selectedPaletteId", "overrides", "tokenSnapshot", "colorHistory", "createdAt", "updatedAt", "source"
+        ])
+      )
+        && validProjectSource()
         && request.resource.data.title is string
         && request.resource.data.title.size() >= 1
         && request.resource.data.title.size() <= 60
@@ -90,6 +113,30 @@ service cloud.firestore {
     }
 
     match /inboxCooldowns/{id} {
+      allow read, write: if false;
+    }
+
+    match /communityPosts/{postId} {
+      allow read, write: if false;
+    }
+
+    match /communityReports/{id} {
+      allow read, write: if false;
+    }
+
+    match /communityRateLimits/{id} {
+      allow read, write: if false;
+    }
+
+    match /users/{uid}/communityPublications/{projectId} {
+      allow read, write: if false;
+    }
+
+    match /users/{uid}/communityLikes/{postId} {
+      allow read, write: if false;
+    }
+
+    match /users/{uid}/communityCopyIntents/{intentId} {
       allow read, write: if false;
     }
   }

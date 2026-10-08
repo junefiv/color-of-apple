@@ -833,6 +833,23 @@
   padding: 1rem 2rem;
 }
 
+/* The home header sits above the hero, so its box was clipping the apple
+   bubble and the top stickers. Keep the controls, but leave the band clear. */
+.home-screen > .site-header {
+  position: relative;
+  z-index: 5;
+  background: transparent;
+  pointer-events: none;
+}
+
+.home-screen > .site-header > * {
+  pointer-events: auto;
+}
+
+.home-screen .landing-hero {
+  overflow: visible;
+}
+
 .landing-hero-stage {
   position: relative;
   display: grid;

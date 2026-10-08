@@ -29,14 +29,19 @@ vi.mock("react-colorful", () => ({
 let root: Root;
 let container: HTMLDivElement;
 
-it("generates a fresh palette directly from a project's current Primary", async () => {
+it("opens the color picker for a saved project and generates only from Generate", async () => {
   const onGenerate = vi.fn();
   await act(() => root.render(createElement(PrimaryApplePicker, { hex: "#ff015c", locale: "ko", savedProject: true, onGenerate })));
-  const apple = container.querySelector<HTMLButtonElement>('[aria-label="이 Primary로 새 팔레트 만들기"]')!;
-  expect(apple.hasAttribute("aria-haspopup")).toBe(false);
+  const apple = container.querySelector<HTMLButtonElement>('[aria-label="새 Primary 컬러 선택"]')!;
+  expect(apple.getAttribute("aria-haspopup")).toBe("dialog");
   await act(() => apple.click());
-  expect(onGenerate).toHaveBeenCalledWith("#ff015c");
-  expect(container.querySelector('[data-testid="pick-blue"]')).toBeNull();
+  expect(onGenerate).not.toHaveBeenCalled();
+  const picker = document.querySelector<HTMLButtonElement>('[data-testid="pick-blue"]')!;
+  await act(() => picker.dispatchEvent(new Event("pointerdown", { bubbles: true })));
+  await act(() => picker.click());
+  await act(() => document.dispatchEvent(new Event("pointerup", { bubbles: true })));
+  await act(() => document.querySelector<HTMLButtonElement>(".primary-apple-generate-tip button")!.click());
+  expect(onGenerate).toHaveBeenCalledExactlyOnceWith("#3388FF");
 });
 
 beforeEach(() => {

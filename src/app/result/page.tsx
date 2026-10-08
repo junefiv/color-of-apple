@@ -100,6 +100,7 @@ function ResultContent() {
         initialTokenOverrides={decoded?.overrides}
         initialTokenSnapshot={decoded?.tokenSnapshot}
         initialProjectTitle={decoded?.projectTitle}
+        initialSource={decoded?.source ?? null}
       />
       {pendingBleed ? (
         <ColorBleed key={bleedKey} hex={hex} play onDone={finishBleed} />

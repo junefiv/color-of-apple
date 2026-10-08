@@ -8,12 +8,14 @@ import { GiftSupportButton } from "@/components/billing/gift-support-button";
 export function SiteHeader({
   children,
   endAction,
+  beforeAccount,
   remakeWordmark = false,
   onRemake,
   compact = false,
 }: {
   children?: React.ReactNode;
   endAction?: React.ReactNode;
+  beforeAccount?: React.ReactNode;
   remakeWordmark?: boolean;
   onRemake?: () => void;
   compact?: boolean;
@@ -30,6 +32,7 @@ export function SiteHeader({
       {children ? <div className="studio-gnb-center flex min-w-0 flex-1 items-center gap-2 overflow-visible">{children}</div> : null}
       {endAction ?? (
         <div className="studio-gnb-actions">
+          {beforeAccount}
           <GiftSupportButton />
           <AccountButton />
           <LocaleToggle />

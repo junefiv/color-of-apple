@@ -4,6 +4,7 @@ import {
 } from "lz-string";
 import { DEFAULT_INPUT, ENGINE_VERSION, type GenerateInput } from "@/lib/color-engine";
 import { DEFAULT_PALETTE_ID, resolvePaletteId } from "@/lib/space-palettes";
+import { readProjectSource, type ProjectSource } from "@/lib/community/source";
 import type { PlatformView, PreviewTab } from "@/lib/store";
 
 const KEYS: Array<keyof GenerateInput> = [
@@ -26,6 +27,7 @@ export type SharePayload = {
   previewTab: PreviewTab;
   projectTitle?: string;
   engineVersion: string;
+  source?: ProjectSource;
 };
 
 export function encodeShare(data: Pick<SharePayload, "input" | "selectedPaletteId" | "overrides"> & Partial<Omit<SharePayload, "input" | "selectedPaletteId" | "overrides">>) {
@@ -80,6 +82,7 @@ export function decodeShare(payload: string): SharePayload | null {
       previewTab: parsed.previewTab === "components" ? "components" : "overview",
       projectTitle: typeof parsed.projectTitle === "string" ? parsed.projectTitle.trim().slice(0, 60) : undefined,
       engineVersion: typeof parsed.engineVersion === "string" ? parsed.engineVersion : ENGINE_VERSION,
+      source: readProjectSource(parsed.source) ?? undefined,
     };
   } catch {
     return null;

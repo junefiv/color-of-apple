@@ -4,6 +4,9 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { Palette } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/auth-provider";
+import { CommunityPanel } from "@/components/community/community-panel";
+import { PublishDialog } from "@/components/community/publish-dialog";
+import { fetchPublications } from "@/lib/community/client";
 import { PlanUpgradeDialog } from "@/components/billing/plan-upgrade-dialog";
 import { SiteHeader } from "@/components/brand/site-header";
 import { SiteFooter } from "@/components/brand/site-footer";
@@ -22,6 +25,8 @@ import { encodeShare } from "@/lib/share/encode";
 import { writePreviewDraft } from "@/lib/preview-draft";
 import { hasAvailableProjectSlot, isPlanRequiredError, quotaErrorMessage, saveProject } from "@/lib/firebase/data";
 import { trackProductEvent } from "@/lib/analytics";
+import type { ProjectSource } from "@/lib/community/source";
+import type { CommunityPost } from "@/lib/community/types";
 import { applyTokenSnapshot, createTokenSnapshot, diffTokenSnapshots, type ColorHistoryEntry } from "@/lib/project-tokens";
 import { MEDIA_QUERIES } from "@/lib/responsive";
 import { useMatchuStore } from "@/lib/store";
@@ -39,12 +44,16 @@ export function Workbench({
   initialTokenOverrides = {},
   initialTokenSnapshot = {},
   initialProjectTitle,
+  initialSource = null,
   projectId = null,
+  mode = "edit",
 }: {
   initialTokenOverrides?: Record<string, string>;
   initialTokenSnapshot?: Record<string, string>;
   initialProjectTitle?: string;
+  initialSource?: ProjectSource | null;
   projectId?: string | null;
+  mode?: "edit" | "community";
 }) {
   const copy = useCopy();
   const router = useRouter();
@@ -77,21 +86,43 @@ export function Workbench({
   const [freeingProjectSlot, setFreeingProjectSlot] = useState(false);
   const [upgradeDialog, setUpgradeDialog] = useState<"limit" | "plan" | null>(null);
   const [projectLibraryOpen, setProjectLibraryOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [publishedPostId, setPublishedPostId] = useState<string | null>(null);
   const [mobilePreviewOnly, setMobilePreviewOnly] = useState(false);
   const [tokenPanelOpen, setTokenPanelOpen] = useState(false);
+  const [inspector, setInspector] = useState<"tokens" | "community">(mode === "community" ? "community" : "tokens");
+  const [communityPost, setCommunityPost] = useState<CommunityPost | null>(null);
+  const [narrowWorkbench, setNarrowWorkbench] = useState(false);
+  const [sourceMissing, setSourceMissing] = useState(false);
   const [resetNonce, setResetNonce] = useState(0);
   const activeTokenEdit = useRef<{ paletteId: string; before: Record<string, string> } | null>(null);
   const tokenOverridesRef = useRef<Record<string, string>>({});
   const tokenPanelSwipeStart = useRef<number | null>(null);
+  const previewScrollRef = useRef<HTMLDivElement>(null);
+  const previewToolbarRef = useRef<HTMLDivElement>(null);
+  const [previewToolbarHidden, setPreviewToolbarHidden] = useState(false);
+  const [previewDockMounted, setPreviewDockMounted] = useState(false);
+  const [previewDockOpen, setPreviewDockOpen] = useState(false);
 
   const generatedResult = useColorSystem(input, selectedPaletteId);
+  const communityGenerated = useColorSystem(
+    communityPost?.palette.input ?? input,
+    communityPost?.palette.selectedPaletteId ?? selectedPaletteId,
+  );
   const [initialPaletteId] = useState(selectedPaletteId);
   const [useInitialSnapshot, setUseInitialSnapshot] = useState(true);
   const result = useMemo(
     () => applyTokenSnapshot(generatedResult, useInitialSnapshot && selectedPaletteId === initialPaletteId ? initialTokenSnapshot : undefined),
     [generatedResult, initialPaletteId, initialTokenSnapshot, selectedPaletteId, useInitialSnapshot],
   );
-  const stage = hasMatched ? "done" : matchStage;
+  const showingCommunity = (mode === "community" || inspector === "community") && Boolean(communityPost);
+  const previewResult = useMemo(
+    () => showingCommunity && communityPost
+      ? applyTokenSnapshot(communityGenerated, communityPost.palette.tokenSnapshot)
+      : result,
+    [communityGenerated, communityPost, result, showingCommunity],
+  );
+  const stage = mode === "community" || hasMatched ? "done" : matchStage;
   const view = previewTab === "components" ? "components" : platform;
   const tokenOverrides = useMemo(
     () => tokenOverridesByPalette[selectedPaletteId] ?? {},
@@ -100,7 +131,10 @@ export function Workbench({
   const overrideVars = useMemo(() => Object.fromEntries(
     Object.entries(tokenOverrides).map(([path, value]) => [tokenPathToCssVar(path), value]),
   ), [tokenOverrides]);
-  const effectivePrimary = tokenOverrides["primary.default"] ?? result.semantic.light.primary.default;
+  const previewVars = showingCommunity ? {} : overrideVars;
+  const effectivePrimary = showingCommunity
+    ? previewResult.semantic.light.primary.default
+    : tokenOverrides["primary.default"] ?? result.semantic.light.primary.default;
   const tokenHistory = tokenHistoryByPalette[selectedPaletteId] ?? [];
   const effectiveSnapshot = useMemo(() => createTokenSnapshot(result, tokenOverrides), [result, tokenOverrides]);
   const effectiveTheme = useMemo(() => applyTokenSnapshot(result, effectiveSnapshot).semantic.light, [result, effectiveSnapshot]);
@@ -112,11 +146,11 @@ export function Workbench({
     [effectiveSnapshot, input, selectedPaletteId],
   );
   useEffect(() => {
-    if (!hasMatched) return;
+    if (mode === "community" || !hasMatched) return;
     writePreviewDraft({ input, selectedPaletteId, overrides: tokenOverrides,
       tokenSnapshot: effectiveSnapshot, platform, previewTab, projectTitle,
       engineVersion: result.meta.engineVersion }, savedProjectId);
-  }, [effectiveSnapshot, hasMatched, input, platform, previewTab, projectTitle, result.meta.engineVersion, savedProjectId, selectedPaletteId, tokenOverrides]);
+  }, [effectiveSnapshot, hasMatched, input, mode, platform, previewTab, projectTitle, result.meta.engineVersion, savedProjectId, selectedPaletteId, tokenOverrides]);
   async function openProjectLibrary() {
     try {
       if (!user) {
@@ -131,6 +165,18 @@ export function Workbench({
   }
 
   useEffect(() => {
+    if (projectLibraryOpen || !user || !savedProjectId) {
+      if (!user || !savedProjectId) setPublishedPostId(null);
+      return;
+    }
+    let cancel = false;
+    void fetchPublications(user).then((result) => {
+      if (!cancel) setPublishedPostId(result.items.find((item) => item.projectId === savedProjectId)?.postId ?? null);
+    }).catch(() => undefined);
+    return () => { cancel = true; };
+  }, [projectLibraryOpen, savedProjectId, user]);
+
+  useEffect(() => {
     tokenOverridesRef.current = tokenOverrides;
   }, [tokenOverrides]);
 
@@ -139,6 +185,56 @@ export function Workbench({
   }, [currentSignature, projectId, savedSignature]);
 
   useEffect(() => setTokenFocus(null), [selectedPaletteId, platform, previewTab]);
+
+  useEffect(() => {
+    const root = previewScrollRef.current;
+    const toolbar = previewToolbarRef.current;
+    if (!root || !toolbar) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setPreviewToolbarHidden(!entry.isIntersecting),
+      { root, threshold: 0 },
+    );
+    observer.observe(toolbar);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (previewToolbarHidden) {
+      setPreviewDockMounted(true);
+      let second = 0;
+      const first = requestAnimationFrame(() => {
+        second = requestAnimationFrame(() => setPreviewDockOpen(true));
+      });
+      return () => {
+        cancelAnimationFrame(first);
+        cancelAnimationFrame(second);
+      };
+    }
+    setPreviewDockOpen(false);
+  }, [previewToolbarHidden]);
+
+  useEffect(() => {
+    if (previewToolbarHidden || previewDockOpen || !previewDockMounted) return;
+    const timer = window.setTimeout(() => setPreviewDockMounted(false), 300);
+    return () => window.clearTimeout(timer);
+  }, [previewDockMounted, previewDockOpen, previewToolbarHidden]);
+
+  useEffect(() => {
+    if (!initialSource) return;
+    let cancel = false;
+    void fetch(`/api/community/posts/${initialSource.postId}`).then((response) => {
+      if (!cancel) setSourceMissing(response.status === 404 || response.status === 422);
+    }).catch(() => undefined);
+    return () => { cancel = true; };
+  }, [initialSource]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1199px)");
+    const sync = () => setNarrowWorkbench(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     const media = window.matchMedia(MEDIA_QUERIES.mobile);
@@ -353,6 +449,56 @@ export function Workbench({
     }
   }
 
+  function openPublish() {
+    if (!savedProjectId) return;
+    setPublishOpen(true);
+  }
+
+  const showPalettePicker = mode === "edit" && inspector === "tokens" && !savedProjectId;
+  function previewViewSwitch() {
+    return (
+    <div
+      className="studio-nav"
+      role="radiogroup"
+      aria-label={copy.result.platforms}
+      data-view={view}
+      data-mobile-preview={mobilePreviewOnly || undefined}
+      style={{
+        "--studio-switch-fill": effectivePrimary,
+        "--studio-switch-on": chooseOnColor(effectivePrimary),
+      } as CSSProperties}
+    >
+      {showingCommunity ? <span className="community-readonly">{copy.community.readonly}</span> : null}
+      {!mobilePreviewOnly ? (
+        <ChromeChip
+          active={view === "web"}
+          matched={hasMatched}
+          onClick={() => {
+            setPlatform("web");
+            setPreviewTab("overview");
+          }}
+          label={copy.result.web}
+        />
+      ) : null}
+      <ChromeChip
+        active={view === "app"}
+        matched={hasMatched}
+        onClick={() => {
+          setPlatform("app");
+          setPreviewTab("overview");
+        }}
+        label={copy.result.app}
+      />
+      <ChromeChip
+        active={view === "components"}
+        matched={hasMatched}
+        onClick={() => setPreviewTab("components")}
+        label={copy.preview.components}
+      />
+    </div>
+    );
+  }
+
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-[var(--background)]">
       <SiteHeader compact remakeWordmark onRemake={startNewPalette} />
@@ -360,57 +506,34 @@ export function Workbench({
       <div
         className="workbench-main match-transition relative min-h-0 flex-1"
         data-stage={stage}
+        data-inspector={mode === "community" ? "community" : inspector}
         data-token-panel={tokenPanelOpen ? "open" : "closed"}
       >
-        <div className="workbench-preview min-h-0 min-w-0" data-token-focus={tokenFocus ?? undefined}>
-          <div className="workbench-preview-toolbar">
+        <div className="workbench-preview min-h-0 min-w-0" data-token-focus={tokenFocus ?? undefined} data-dock={previewToolbarHidden ? "true" : "false"}>
+          <div className="workbench-preview-scroll" ref={previewScrollRef}>
+          <div className="workbench-preview-stage">
+          <div className="workbench-preview-toolbar" ref={previewToolbarRef} inert={previewToolbarHidden || undefined} aria-hidden={previewToolbarHidden || undefined}>
             <div className="workbench-preview-toolbar-end">
-              <div
-                className="studio-nav"
-                role="radiogroup"
-                aria-label={copy.result.platforms}
-                data-view={view}
-                data-mobile-preview={mobilePreviewOnly || undefined}
-                style={{
-                  "--studio-switch-fill": effectivePrimary,
-                  "--studio-switch-on": chooseOnColor(effectivePrimary),
-                } as CSSProperties}
-              >
-                {!mobilePreviewOnly ? (
-                  <ChromeChip
-                    active={view === "web"}
-                    matched={hasMatched}
-                    onClick={() => {
-                      setPlatform("web");
-                      setPreviewTab("overview");
-                    }}
-                    label={copy.result.web}
-                  />
-                ) : null}
-                <ChromeChip
-                  active={view === "app"}
-                  matched={hasMatched}
-                  onClick={() => {
-                    setPlatform("app");
-                    setPreviewTab("overview");
-                  }}
-                  label={copy.result.app}
-                />
-                <ChromeChip
-                  active={view === "components"}
-                  matched={hasMatched}
-                  onClick={() => setPreviewTab("components")}
-                  label={copy.preview.components}
-                />
-              </div>
-              {!savedProjectId ? <PalettePicker hex={input.hex} variant="panel" /> : null}
+              {previewViewSwitch()}
+              {showPalettePicker && !previewToolbarHidden ? <PalettePicker hex={input.hex} variant="panel" /> : null}
             </div>
           </div>
-          <ThemeScope result={result} extraVars={overrideVars} className="flex min-h-0 flex-1 flex-col bg-transparent p-2">
+          {sourceMissing && inspector === "tokens" ? <p className="community-source-note">{copy.community.sourceMissing}</p> : null}
+          <ThemeScope result={previewResult} extraVars={previewVars} className="flex min-h-0 flex-1 flex-col bg-transparent p-2">
             <div className="min-h-0 flex-1">
               <PreviewCanvas platform={platform} tab={previewTab} />
             </div>
           </ThemeScope>
+          </div>
+          <SiteFooter />
+          {previewDockMounted ? <div className="workbench-preview-dock-spacer" /> : null}
+          </div>
+          {previewDockMounted ? (
+            <div className="workbench-preview-dock" data-state={previewDockOpen ? "open" : "closed"} role="region" aria-hidden={previewDockOpen ? undefined : true} aria-label={locale === "ko" ? "미리보기 조작" : "Preview controls"}>
+              {previewViewSwitch()}
+              {showPalettePicker ? <PalettePicker hex={input.hex} variant="panel" /> : null}
+            </div>
+          ) : null}
         </div>
 
         {tokenPanelOpen ? (
@@ -434,11 +557,14 @@ export function Workbench({
             : `${tokenPanelOpen ? "Close" : "Open"} color token panel`}
           aria-expanded={tokenPanelOpen}
           onTouchStart={(event) => {
-            tokenPanelSwipeStart.current = event.touches[0]?.clientX ?? null;
+            const touch = event.touches[0];
+            tokenPanelSwipeStart.current = touch ? (inspector === "community" && narrowWorkbench ? touch.clientY : touch.clientX) : null;
           }}
           onTouchEnd={(event) => {
             if (tokenPanelSwipeStart.current === null) return;
-            const distance = (event.changedTouches[0]?.clientX ?? tokenPanelSwipeStart.current) - tokenPanelSwipeStart.current;
+            const touch = event.changedTouches[0];
+            const next = inspector === "community" && narrowWorkbench ? touch?.clientY : touch?.clientX;
+            const distance = (next ?? tokenPanelSwipeStart.current) - tokenPanelSwipeStart.current;
             tokenPanelSwipeStart.current = null;
             if (Math.abs(distance) < 36) return;
             event.preventDefault();
@@ -463,6 +589,20 @@ export function Workbench({
             "--color-surface-default": tokenOverrides["surface.default"] ?? result.semantic.light.surface.default,
           } as CSSProperties}
         >
+          {mode === "edit" ? (
+            <div className="community-tabs" role="tablist" aria-label={copy.community.entry}>
+              <button type="button" role="tab" aria-selected={inspector === "tokens"} className="community-tab" onClick={() => setInspector("tokens")}>{copy.community.tokens}</button>
+              <button type="button" role="tab" aria-selected={inspector === "community"} className="community-tab" onClick={() => setInspector("community")}>{copy.community.entry}</button>
+            </div>
+          ) : null}
+          {mode === "community" || inspector === "community" ? (
+            <CommunityPanel
+              mode={mode}
+              selectedId={communityPost?.id ?? null}
+              onSelect={setCommunityPost}
+              onProjectLimit={() => setUpgradeDialog("limit")}
+            />
+          ) : (
           <TokenPanel
             paletteControls={<PaletteControls theme={effectiveTheme} commentTheme={commentTheme} locale={locale} savedProject={Boolean(savedProjectId)} resetNonce={resetNonce} onGenerate={generateFromPrimary} />}
             result={result}
@@ -474,6 +614,8 @@ export function Workbench({
             onOpenProjects={() => { void openProjectLibrary(); }}
             onUpgradePlan={() => setUpgradeDialog("plan")}
             onSave={requestProjectSave}
+            onPublish={openPublish}
+            publishLabel={publishedPostId ? copy.community.manage : copy.community.publish}
             onShare={share}
             undoableTokens={Array.from(new Set(tokenHistory.flatMap(entry => Object.keys(entry)).concat(Object.keys(tokenOverrides))))
               .filter(path => tokenHistory.some(entry => entry[path] !== tokenOverrides[path]))}
@@ -484,10 +626,9 @@ export function Workbench({
             onTokenChange={finishTokenEdit}
             onTokenCancel={cancelTokenEdit}
           />
+          )}
         </aside>
       </div>
-
-      <SiteFooter />
 
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent>
@@ -555,10 +696,26 @@ export function Workbench({
         }}
       />
 
+      {savedProjectId ? (
+        <PublishDialog
+          open={publishOpen}
+          onOpenChange={setPublishOpen}
+          snapshot={effectiveSnapshot}
+          projectId={savedProjectId}
+          defaultTitle={projectTitle}
+          existingPostId={publishedPostId}
+          needsSave={savedSignature !== null && (savedSignature !== currentSignature || pendingColorHistory.length > 0)}
+          onSaveFirst={() => save()}
+          onSaved={(post) => setPublishedPostId(post.id)}
+        />
+      ) : null}
+
       <ProjectLibraryDialog
         open={projectLibraryOpen}
         onOpenChange={(open) => { setProjectLibraryOpen(open); if (!open) setFreeingProjectSlot(false); }}
         currentProjectId={savedProjectId}
+        unsaved={Boolean(savedProjectId) && savedSignature !== null && (savedSignature !== currentSignature || pendingColorHistory.length > 0)}
+        onSaveCurrent={() => save()}
         freeSlot={freeingProjectSlot}
         onSlotFreed={() => {
           setProjectLibraryOpen(false);

@@ -9,7 +9,7 @@ const concepts = [
 ] as const;
 
 // Move the entire flat outline inward near the press, including both rounded ends.
-function cushionContour(xPercent: number, yPercent: number, pressed: boolean, width = 180, height = 52, maxDepth = 3.5, cornerRadius = height / 2 - 1) {
+export function cushionContour(xPercent: number, yPercent: number, pressed: boolean, width = 180, height = 52, maxDepth = 3.5, cornerRadius = height / 2 - 1) {
   const pressX = Math.max(0, Math.min(100, xPercent)) / 100 * width;
   const pressY = Math.max(0, Math.min(100, yPercent)) / 100 * height;
   const radius = Math.min(cornerRadius, height / 2 - 1, width / 2 - 1);

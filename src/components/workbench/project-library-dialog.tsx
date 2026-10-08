@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Clock3, Library, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/auth-provider";
+import { PublishDialog } from "@/components/community/publish-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,7 +17,9 @@ import {
 } from "@/components/ui/dialog";
 import { uiToast } from "@/components/ui/toast";
 import { trackProductEvent } from "@/lib/analytics";
+import { fetchPublications } from "@/lib/community/client";
 import { generateColorSystem } from "@/lib/color-engine";
+import { useCopy } from "@/hooks/use-copy";
 import { FREE_PROJECT_LIMIT, deleteProject, subscribeProjects, type SavedProject } from "@/lib/firebase/data";
 import { encodeShare } from "@/lib/share/encode";
 import { useMatchuStore } from "@/lib/store";
@@ -27,21 +30,28 @@ export function ProjectLibraryDialog({
   currentProjectId,
   freeSlot = false,
   onSlotFreed,
+  unsaved = false,
+  onSaveCurrent,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentProjectId: string | null;
   freeSlot?: boolean;
   onSlotFreed?: () => void;
+  unsaved?: boolean;
+  onSaveCurrent?: () => Promise<boolean>;
 }) {
   const router = useRouter();
   const { user } = useAuth();
+  const copy = useCopy();
   const locale = useMatchuStore((state) => state.locale);
   const isKo = locale === "ko";
   const [projects, setProjects] = useState<SavedProject[]>([]);
   const [loading, setLoading] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<SavedProject | null>(null);
   const [historyProject, setHistoryProject] = useState<SavedProject | null>(null);
+  const [publishProject, setPublishProject] = useState<SavedProject | null>(null);
+  const [postsByProject, setPostsByProject] = useState<Record<string, string>>({});
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -56,6 +66,15 @@ export function ProjectLibraryDialog({
       setProjects(freeSlot ? next.filter(project => slotIds.has(project.id)) : next);
       setLoading(false);
     });
+  }, [freeSlot, open, user]);
+
+  useEffect(() => {
+    if (!open || !user || freeSlot) return;
+    let cancel = false;
+    void fetchPublications(user).then((result) => {
+      if (!cancel) setPostsByProject(Object.fromEntries(result.items.map((item) => [item.projectId, item.postId])));
+    }).catch(() => undefined);
+    return () => { cancel = true; };
   }, [freeSlot, open, user]);
 
   useEffect(() => {
@@ -76,6 +95,7 @@ export function ProjectLibraryDialog({
       overrides: project.overrides,
       tokenSnapshot: project.tokenSnapshot,
       projectTitle: project.title,
+      source: project.source,
     });
     void trackProductEvent("project_opened", { source: "token_panel" });
     onOpenChange(false);
@@ -159,6 +179,11 @@ export function ProjectLibraryDialog({
                         <Button size="sm" variant="outline" className="flex-1" disabled={project.colorHistory.length === 0} onClick={() => setHistoryProject(project)}>
                           {isKo ? `변경 이력${project.colorHistory.length ? ` ${project.colorHistory.length}` : ""}` : `History${project.colorHistory.length ? ` ${project.colorHistory.length}` : ""}`}
                         </Button>
+                        {!freeSlot ? (
+                          <Button size="sm" variant="outline" className="flex-1" onClick={() => setPublishProject(project)}>
+                            {postsByProject[project.id] ? copy.community.manage : copy.community.publish}
+                          </Button>
+                        ) : null}
                         <Button size="sm" variant={freeSlot ? "destructive" : "default"} className="flex-1" disabled={!freeSlot && isCurrent} onClick={() => freeSlot ? setProjectToDelete(project) : openProject(project)}>
                           {freeSlot ? <Trash2 aria-hidden /> : <Library aria-hidden />}{freeSlot ? (isKo ? "이 컬러북 선택" : "Select this colorbook") : isCurrent ? (isKo ? "열려 있음" : "Open") : (isKo ? "열기" : "Open")}
                         </Button>
@@ -200,8 +225,8 @@ export function ProjectLibraryDialog({
           <DialogHeader>
             <DialogTitle>{isKo ? "저장한 컬러를 삭제할까요?" : "Delete these saved colors?"}</DialogTitle>
             <DialogDescription>{isKo
-              ? `“${projectToDelete?.title ?? ""}” 컬러와 변경 이력이 영구적으로 삭제됩니다.`
-              : `“${projectToDelete?.title ?? ""}” and its color history will be permanently deleted.`}</DialogDescription>
+              ? `“${projectToDelete?.title ?? ""}” 컬러와 변경 이력이 영구적으로 삭제됩니다. ${copy.community.deleteNotice}`
+              : `“${projectToDelete?.title ?? ""}” and its color history will be permanently deleted. ${copy.community.deleteNotice}`}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose render={<Button variant="outline" autoFocus disabled={deleting} />}>{isKo ? "취소" : "Cancel"}</DialogClose>
@@ -211,6 +236,20 @@ export function ProjectLibraryDialog({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {publishProject ? (
+        <PublishDialog
+          open
+          onOpenChange={(next) => { if (!next) setPublishProject(null); }}
+          snapshot={publishProject.tokenSnapshot}
+          projectId={publishProject.id}
+          defaultTitle={publishProject.title}
+          existingPostId={postsByProject[publishProject.id] ?? null}
+          needsSave={unsaved && publishProject.id === currentProjectId}
+          onSaveFirst={onSaveCurrent}
+          onSaved={(post) => setPostsByProject((current) => ({ ...current, [publishProject.id]: post.id }))}
+        />
+      ) : null}
     </>
   );
 }

@@ -17,13 +17,15 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import type { GenerateInput } from "@/lib/color-engine";
+import type { ProjectSource } from "@/lib/community/source";
+import { readProjectSource } from "@/lib/community/source";
 import type { Locale } from "@/lib/copy";
 import type { ColorHistoryEntry } from "@/lib/project-tokens";
 import { getFirebaseDb } from "./client";
+import { effectiveProfilePlan, FREE_PROJECT_LIMIT, type Plan } from "./plan";
 
-export const FREE_PROJECT_LIMIT = 5;
-
-export type Plan = "free" | "pro";
+export { effectiveProfilePlan, FREE_PROJECT_LIMIT };
+export type { Plan };
 
 export type UserProfile = {
   displayName: string | null;
@@ -31,14 +33,6 @@ export type UserProfile = {
   photoURL: string | null;
   plan: Plan;
 };
-
-export function effectiveProfilePlan(value: { plan?: unknown; proExpiresAt?: unknown }, now = Date.now()): Plan {
-  if (value.plan !== "pro") return "free";
-  // Preserve existing administrator-assigned Pro accounts without a billing expiry.
-  if (!("proExpiresAt" in value)) return "pro";
-  const expiry = value.proExpiresAt as { toMillis?: () => number } | null;
-  return expiry && typeof expiry.toMillis === "function" && expiry.toMillis() > now ? "pro" : "free";
-}
 
 export type SavedProject = {
   id: string;
@@ -48,6 +42,7 @@ export type SavedProject = {
   overrides: Record<string, string>;
   tokenSnapshot: Record<string, string>;
   colorHistory: ColorHistoryEntry[];
+  source?: ProjectSource;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 };
@@ -127,6 +122,7 @@ function projectFromDocument(snapshot: QuerySnapshot<DocumentData>["docs"][numbe
     overrides: (value.overrides ?? {}) as Record<string, string>,
     tokenSnapshot: (value.tokenSnapshot ?? {}) as Record<string, string>,
     colorHistory: Array.isArray(value.colorHistory) ? value.colorHistory as ColorHistoryEntry[] : [],
+    source: readProjectSource(value.source) ?? undefined,
     createdAt: value.createdAt as Timestamp | undefined,
     updatedAt: value.updatedAt as Timestamp | undefined,
   };
@@ -166,6 +162,7 @@ export async function saveProject({
   overrides,
   tokenSnapshot,
   historyEntries = [],
+  source,
 }: {
   uid: string;
   projectId?: string | null;
@@ -175,6 +172,7 @@ export async function saveProject({
   overrides: Record<string, string>;
   tokenSnapshot: Record<string, string>;
   historyEntries?: ColorHistoryEntry[];
+  source?: ProjectSource | null;
 }) {
   const database = getFirebaseDb();
   const projectData = {
@@ -184,6 +182,7 @@ export async function saveProject({
     overrides,
     tokenSnapshot,
     updatedAt: serverTimestamp(),
+    ...(source ? { source } : {}),
   };
 
   if (projectId) {

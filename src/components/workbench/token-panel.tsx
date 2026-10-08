@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Copy, Crown, Download, Library, Save, Share2, Undo2 } from "lucide-react";
+import { Copy, Crown, Download, Library, Save, Send, Share2, Undo2 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/auth/auth-provider";
 import { FREE_PROJECT_LIMIT, subscribeProjects } from "@/lib/firebase/data";
@@ -34,6 +34,8 @@ export function TokenPanel({
   onOpenProjects,
   onUpgradePlan,
   onSave,
+  onPublish,
+  publishLabel,
   onShare,
   onTokenChange,
   onTokenEditStart,
@@ -53,6 +55,8 @@ export function TokenPanel({
   onOpenProjects: () => void;
   onUpgradePlan: () => void;
   onSave: () => void;
+  onPublish: () => void;
+  publishLabel: string;
   onShare: () => void;
   onTokenChange: (path: string, value: string) => void;
   onTokenEditStart: () => void;
@@ -261,6 +265,17 @@ export function TokenPanel({
             <Save aria-hidden />
             <span>{saveLabel}</span>
           </button>
+          {savedProject ? (
+            <button
+              type="button"
+              className="token-panel-colorbook-btn token-panel-publish-btn"
+              disabled={saving}
+              onClick={onPublish}
+            >
+              <Send aria-hidden />
+              <span>{publishLabel}</span>
+            </button>
+          ) : null}
           <button
             type="button"
             className="token-panel-share-btn"
