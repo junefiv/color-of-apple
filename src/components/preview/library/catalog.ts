@@ -1,13 +1,12 @@
 export type LibraryStyle = "cushion" | "ink";
 export const LIBRARY_ITEMS = [
   ["button", "버튼", "Button"], ["icon-button", "아이콘 버튼", "Icon button"],
-  ["button-group", "버튼 그룹", "Button group"], ["toggle", "토글 버튼", "Toggle"],
-  ["input", "텍스트 입력창", "Text inputs · Password · Search"],
+  ["button-group", "버튼 그룹", "Button group"],
+  ["input", "텍스트 입력창", "Text input"],
   ["textarea", "여러 줄 입력창", "Textarea"],
-  ["number", "숫자 입력창", "Number input"], ["checkbox", "체크박스 · 라디오 버튼 · 스위치", "Checkbox · Radio · Switch"],
+  ["checkbox", "체크박스 · 라디오 버튼 · 스위치", "Checkbox · Radio · Switch"],
   ["select", "셀렉트", "Select"],
   ["slider", "슬라이더", "Slider"], ["date", "날짜 선택기", "Date picker"],
-  ["calendar", "캘린더", "Calendar"], ["otp", "인증번호 입력창", "OTP input"],
   ["card", "카드", "Card"], ["tag", "태그", "Tag"],
   ["avatar", "아바타 & 아바타 그룹", "Avatar & Avatar group"],
   ["tooltip", "툴팁", "Tooltip"], ["popover", "팝오버", "Popover"],

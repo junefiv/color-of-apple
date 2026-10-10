@@ -5,12 +5,11 @@ import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { KitButton, KitField } from "./primitives";
 
 export function TextInputsDemo({ ko }: { ko: boolean }) {
-  const [show, setShow] = useState(false);
+  const [number, setNumber] = useState(1);
   return <div className="lk-stack">
-    <KitField label={ko ? "텍스트" : "Text"}><input placeholder="Apple" /></KitField>
-    <KitField label={ko ? "검색" : "Search"}><input type="search" placeholder="Apple / Ink" /></KitField>
-    <KitField label={ko ? "비밀번호" : "Password"}><input type={show ? "text" : "password"} autoComplete="off" placeholder="••••••••" /></KitField>
-    <KitButton tone="soft" aria-pressed={show} onClick={() => setShow(!show)}>{ko ? (show ? "비밀번호 숨기기" : "비밀번호 표시") : (show ? "Hide password" : "Show password")}</KitButton>
+    <KitField label={ko ? "텍스트" : "Text input"}><input placeholder="Apple" /></KitField>
+    <KitField label={ko ? "숫자" : "Number input"}><input type="number" min={0} max={99} value={number} onChange={event => setNumber(Math.max(0, Math.min(99, Number(event.target.value))))} /></KitField>
+    <div className="lk-stack"><span>{ko ? "인증번호" : "Verification code"}</span><OtpDemo ko={ko} /></div>
   </div>;
 }
 

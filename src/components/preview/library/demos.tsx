@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Heart, ShoppingBag, Star, Bell, ArrowRight, Check, Settings, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import type { LibraryItemId } from "./catalog";
-import { CalendarDemo, DatePickerDemo, OtpDemo, SelectionDemo, TextInputsDemo } from "./input-demos";
+import { DatePickerDemo, SelectionDemo, TextInputsDemo } from "./input-demos";
 import { KitAccordion, KitArt, KitAvatar, KitButton, KitDialog, KitField } from "./primitives";
 
 const PEOPLE = [{ name: "Alex", role: "Designer", score: 92 }, { name: "June", role: "Developer", score: 85 }, { name: "Sam", role: "Designer", score: 98 }];
@@ -57,16 +57,12 @@ export function LibraryDemo({ id, ko }: { id: LibraryItemId; ko: boolean }) {
     case "button": return <div className="lk-stack"><div className="lk-row">{action(t("눌러보기", "Press me"))}<KitButton tone="soft">{t("보조 버튼", "Secondary")}</KitButton><KitButton disabled>{t("비활성", "Disabled")}</KitButton></div>{status}</div>;
     case "icon-button": return <KitButton aria-label={t("좋아요", "Like")} aria-pressed={checked} onClick={() => setChecked(!checked)}><Heart size={19} fill={checked ? "currentColor" : "none"} /></KitButton>;
     case "button-group": return <div className="lk-row">{["Left", "Center", "Right"].map((name, i) => <KitButton key={name} tone={active === i ? "primary" : "soft"} aria-pressed={active === i} onClick={() => setActive(i)}>{name}</KitButton>)}</div>;
-    case "toggle": return <KitButton tone={checked ? "primary" : "soft"} aria-pressed={checked} onClick={() => setChecked(!checked)}><Star size={16} />{checked ? t("즐겨찾기 켜짐", "Starred") : t("즐겨찾기", "Star")}</KitButton>;
     case "input": return <TextInputsDemo ko={ko} />;
     case "textarea": return field(t("메모", "Note"), <textarea rows={3} placeholder={t("생각을 남겨보세요", "Leave a thought")} />);
-    case "number": return field(t("수량", "Quantity"), <input type="number" min={0} max={99} value={number} onChange={e => setNumber(Math.max(0, Math.min(99, Number(e.target.value))))} />);
     case "checkbox": return <SelectionDemo ko={ko} />;
     case "select": return field(t("스타일", "Style"), <select value={value || "Cushion"} onChange={e => setValue(e.target.value)}>{items.map(item => <option key={item}>{item}</option>)}</select>);
     case "slider": return field(`${t("볼륨", "Volume")} ${number}`, <input type="range" min={0} max={100} value={number} style={{ "--lk-range-progress": `${number}%` } as CSSProperties} onChange={e => setNumber(Number(e.target.value))} />);
     case "date": return <DatePickerDemo ko={ko} />;
-    case "calendar": return <CalendarDemo ko={ko} />;
-    case "otp": return <OtpDemo ko={ko} />;
     case "card": return <div className="lk-surface lk-stack"><KitArt /><strong>{t("작은 색의 발견", "A little color discovery")}</strong><p>{t("사과 하나에서 시작하는 새로운 화면.", "A new screen, beginning with one apple.")}</p>{action(t("살펴보기", "Explore"))}{status}</div>;
     case "tag": return <div className="lk-row">{items.map(item => <KitButton key={item} tone="soft" aria-label={`${item} ${t("삭제", "remove")}`} onClick={() => setItems(items.filter(text => text !== item))}>{item} ×</KitButton>)}{items.length === 0 && <KitButton tone="soft" onClick={() => setItems(["Apple", "Cushion", "Ink"])}>{t("초기화", "Reset")}</KitButton>}</div>;
     case "avatar": return <div className="lk-stack"><KitAvatar /><div className="lk-avatar-group">{["Alex", "June", "Sam"].map((name, i) => <KitAvatar key={name} name={name} index={i} />)}<span className="lk-avatar">+2</span></div></div>;
