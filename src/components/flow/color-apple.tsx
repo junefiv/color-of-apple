@@ -13,11 +13,9 @@ import { trackProductEvent } from "@/lib/analytics";
 export function ColorApple({
   hex,
   onChange,
-  onGenerate,
 }: {
   hex: string;
   onChange: (value: string) => void;
-  onGenerate?: (value: string) => void;
 }) {
   const copy = useCopy();
   const appleRef = useRef<HTMLButtonElement>(null);
@@ -70,13 +68,7 @@ export function ColorApple({
           anchorRef={appleRef}
           color={fill}
           title={copy.hero.hexLabel}
-          actionLabel="Generate Color Palette"
           onChange={commit}
-          onAction={(next) => {
-            commit(next);
-            onGenerate?.(next);
-            setOpen(false);
-          }}
           onDismiss={() => setOpen(false)}
         />
       ) : null}

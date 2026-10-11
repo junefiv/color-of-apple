@@ -1,7 +1,11 @@
 "use client";
 
-import { isValidElement, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
+import { isValidElement, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type CSSProperties, type ReactNode } from "react";
 import { cushionContour } from "../concept-samples";
+
+export function KitSwitch({ size = "medium", className = "", ...props }: Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "size" | "role"> & { size?: "small" | "medium" | "large" }) {
+  return <input {...props} type="checkbox" role="switch" className={`lk-switch ${className}`} data-size={size} />;
+}
 
 function useSurfaceSize<T extends HTMLElement>(initialWidth = 180, initialHeight = 52) {
   const ref = useRef<T>(null);
@@ -16,19 +20,20 @@ function useSurfaceSize<T extends HTMLElement>(initialWidth = 180, initialHeight
   return { ref, size };
 }
 
-export function KitButton({ children, className = "", tone = "primary", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { tone?: "primary" | "soft" | "danger" }) {
+export function KitButton({ children, className = "", tone = "primary", shape, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { tone?: "primary" | "soft" | "danger"; shape?: "pill" | "square" | "circle" }) {
   const [press, setPress] = useState(false);
   const [point, setPoint] = useState({ x: 50, y: 50 });
   const [pulse, setPulse] = useState(0);
   const { ref, size } = useSurfaceSize<HTMLButtonElement>();
+  const radius = shape === "square" ? size.height * .32 : Math.min(size.width, size.height) / 2 - 1;
   return <button {...props} ref={ref} type={props.type ?? "button"} className={`lk-button ${className}`} data-tone={tone} data-pressed={press || undefined}
-    style={{ ...props.style, "--press-x": `${point.x}%`, "--press-y": `${point.y}%`, "--lk-rest": `path("${cushionContour(50, 50, false, size.width, size.height)}")`, "--lk-pressed": `path("${cushionContour(point.x, point.y, true, size.width, size.height)}")` } as CSSProperties}
+    style={{ ...props.style, "--press-x": `${point.x}%`, "--press-y": `${point.y}%`, "--lk-rest": `path("${cushionContour(50, 50, false, size.width, size.height, 3.5, radius)}")`, "--lk-pressed": `path("${cushionContour(point.x, point.y, true, size.width, size.height, 3.5, radius)}")` } as CSSProperties}
     onPointerDown={event => { if (event.button !== 0) return; const rect = event.currentTarget.getBoundingClientRect(); setPoint({ x: (event.clientX - rect.left) / rect.width * 100, y: (event.clientY - rect.top) / rect.height * 100 }); setPress(true); event.currentTarget.setPointerCapture(event.pointerId); props.onPointerDown?.(event); }}
     onPointerUp={event => { setPress(false); props.onPointerUp?.(event); }} onPointerCancel={() => setPress(false)} onLostPointerCapture={() => setPress(false)}
     onBlur={event => { setPress(false); props.onBlur?.(event); }}
     onKeyDown={event => { if (!event.repeat && (event.key === " " || event.key === "Enter")) { setPoint({ x: 50, y: 50 }); setPress(true); } props.onKeyDown?.(event); }}
     onKeyUp={event => { setPress(false); props.onKeyUp?.(event); }} onClick={event => { setPulse(p => p + 1); props.onClick?.(event); }}>
-    <svg className="lk-contour" viewBox={`0 0 ${size.width} ${size.height}`} preserveAspectRatio="none" aria-hidden><path d={cushionContour(50, 50, false, size.width, size.height)} /></svg>
+    <svg className="lk-contour" viewBox={`0 0 ${size.width} ${size.height}`} preserveAspectRatio="none" aria-hidden><path d={cushionContour(50, 50, false, size.width, size.height, 3.5, radius)} /></svg>
     {pulse > 0 && <span key={pulse} className="lk-ripple" aria-hidden />}
     <span className="lk-button-content">{children}</span>
   </button>;

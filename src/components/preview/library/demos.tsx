@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Heart, ShoppingBag, Star, Bell, ArrowRight, Check, Settings, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
-import type { LibraryItemId } from "./catalog";
+import type { LegacyLibraryItemId } from "./catalog";
 import { DatePickerDemo, SelectionDemo, TextInputsDemo } from "./input-demos";
 import { KitAccordion, KitArt, KitAvatar, KitButton, KitDialog, KitField } from "./primitives";
 
@@ -36,7 +36,7 @@ function Palette({ detail = false, ko }: { detail?: boolean; ko: boolean }) {
   return <div className="lk-stack"><div className="lk-dice">{COLORS.map((color, i) => <span key={color} className={`lk-dot lk-dot-${i}`} style={{ background: `var(${color})` }} title={["Primary", "Secondary", "Accent", "Surface", "Text"][i]} />)}</div><strong>{ko ? "나의 사과 팔레트" : "My apple palette"}</strong>{detail && <dl className="lk-palette-details">{COLORS.map((color, i) => <div key={color}><dt><span style={{ background: `var(${color})` }} />{["Primary", "Secondary", "Accent", "Surface", "Text"][i]}</dt><dd>{color.replace("--lk-", "")}</dd></div>)}</dl>}</div>;
 }
 
-export function LibraryDemo({ id, ko }: { id: LibraryItemId; ko: boolean }) {
+export function LibraryDemo({ id, ko }: { id: LegacyLibraryItemId; ko: boolean }) {
   const uid = useId();
   const t = (kr: string, en: string) => ko ? kr : en;
   const [value, setValue] = useState("");

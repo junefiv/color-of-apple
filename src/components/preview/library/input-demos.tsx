@@ -25,29 +25,29 @@ export function SelectionDemo({ ko }: { ko: boolean }) {
   </div>;
 }
 
-export function OtpDemo({ ko }: { ko: boolean }) {
+export function OtpDemo({ ko, length = 6, disabled = false, label }: { ko: boolean; length?: number; disabled?: boolean; label?: string }) {
   // Empty slots must stay empty: a space consumes maxLength and blocks the next digit.
-  const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
+  const [digits, setDigits] = useState<string[]>(Array(length).fill(""));
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
   function enter(index: number, text: string) {
-    const numbers = text.replace(/\D/g, "").slice(0, 6 - index);
+    const numbers = text.replace(/\D/g, "").slice(0, length - index);
     setDigits(previous => {
       const next = [...previous];
       if (!numbers) next[index] = "";
       else Array.from(numbers).forEach((digit, offset) => { next[index + offset] = digit; });
       return next;
     });
-    if (numbers) inputs.current[Math.min(index + numbers.length, 5)]?.focus();
+    if (numbers) inputs.current[Math.min(index + numbers.length, length - 1)]?.focus();
   }
-  return <div className="lk-stack"><div className="lk-otp" role="group" aria-label={ko ? "6자리 인증번호" : "Six-digit code"}>
-    {digits.map((digit, index) => <input key={index} ref={input => { inputs.current[index] = input; }} aria-label={`${ko ? "인증번호" : "Digit"} ${index + 1}`} inputMode="numeric" pattern="[0-9]*" autoComplete={index === 0 ? "one-time-code" : "off"} maxLength={6} value={digit}
+  return <div className="lk-stack"><div className="lk-otp" role="group" aria-label={label || (ko ? `${length}자리 인증번호` : `${length}-digit code`)}>
+    {digits.map((digit, index) => <input key={index} disabled={disabled} ref={input => { inputs.current[index] = input; }} aria-label={`${ko ? "인증번호" : "Digit"} ${index + 1}`} inputMode="numeric" pattern="[0-9]*" autoComplete={index === 0 ? "one-time-code" : "off"} maxLength={length} value={digit}
       onFocus={event => event.currentTarget.select()} onChange={event => enter(index, event.target.value)}
       onPaste={event => { event.preventDefault(); enter(index, event.clipboardData.getData("text")); }}
       onKeyDown={event => {
-        if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); inputs.current[Math.max(0, Math.min(5, index + (event.key === "ArrowLeft" ? -1 : 1)))]?.focus(); }
+        if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); inputs.current[Math.max(0, Math.min(length - 1, index + (event.key === "ArrowLeft" ? -1 : 1)))]?.focus(); }
         if (event.key === "Backspace" && !digit && index > 0) { event.preventDefault(); setDigits(previous => previous.map((value, i) => i === index - 1 ? "" : value)); inputs.current[index - 1]?.focus(); }
       }} />)}
-  </div><output aria-live="polite">{digits.every(Boolean) ? (ko ? "입력 완료" : "Code entered") : (ko ? "6자리 숫자 입력" : "Enter six digits")}</output></div>;
+  </div><output aria-live="polite">{digits.every(Boolean) ? (ko ? "입력 완료" : "Code entered") : (ko ? `${length}자리 숫자 입력` : `Enter ${length} digits`)}</output></div>;
 }
 
 function dateKey(year: number, month: number, day: number) { return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`; }

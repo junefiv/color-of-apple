@@ -188,7 +188,6 @@ export function Hero() {
             setHex(nextHex);
             setError(null);
           }}
-          onGenerate={generate}
         />
         <div className="hero-generate">
           <div className="landing-hero-actions">

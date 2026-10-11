@@ -73,6 +73,19 @@ async function chooseBlue() {
 }
 
 describe("home apple", () => {
+  it("keeps only the main Generate button after a picker selection is released", async () => {
+    await act(() => root.render(createElement(Hero)));
+    await act(() => container.querySelector<HTMLButtonElement>('[data-testid="color-apple"]')!.click());
+    const picker = document.querySelector<HTMLButtonElement>('[data-testid="pick-blue"]')!;
+    await act(() => picker.dispatchEvent(new Event("pointerdown", { bubbles: true })));
+    await act(() => picker.click());
+    await act(() => document.dispatchEvent(new Event("pointerup", { bubbles: true })));
+    expect(appleColor()).toBe("#3388FF");
+    expect(document.querySelector(".primary-apple-generate-tip")).toBeNull();
+    expect(document.querySelectorAll(".match-button")).toHaveLength(1);
+    expect(container.querySelector(".hero-generate .match-button")).not.toBeNull();
+  });
+
   it("keeps a panel Primary selection as a draft until release and Generate", async () => {
     const generate = vi.fn();
     await act(() => root.render(createElement("div", null,

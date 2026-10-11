@@ -30,6 +30,7 @@ import type { CommunityPost } from "@/lib/community/types";
 import { applyTokenSnapshot, createTokenSnapshot, diffTokenSnapshots, type ColorHistoryEntry } from "@/lib/project-tokens";
 import { MEDIA_QUERIES } from "@/lib/responsive";
 import { useMatchuStore } from "@/lib/store";
+import { leaveUiKit, navigateUiKit, readUiKitLocation, UI_KIT_NAVIGATION_EVENT } from "@/lib/ui-kit-navigation";
 import { TokenPanel, type TokenFocusRole } from "./token-panel";
 import { ProjectLibraryDialog } from "./project-library-dialog";
 import { PaletteControls } from "./palette-controls";
@@ -65,6 +66,18 @@ export function Workbench({
   const setPlatform = useMatchuStore((state) => state.setPlatform);
   const previewTab = useMatchuStore((state) => state.previewTab);
   const setPreviewTab = useMatchuStore((state) => state.setPreviewTab);
+  useEffect(() => {
+    const sync = () => setPreviewTab(readUiKitLocation().active ? "components" : "overview");
+    if (readUiKitLocation().active) sync();
+    window.addEventListener("popstate", sync);
+    window.addEventListener("hashchange", sync);
+    window.addEventListener(UI_KIT_NAVIGATION_EVENT, sync);
+    return () => {
+      window.removeEventListener("popstate", sync);
+      window.removeEventListener("hashchange", sync);
+      window.removeEventListener(UI_KIT_NAVIGATION_EVENT, sync);
+    };
+  }, [setPreviewTab]);
   const matchStage = useMatchuStore((state) => state.matchStage);
   const selectedPaletteId = useMatchuStore((state) => state.selectedPaletteId);
   const [tokenOverridesByPalette, setTokenOverridesByPalette] = useState<Record<string, Record<string, string>>>(() => (
@@ -475,6 +488,7 @@ export function Workbench({
           matched={hasMatched}
           onClick={() => {
             setPlatform("web");
+            leaveUiKit();
             setPreviewTab("overview");
           }}
           label={copy.result.web}
@@ -485,6 +499,7 @@ export function Workbench({
         matched={hasMatched}
         onClick={() => {
           setPlatform("app");
+          leaveUiKit();
           setPreviewTab("overview");
         }}
         label={copy.result.app}
@@ -492,7 +507,7 @@ export function Workbench({
       <ChromeChip
         active={view === "components"}
         matched={hasMatched}
-        onClick={() => setPreviewTab("components")}
+        onClick={() => { navigateUiKit(); setPreviewTab("components"); }}
         label={copy.preview.components}
       />
     </div>

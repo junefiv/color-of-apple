@@ -2,6 +2,7 @@
 
 import {
   previewComponentVars,
+  chooseOnColor,
   primitivesToCssVars,
   semanticToCssVars,
   type ColorSystemResult,
@@ -22,6 +23,9 @@ export function ThemeScope({
   const semantic = result.semantic.light;
   const vars = {
     ...primitivesToCssVars(result.primitive),
+    ...Object.fromEntries(Object.entries(result.primitive).flatMap(([family, scale]) =>
+      Object.entries(scale).map(([step, color]) => [`--color-${family}-${step}-on`, chooseOnColor(color)]),
+    )),
     ...semanticToCssVars(semantic),
     ...previewComponentVars(result.primitive, semantic),
     ...paletteTokensToCssVariables(result.derived.light),
