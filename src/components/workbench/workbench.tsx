@@ -522,7 +522,7 @@ export function Workbench({
         className="workbench-main match-transition relative min-h-0 flex-1"
         data-stage={stage}
         data-inspector={mode === "community" ? "community" : inspector}
-        data-token-panel={tokenPanelOpen ? "open" : "closed"}
+        data-token-panel={view === "components" ? "hidden" : tokenPanelOpen ? "open" : "closed"}
       >
         <div className="workbench-preview min-h-0 min-w-0" data-token-focus={tokenFocus ?? undefined} data-dock={previewToolbarHidden ? "true" : "false"}>
           <div className="workbench-preview-scroll" ref={previewScrollRef}>
@@ -551,7 +551,7 @@ export function Workbench({
           ) : null}
         </div>
 
-        {tokenPanelOpen ? (
+        {view !== "components" && tokenPanelOpen ? (
           <button
             type="button"
             className="token-inspector-dismiss"
@@ -560,7 +560,7 @@ export function Workbench({
           />
         ) : null}
 
-        <button
+        {view !== "components" ? <><button
           type="button"
           className="token-inspector-bookmark"
           style={{
@@ -642,7 +642,7 @@ export function Workbench({
             onTokenCancel={cancelTokenEdit}
           />
           )}
-        </aside>
+        </aside></> : null}
       </div>
 
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>

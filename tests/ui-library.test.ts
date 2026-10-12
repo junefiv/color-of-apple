@@ -2,251 +2,211 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import type { User } from "firebase/auth";
+import { AuthContext, type AuthContextValue } from "@/components/auth/auth-provider";
 import { LibraryCatalog } from "@/components/preview/library/library-catalog";
-import { WebComponentsCatalog } from "@/components/preview/web/components-catalog";
 import { ComponentPlayground } from "@/components/preview/library/playground";
-import { COMPONENT_GROUPS, LIBRARY_ITEMS } from "@/components/preview/library/catalog";
-import { COMPONENT_SETTINGS, defaultOptions, updateOptions } from "@/components/preview/library/settings";
+import { LIBRARY_ITEMS } from "@/components/preview/library/catalog";
 import { useMatchuStore } from "@/lib/store";
 
 let host: HTMLDivElement;
 let root: Root;
+const originalGetContext = HTMLCanvasElement.prototype.getContext;
 beforeEach(() => {
+  HTMLCanvasElement.prototype.getContext = () => null;
   window.history.replaceState({}, "", "/result");
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
   useMatchuStore.setState({ locale: "ko" });
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
 });
-afterEach(() => { act(() => root.unmount()); host.remove(); vi.unstubAllGlobals(); });
-function mount(id?: typeof LIBRARY_ITEMS[number][0]) {
-  act(() => root.render(id ? createElement(ComponentPlayground, { id, ko: true }) : createElement(LibraryCatalog)));
+afterEach(() => { act(() => root.unmount()); host.remove(); HTMLCanvasElement.prototype.getContext = originalGetContext; vi.unstubAllGlobals(); });
+function authValue(signedIn: boolean): AuthContextValue {
+  const user = signedIn ? { uid: "tester" } as User : null;
+  return { user, profile: null, loading: false, signIn: async () => user ?? ({ uid: "tester" } as User), signOut: async () => undefined };
+}
+function mount(id?: typeof LIBRARY_ITEMS[number][0], signedIn = true) {
+  const child = id ? createElement(ComponentPlayground, { id, ko: true }) : createElement(LibraryCatalog);
+  act(() => root.render(createElement(AuthContext.Provider, { value: authValue(signedIn) }, child)));
 }
 function inputOption(name: string): HTMLInputElement {
-  return Array.from(host.querySelectorAll<HTMLLabelElement>(".lk-controls label")).find(label => label.querySelector("span")?.textContent === name)!.querySelector("input")!;
+  return Array.from(document.body.querySelectorAll<HTMLLabelElement>(".lk-controls label")).find(label => label.querySelector("span")?.textContent === name)!.querySelector("input")!;
 }
 function selectOption(name: string, value: string) {
-  const select = Array.from(host.querySelectorAll<HTMLLabelElement>(".lk-controls label")).find(label => label.querySelector("span")?.textContent === name)!.querySelector("select")!;
+  const select = Array.from(document.body.querySelectorAll<HTMLLabelElement>(".lk-controls label")).find(label => label.querySelector("span")?.textContent === name)!.querySelector("select")!;
   act(() => { select.value = value; select.dispatchEvent(new Event("change", { bubbles: true })); });
 }
 function fill(input: HTMLInputElement, value: string) {
   act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, value); input.dispatchEvent(new Event("input", { bubbles: true })); });
 }
-function click(selector: string) { act(() => host.querySelector<HTMLButtonElement>(selector)!.click()); }
+function click(selector: string) { act(() => document.body.querySelector<HTMLButtonElement>(selector)!.click()); }
 
-describe("Jelly-compatible library catalog", () => {
-  it("classifies every component exactly once outside All", () => {
-    const classified = COMPONENT_GROUPS.filter(group => group.id !== "all").flatMap(group => [...group.items]);
-    expect(classified).toHaveLength(35);
-    expect(new Set(classified)).toEqual(new Set(LIBRARY_ITEMS.map(([id]) => id)));
-  });
-  it("filters by group and component type while preserving filters after a detail visit", async () => {
+
+describe("fresh fold button gallery", () => {
+  it("keeps empty categories and their subtype tabs visible with counts", () => {
     mount();
-    expect(host.querySelectorAll('.lk-filter-tabs:not(.lk-filter-subtabs) [role="tab"]')).toHaveLength(9);
-    expect(host.querySelector(".lk-filter-subtabs")).toBeNull();
+    expect(document.querySelectorAll('.lk-filter-tabs:not(.lk-filter-subtabs) [role=tab]')).toHaveLength(9);
     click('[id$="-category-inputs"]');
-    expect(host.querySelectorAll(".lk-example:not([hidden])")).toHaveLength(4);
-    expect(Array.from(host.querySelectorAll('.lk-filter-subtabs [role="tab"]'), node => node.textContent)).toEqual(["All", "Input", "Textarea", "OTP", "Label"]);
+    expect(Array.from(document.querySelectorAll('.lk-filter-subtabs [role=tab]'), el => el.textContent)).toEqual(['All0', 'Input0', 'Textarea0', 'OTP0', 'Label0']);
     click('[id$="-type-textarea"]');
-    expect(host.querySelector(".lk-example:not([hidden])")?.getAttribute("data-component")).toBe("textarea");
-    click('[data-component="textarea"] .lk-detail-link');
-    await act(async () => {
-      const popped = new Promise<void>(resolve => window.addEventListener("popstate", () => resolve(), { once: true }));
-      host.querySelector<HTMLButtonElement>('.lk-back')!.click();
-      await popped;
-    });
-    expect(host.querySelector('[id$="-type-textarea"]')?.getAttribute("aria-selected")).toBe("true");
-    expect(host.querySelectorAll(".lk-example:not([hidden])")).toHaveLength(1);
+    expect(document.querySelector('[id$="-type-textarea"]')?.getAttribute('aria-selected')).toBe('true');
+    expect(document.querySelectorAll('.lk-example:not([hidden])')).toHaveLength(0);
+    expect(document.querySelector('.lk-empty')?.textContent).toContain('아직 등록된');
     click('[id$="-category-buttons"]');
-    expect(host.querySelector('[id$="-type-all"]')?.getAttribute("aria-selected")).toBe("true");
-    expect(host.querySelectorAll(".lk-example:not([hidden])")).toHaveLength(2);
-    click('[id$="-category-all"]');
-    expect(host.querySelectorAll(".lk-example:not([hidden])")).toHaveLength(35);
+    expect(Array.from(document.querySelectorAll('.lk-filter-subtabs [role=tab]'), el => el.textContent)).toEqual(['All1', 'Button1', 'Icon Button0']);
+    click('[id$="-type-button"]');
+    expect(document.querySelectorAll('.lk-example:not([hidden])')).toHaveLength(1);
+    click('[id$="-type-icon-button"]');
+    expect(document.querySelectorAll('.lk-example:not([hidden])')).toHaveLength(0);
   });
-  it("supports keyboard sub-tabs and combines category filters with search", () => {
-    mount(); click('[id$="-category-inputs"]');
-    const all = host.querySelector<HTMLButtonElement>('[id$="-type-all"]')!;
-    act(() => all.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })));
-    expect(host.querySelector('[id$="-type-input"]')?.getAttribute("aria-selected")).toBe("true");
-    expect(document.activeElement).toBe(host.querySelector('[id$="-type-input"]'));
-    click('[id$="-type-all"]');
-    fill(host.querySelector<HTMLInputElement>(".lk-catalog-search input")!, "otp");
-    expect(host.querySelectorAll(".lk-example:not([hidden])")).toHaveLength(1);
-    expect(host.querySelector(".lk-example:not([hidden])")?.getAttribute("data-component")).toBe("otp");
-  });
-  it("provides the 35 requested standalone components in one catalog", () => {
+  it("registers only the new component and opens its modal", () => {
     mount();
-    expect(host.querySelectorAll(".lk-example")).toHaveLength(35);
-    const playground = host.querySelector<HTMLElement>(".lk-playground")!;
-    expect(playground.firstElementChild?.classList.contains("lk-preview-panel")).toBe(true);
-    expect(playground.dataset.compact).toBe("true");
-    expect(playground.querySelector(".lk-controls .lk-reset, .lk-controls-heading")).toBeNull();
-    expect(playground.querySelector(".lk-controls, .lk-preview-panel .lk-reset")).toBeNull();
-    expect(new Set(LIBRARY_ITEMS.map(([id]) => id)).size).toBe(35);
-    for (const [id] of LIBRARY_ITEMS) expect(host.querySelector(`[data-component="${id}"] .lk-configured`)!.children.length).toBeGreaterThan(0);
-    for (const id of ["theme", "cart", "calendar", "avatar", "data-table", "hero", "navbar"]) expect(host.querySelector(`[data-component="${id}"]`)).toBeNull();
-    for (const id of ["checkbox", "radio", "switch", "badge", "chip", "range", "slider"]) expect(host.querySelector(`[data-component="${id}"]`)).not.toBeNull();
+    expect(LIBRARY_ITEMS.map(item => item[0])).toEqual(["fold-button", "slime-toggle", "glass-drop", "image-reveal"]);
+    expect(document.querySelectorAll('.lk-example')).toHaveLength(4);
+    expect(document.querySelector('.lk-card-name')?.textContent).toBe('스티커 필링 버튼');
+    expect(document.querySelector('.lk-detail-link')?.textContent).toBe('</> Edit & Use');
+    expect(document.querySelector('.lk-card-footer')).toBeNull();
+    click('.lk-configured button');
+    expect(document.querySelector('.lk-detail-modal')).toBeNull();
+    click('.lk-detail-link');
+    expect(window.location.hash).toBe('#ui-kit/fold-button');
+    expect(document.querySelector('[role=dialog]')).not.toBeNull();
+    expect(document.querySelectorAll('.lk-code-tabs [role=tab]')).toHaveLength(2);
   });
-  it("uses component-specific Jelly settings without global density or invented variants", () => {
-    expect(defaultOptions("button")).toMatchObject({ shape: "pill", size: "medium", variant: "primary-500", disabled: false, block: false });
-    expect(defaultOptions("icon-button").shape).toBe("square");
-    expect(defaultOptions("slider").value).toBe(50);
-    expect(defaultOptions("range")).toMatchObject({ low: 20, high: 75, min: 0, max: 100, step: 1 });
-    expect(defaultOptions("pagination")).toMatchObject({ total: 12, page: 3, size: "small" });
-    expect(defaultOptions("tooltip").placement).toBe("top");
-    for (const settings of Object.values(COMPONENT_SETTINGS)) expect(settings.some(setting => setting.key === "density")).toBe(false);
+  it("normalizes removed component URLs", () => {
+    window.history.replaceState({}, '', '/result#ui-kit/button'); mount();
+    expect(window.location.hash).toBe('#ui-kit');
+    expect(document.querySelector('.lk-controls')).toBeNull();
   });
-  it("keeps search results accurate without resetting mounted settings", () => {
-    mount();
-    const search = host.querySelector<HTMLInputElement>(".lk-catalog-search input")!;
-    fill(search, "range");
-    expect(host.querySelectorAll(".lk-example:not([hidden])")).toHaveLength(1);
-    expect(host.querySelector(".lk-example:not([hidden])")?.getAttribute("data-component")).toBe("range");
-    fill(search, "not-a-component"); expect(host.querySelector(".lk-empty[role=status]")?.textContent).toContain("일치하는");
+  it("synchronizes settings with both code formats and resets", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    mount('fold-button');
+    fill(inputOption('label'), 'Take it'); selectOption('size', 'large');
+    click('[aria-label="secondary-700"]'); click('.lk-option-toggle input');
+    const copied = async () => {
+      writeText.mockClear();
+      await act(async () => document.querySelector<HTMLButtonElement>('.lk-copy-code')!.click());
+      return String(writeText.mock.calls.at(-1)?.[0]);
+    };
+    expect(await copied()).toContain('Take it'); expect(await copied()).toContain('23px');
+    expect(document.querySelector<HTMLButtonElement>('.lk-configured button')!.disabled).toBe(true);
+    click('.lk-code-tabs button:first-child');
+    const html = await copied();
+    expect(html).toContain('<style>'); expect(html).toContain('Take it'); expect(html).toContain(' disabled');
+    expect(document.querySelector(".lk-code-panel")!.textContent).not.toContain("Take it");
+    click('.lk-reset');
+    expect(inputOption('label').value).toBe('Peel off');
+    expect(document.querySelector<HTMLButtonElement>('.lk-configured button')!.disabled).toBe(false);
   });
-  it("applies button shape, variant, disabled and reset", () => {
-    mount("button");
-    selectOption("shape", "square"); click('.lk-variant-swatches [aria-label="secondary-100"]');
-    expect(host.querySelector(".lk-configured")?.getAttribute("data-shape")).toBe("square");
-    expect(host.querySelector(".lk-configured")?.getAttribute("data-variant")).toBe("secondary-100");
-    expect(host.querySelector<HTMLElement>(".lk-configured")!.style.getPropertyValue("--lk-primary")).toContain("--color-secondary-100");
-    expect(host.querySelector<HTMLElement>(".lk-configured")!.style.getPropertyValue("--lk-on")).toContain("--color-secondary-100-on");
-    expect(host.querySelectorAll(".lk-variant-swatches button")).toHaveLength(40);
-    expect(host.querySelectorAll(".lk-variant-option small, .lk-variant-option output")).toHaveLength(0);
-    expect(Array.from(host.querySelectorAll(".lk-variant-family-label"), node => node.textContent)).toEqual(["Primary", "Secondary", "Accent", "Neutral"]);
-    expect(host.querySelector(".lk-variant-option > legend")?.textContent).toBe("Variant");
-    expect(host.querySelector(".lk-other-settings .lk-variant-option")).toBeNull();
-    expect(host.querySelectorAll('.lk-variant-swatches button svg')).toHaveLength(1);
-    expect(host.querySelector('.lk-variant-swatches [aria-label="secondary-100"] svg')).not.toBeNull();
-    expect(host.querySelector('.lk-variant-swatches [aria-label="primary-500"] svg')).toBeNull();
-    act(() => inputOption("disabled").click()); expect(host.querySelector<HTMLButtonElement>(".lk-main-button")!.disabled).toBe(true);
-    click('.lk-reset[aria-label="설정 초기화"]'); expect(host.querySelector<HTMLButtonElement>(".lk-main-button")!.disabled).toBe(false);
-    expect(host.querySelector(".lk-configured")?.getAttribute("data-shape")).toBe("pill");
+  it("replays peeling after animation cleanup and respects reduced motion", () => {
+    mount('fold-button'); const button = document.querySelector<HTMLButtonElement>('.lk-configured button')!;
+    act(() => button.click()); expect(button.classList.contains('is-peeling')).toBe(true);
+    act(() => root.render(createElement(AuthContext.Provider, { value: authValue(true) }, createElement(ComponentPlayground, { key: 'fresh', id: 'fold-button', ko: true }))));
+    const freshButton = document.querySelector<HTMLButtonElement>('.lk-configured button')!;
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    act(() => freshButton.click()); expect(freshButton.classList.contains('is-peeling')).toBe(false);
   });
-  it("clears indeterminate on a checkbox interaction and synchronizes settings", () => {
-    mount("checkbox"); act(() => inputOption("indeterminate").click());
-    const checkbox = host.querySelector<HTMLInputElement>('.lk-configured input[type="checkbox"]')!;
-    expect(checkbox.indeterminate).toBe(true);
-    act(() => checkbox.click()); expect(checkbox.indeterminate).toBe(false); expect(inputOption("indeterminate").checked).toBe(false); expect(inputOption("checked").checked).toBe(true);
+  it("shows component source before sign-in and copies only after login", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    mount("fold-button", false);
+    expect(document.querySelector(".lk-code-panel canvas")).not.toBeNull();
+    expect(document.querySelector(".lk-code-panel")!.textContent).not.toContain("export default function FoldButton");
+    await act(async () => document.querySelector<HTMLButtonElement>(".lk-copy-code")!.click());
+    expect(String(writeText.mock.calls.at(-1)?.[0])).toContain("export default function FoldButton");
   });
-  it("applies input value, placeholder and readonly to the actual input", () => {
-    mount("input"); fill(inputOption("value"), "June"); fill(inputOption("placeholder"), "Email");
-    act(() => inputOption("readonly").click());
-    const input = host.querySelector<HTMLInputElement>(".lk-configured input")!;
-    expect(input.value).toBe("June"); expect(input.placeholder).toBe("Email"); expect(input.readOnly).toBe(true);
+  it("copies the current combined HTML source", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { configurable:true, value:{ writeText } });
+    mount('fold-button'); click('.lk-code-tabs button:first-child');
+    await act(async () => document.querySelector<HTMLButtonElement>('.lk-copy-code')!.click());
+    expect(String(writeText.mock.calls.at(-1)?.[0])).toContain("<style>");
+    expect(document.querySelector(".lk-code-panel")!.textContent).not.toContain("<style>");
   });
-  it("supports variable OTP length, sequential typing, paste, and backspace", () => {
-    mount("otp"); fill(inputOption("length"), "4");
-    const inputs = Array.from(host.querySelectorAll<HTMLInputElement>(".lk-otp input")); expect(inputs).toHaveLength(4);
-    fill(inputs[0], "1"); expect(document.activeElement).toBe(inputs[1]);
-    act(() => { const event = new Event("paste", { bubbles: true, cancelable: true }); Object.defineProperty(event, "clipboardData", { value: { getData: () => "a9876" } }); inputs[0].dispatchEvent(event); });
-    expect(inputs.map(input => input.value).join("")).toBe("9876");
-    fill(inputs[3], ""); act(() => inputs[3].dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", bubbles: true })));
-    expect(inputs[2].value).toBe(""); expect(document.activeElement).toBe(inputs[2]);
+  it("moves the white slime thumb between primary and gray", () => {
+    mount("slime-toggle");
+    const button = document.querySelector<HTMLButtonElement>("[role=switch]")!;
+    const css = document.querySelector("style")!.textContent!;
+    expect(button.getAttribute("aria-checked")).toBe("true");
+    expect(button.getAttribute("aria-label")).toBe("슬라임 토글");
+    expect(css).toContain("background: #ffffff");
+    expect(css).toContain("background: #c6c6cc");
+    expect(css).toContain("coa-slime-on");
+    expect(css).toContain("--slime-ms: 500ms");
+    expect(button.hasAttribute("disabled")).toBe(false);
+    selectOption("duration", "100ms");
+    expect(document.querySelector("style")!.textContent).toContain("--slime-ms: 100ms");
+    selectOption("duration", "900ms");
+    expect(document.querySelector("style")!.textContent).toContain("--slime-ms: 900ms");
+    click("[role=switch]");
+    expect(button.getAttribute("aria-checked")).toBe("false");
+    click("[role=switch]");
+    expect(button.getAttribute("aria-checked")).toBe("true");
   });
-  it("keeps range bounds ordered and clamps when limits change", () => {
-    expect(updateOptions("range", defaultOptions("range"), "low", 90)).toMatchObject({ low: 90, high: 90 });
-    expect(updateOptions("range", defaultOptions("range"), "max", 10)).toMatchObject({ low: 10, high: 10 });
-    expect(updateOptions("slider", defaultOptions("slider"), "min", 120)).toMatchObject({ min: 120, max: 121, value: 120 });
-    mount("range"); expect(host.querySelectorAll('.lk-configured input[type="range"]')).toHaveLength(2);
+  it("glows the whole glass word and trails a separate liquid drop", () => {
+    mount("glass-drop");
+    const root = document.querySelector<HTMLElement>("[data-glass]")!;
+    const css = document.querySelector("style")!.textContent!;
+    expect(root.tagName).toBe("BUTTON");
+    expect(root.querySelector("b")!.textContent).toBe("Raindrop");
+    expect(css).toContain("color: transparent");
+    expect(css).toContain("backdrop-filter");
+    expect(css).toContain("pointer-events: none");
+    expect(css).toContain("scale(0.94)");
+    expect(css).not.toContain("mask-image");
+    act(() => root.dispatchEvent(new MouseEvent("pointerenter", { bubbles: true, clientX: 48, clientY: 36 })));
+    expect(root.classList.contains("is-hot")).toBe(true);
+    expect(root.querySelector<HTMLElement>("[data-drop]")!.style.transform).toContain("translate3d");
+    act(() => root.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, clientX: 48, clientY: 36 })));
+    expect(root.classList.contains("is-pressed")).toBe(true);
+    expect(root.classList.contains("is-absorbing")).toBe(true);
+    const drop = root.querySelector<HTMLElement>("[data-drop]")!;
+    expect(drop.style.borderRadius).toBe("50%");
+    expect(drop.style.transform).toMatch(/scale\(([0-9.]+), \1\)/);
+    expect(drop.style.transform).toContain("rotate(0.000rad)");
+    act(() => root.dispatchEvent(new MouseEvent("pointerup", { bubbles: true })));
+    expect(root.classList.contains("is-pressed")).toBe(false);
+    act(() => root.dispatchEvent(new MouseEvent("pointerleave", { bubbles: true })));
+    expect(root.classList.contains("is-hot")).toBe(true);
   });
-  it("updates segmented value by keyboard and direct interaction", () => {
-    mount("segmented"); const buttons = host.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-    expect(buttons[2].getAttribute("aria-checked")).toBe("true");
-    act(() => buttons[2].dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })));
-    expect(buttons[0].getAttribute("aria-checked")).toBe("true"); expect(document.activeElement).toBe(buttons[0]);
-  });
-  it("supports selection and removal independently on Chip", () => {
-    mount("chip"); act(() => inputOption("selectable").click()); act(() => inputOption("removable").click());
-    click('.lk-chip button[aria-pressed]'); expect(inputOption("selected").checked).toBe(true);
-    click('[aria-label="Remove Apple"]'); expect(host.querySelector(".lk-chip")).toBeNull();
-  });
-  it("resizes both axes with accessible keyboard separators", () => {
-    mount("resizable"); selectOption("direction", "both");
-    const handles = host.querySelectorAll<HTMLElement>('[role="separator"]'); expect(handles).toHaveLength(2);
-    act(() => handles[0].dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })));
-    expect(handles[0].getAttribute("aria-valuenow")).toBe("52"); expect(handles[1].getAttribute("aria-valuenow")).toBe("50");
-  });
-  it("limits pagination to total and avoids rendering every page", () => {
-    mount("pagination"); fill(inputOption("total"), "10000");
-    expect(host.querySelectorAll(".lk-pagination button").length).toBeLessThanOrEqual(9);
-    fill(inputOption("total"), "2"); expect(inputOption("page").value).toBe("2");
-    expect(host.querySelector<HTMLButtonElement>('[aria-label="Next page"]')!.disabled).toBe(true);
-  });
-  it("changes selected tabs and updates the settings value", () => {
-    mount("tabs"); act(() => host.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1].click());
-    expect(host.querySelector('[role="tabpanel"]')?.textContent).toContain("Three recent changes");
-  });
-  it("reuses the Notifications switch for boolean settings", () => {
-    mount();
-    click('[data-component="switch"] .lk-detail-link');
-    const switches = host.querySelectorAll<HTMLInputElement>('.lk-controls input[role="switch"]');
-    expect(switches).toHaveLength(2);
-    for (const input of switches) {
-      expect(input.classList.contains("lk-switch")).toBe(true);
-      expect(input.dataset.size).toBe("medium");
-    }
-    const reference = host.querySelector<HTMLInputElement>('[data-component="switch"] .lk-configured input')!;
-    expect(reference.classList.contains("lk-switch")).toBe(true);
-    expect(reference.dataset.size).toBe("medium");
-  });
-  it("removes catalog-wide concepts and scopes effects to individual components", () => {
-    act(() => root.render(createElement(WebComponentsCatalog)));
-    expect(host.querySelector(".ui-library-tabs")).toBeNull();
-    expect(host.querySelector(".library-kit:not(.lk-component-scope)")?.hasAttribute("data-library")).toBe(false);
-    expect(host.querySelector('[data-component="button"] .lk-component-scope')?.getAttribute("data-library")).toBe("cushion");
-    expect(host.querySelector('[data-component="input"] .lk-component-scope')?.getAttribute("data-library")).toBe("ink");
-    expect(host.querySelector('[data-component="switch"] .lk-component-scope')?.hasAttribute("data-library")).toBe(false);
-  });
-  it("keeps preview interactions separate from details and preserves configuration on return", async () => {
-    mount();
-    const historyLength = window.history.length;
-    click('[data-component="switch"] .lk-preview-stage');
-    click('[data-component="switch"] .lk-card-footer > span');
-    expect(window.history.length).toBe(historyLength);
-    expect(window.location.hash).toBe("#ui-kit");
-    click('[data-component="switch"] .lk-configured input');
-    expect(host.querySelector(".lk-controls")).toBeNull();
-    click('[data-component="switch"] .lk-detail-link');
-    expect(host.querySelectorAll(".lk-example:not([hidden])")).toHaveLength(1);
-    expect(inputOption("checked").checked).toBe(true);
-    click('.lk-variant-swatches [aria-label="neutral-900"]');
-    selectOption("size", "large");
-    await act(async () => {
-      const popped = new Promise<void>(resolve => window.addEventListener("popstate", () => resolve(), { once: true }));
-      host.querySelector<HTMLButtonElement>('.lk-back')!.click();
-      await popped;
-    });
-    expect(host.querySelectorAll(".lk-example:not([hidden])")).toHaveLength(35);
-    expect(host.querySelector(".lk-controls")).toBeNull();
-    expect(host.querySelector('[data-component="switch"] .lk-configured')?.getAttribute("data-variant")).toBe("neutral-900");
-    click('[data-component="switch"] .lk-preview-stage');
-    expect(host.querySelector(".lk-controls")).toBeNull();
-    click('[data-component="switch"] .lk-detail-link');
-    expect(host.querySelector('[data-component="switch"] .lk-configured')?.getAttribute("data-size")).toBe("large");
-  });
-  it("restores details from URL and handles browser back and forward", async () => {
-    window.history.replaceState({ existing: "preserved" }, "", "/result?d=example#ui-kit");
-    mount();
-    click('[data-component="button"] .lk-detail-link');
-    expect(window.location.hash).toBe("#ui-kit/button");
-    expect(window.location.search).toBe("?d=example");
-    expect(window.history.state.existing).toBe("preserved");
-    for (const [method, detail] of [["back", false], ["forward", true]] as const) {
-      await act(async () => {
-        const popped = new Promise<void>(resolve => window.addEventListener("popstate", () => resolve(), { once: true }));
-        window.history[method]();
-        await popped;
-      });
-      expect(Boolean(host.querySelector(".lk-controls"))).toBe(detail);
-    }
-  });
-  it("opens a direct detail link and returns to the catalog without leaving the page", () => {
-    window.history.replaceState({}, "", "/result#ui-kit/switch");
-    mount();
-    expect(host.querySelector('[data-component="switch"]')?.getAttribute("data-expanded")).toBe("true");
-    click('.lk-back');
-    expect(window.location.hash).toBe("#ui-kit");
-    expect(host.querySelector(".lk-controls")).toBeNull();
+  it("flips image cells away from the top left and keeps the uploaded fit", () => {
+    mount("image-reveal");
+    const frame = document.querySelector<HTMLElement>("[data-fit]")!;
+    expect(frame.querySelector("p")!.textContent).toBe("Reveal New Arrival");
+    expect(frame.querySelectorAll("[data-cell]")).toHaveLength(24);
+    expect(frame.getAttribute("data-fit")).toBe("fill");
+    expect(frame.style.getPropertyValue("--cols")).toBe("6");
+    expect(frame.style.getPropertyValue("--rows")).toBe("4");
+    const css = document.querySelector("style")!.textContent!;
+    expect(css).toContain("rotateX(-76deg)");
+    expect(css).toContain("background-size: 100% 100%");
+    expect(css).toContain("var(--reveal-ink");
+    expect(document.querySelector(".lk-variant-option legend")!.textContent).toBe("글자색");
+    expect(document.querySelector(".lk-controls")!.firstElementChild).toBe(document.querySelector(".lk-variant-option"));
+    expect(frame.style.getPropertyValue("--reveal-ink")).toBe("#64748b");
+    expect(frame.querySelector<HTMLElement>("[data-cell]")!.style.getPropertyValue("--i")).toBe("3");
+    expect(css.match(/transition-delay: calc\(var\(--i\) \* var\(--reveal-step\)\)/g)).toHaveLength(2);
+    selectOption("fit", "cover");
+    expect(document.querySelector("[data-fit]")!.getAttribute("data-fit")).toBe("cover");
+    fill(inputOption("columns"), "3");
+    fill(inputOption("rows"), "2");
+    const next = document.querySelector<HTMLElement>("[data-fit]")!;
+    expect(next.querySelectorAll("[data-cell]")).toHaveLength(6);
+    expect(next.style.getPropertyValue("--cols")).toBe("3");
+    expect(next.querySelector<HTMLElement>("[data-cell]")!.style.getPropertyValue("--x")).toBe("0");
+    expect(next.querySelectorAll<HTMLElement>("[data-cell]")[3]!.style.getPropertyValue("--y")).toBe("1");
+    expect(next.querySelectorAll<HTMLElement>("[data-cell]")[3]!.style.getPropertyValue("--i")).toBe("0");
+    expect(document.querySelectorAll(".lk-direction button")).toHaveLength(9);
+    click('.lk-direction button[data-direction="e"]');
+    const directed = document.querySelector<HTMLElement>("[data-fit]")!;
+    expect(directed.querySelector<HTMLElement>("[data-cell]")!.style.getPropertyValue("--i")).toBe("0");
+    expect(directed.querySelectorAll<HTMLElement>("[data-cell]")[2]!.style.getPropertyValue("--i")).toBe("2");
+    click('.lk-direction button[data-direction="center"]');
+    expect(document.querySelector<HTMLElement>("[data-cell]")!.style.getPropertyValue("--i")).toBe("1");
+    click('.lk-direction button[data-direction="nw"]');
+    expect(document.querySelectorAll<HTMLElement>("[data-cell]")[4]!.style.getPropertyValue("--i")).toBe("1");
+    click('[aria-label="accent-500"]');
+    expect(document.querySelector<HTMLElement>("[data-fit]")!.style.getPropertyValue("--reveal-ink")).toBe("#64748b");
   });
 });

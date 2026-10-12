@@ -1,73 +1,38 @@
-export const LEGACY_LIBRARY_ITEMS = [
-  ["button", "버튼", "Button"], ["icon-button", "아이콘 버튼", "Icon button"],
-  ["button-group", "버튼 그룹", "Button group"],
-  ["input", "텍스트 입력창", "Text input"],
-  ["textarea", "여러 줄 입력창", "Textarea"],
-  ["checkbox", "체크박스 · 라디오 버튼 · 스위치", "Checkbox · Radio · Switch"],
-  ["select", "셀렉트", "Select"],
-  ["slider", "슬라이더", "Slider"], ["date", "날짜 선택기", "Date picker"],
-  ["card", "카드", "Card"], ["tag", "태그", "Tag"],
-  ["avatar", "아바타 & 아바타 그룹", "Avatar & Avatar group"],
-  ["tooltip", "툴팁", "Tooltip"], ["popover", "팝오버", "Popover"],
-  ["dropdown", "드롭다운 메뉴", "Dropdown menu"], ["context", "우클릭 메뉴", "Context menu"],
-  ["tabs", "탭", "Tabs"], ["accordion", "아코디언", "Accordion"],
-  ["modal", "모달", "Modal"], ["confirm", "확인·삭제 다이얼로그", "Confirm dialog"],
-  ["side-panel", "사이드 패널", "Side panel"], ["bottom-sheet", "바텀 시트", "Bottom sheet"],
-  ["navbar", "상단 내비게이션", "Navbar"], ["sidebar", "사이드바", "Sidebar"],
-  ["bottom-nav", "하단 내비게이션", "Bottom navigation"], ["breadcrumb", "브레드크럼", "Breadcrumb"],
-  ["pagination", "페이지네이션", "Pagination"], ["stepper", "단계 표시기", "Stepper"],
-  ["alert", "알림 배너", "Alert"], ["toast", "토스트 알림", "Toast"],
-  ["spinner", "로딩 스피너", "Spinner"], ["skeleton", "스켈레톤", "Skeleton"],
-  ["progress", "진행률 표시", "Progress"], ["empty", "빈 화면 안내", "Empty state"],
-  ["error", "오류 화면", "Error state"], ["list", "리스트", "List"],
-  ["table", "테이블", "Table"], ["data-table", "정렬·필터 테이블", "Data table"],
-  ["stats", "통계 카드", "Stats"], ["chart", "차트", "Chart"],
-  ["timeline", "타임라인", "Timeline"], ["carousel", "캐러셀", "Carousel"],
-  ["gallery", "이미지 갤러리", "Gallery"], ["code", "코드 표시창", "Code block"],
-  ["login", "로그인 폼", "Login form"], ["signup", "회원가입 폼", "Signup form"],
-  ["profile", "프로필 카드", "Profile card"], ["settings", "계정 설정 폼", "Settings form"],
-  ["product", "상품 카드", "Product card"], ["products", "상품 목록", "Product list"],
-  ["product-detail", "상품 상세", "Product details"], ["cart", "장바구니", "Cart"],
-  ["pricing", "가격표", "Pricing"], ["review", "후기 카드", "Review"],
-  ["faq", "FAQ", "FAQ"], ["hero", "히어로 섹션", "Hero"],
-  ["features", "기능 소개", "Features"], ["dashboard", "대시보드", "Dashboard"],
-  ["post", "게시글 카드", "Post card"], ["comments", "댓글", "Comments"],
-  ["chat", "채팅 말풍선", "Chat bubbles"], ["notifications", "알림 목록", "Notifications"],
-  ["palette", "팔레트 카드", "Palette card"], ["palette-detail", "팔레트 상세", "Palette details"],
-  ["footer", "푸터", "Footer"],
-] as const;
-export type LegacyLibraryItemId = typeof LEGACY_LIBRARY_ITEMS[number][0];
-
 export const LIBRARY_ITEMS = [
-  ["button", "버튼", "Button"], ["icon-button", "아이콘 버튼", "Icon Button"],
-  ["checkbox", "체크박스", "Checkbox"], ["input", "텍스트 입력창", "Input"],
-  ["label", "라벨", "Label"], ["otp", "인증번호", "OTP"],
-  ["radio", "라디오 버튼", "Radio"], ["radio-group", "라디오 그룹", "Radio Group"],
-  ["range", "구간 슬라이더", "Range"], ["segmented", "세그먼트 선택", "Segmented"],
-  ["select", "셀렉트", "Select"], ["slider", "슬라이더", "Slider"],
-  ["switch", "스위치", "Switch"], ["textarea", "여러 줄 입력창", "Textarea"],
-  ["alert", "알림 배너", "Alert"], ["badge", "배지", "Badge"],
-  ["progress", "진행률", "Progress"], ["skeleton", "스켈레톤", "Skeleton"],
-  ["spinner", "로딩", "Spinner"], ["toaster", "토스트 알림", "Toaster"],
-  ["accordion", "아코디언", "Accordion"], ["card", "카드", "Card"],
-  ["chip", "칩", "Chip"], ["collapsible", "펼치기·접기", "Collapsible"],
-  ["divider", "구분선", "Divider"], ["kbd", "키보드 키", "Kbd"],
-  ["breadcrumbs", "브레드크럼", "Breadcrumbs"], ["pagination", "페이지네이션", "Pagination"],
-  ["resizable", "크기 조절 패널", "Resizable"], ["tabs", "탭", "Tabs"],
-  ["dialog", "다이얼로그", "Dialog"], ["drawer", "드로어", "Drawer"],
-  ["menu", "메뉴", "Menu"], ["popover", "팝오버", "Popover"], ["tooltip", "툴팁", "Tooltip"],
+  ["fold-button", "스티커 필링 버튼", "Sticker Peeling Button"],
+  ["slime-toggle", "슬라임 토글", "Slime Toggle"],
+  ["glass-drop", "글래스 드롭 호버", "Glass Drop Hover"],
+  ["image-reveal", "이미지 리빌", "Image Reveal"],
 ] as const;
 export type LibraryItemId = typeof LIBRARY_ITEMS[number][0];
 
+// Keep the browsing taxonomy independent from registered implementations.
+export const COMPONENT_TYPES = [
+  ["button", "Button"], ["icon-button", "Icon Button"],
+  ["input", "Input"], ["textarea", "Textarea"], ["otp", "OTP"], ["label", "Label"],
+  ["checkbox", "Checkbox"], ["radio", "Radio"], ["radio-group", "Radio Group"],
+  ["switch", "Switch"], ["select", "Select"], ["segmented", "Segmented"], ["slider", "Slider"], ["range", "Range"],
+  ["alert", "Alert"], ["badge", "Badge"], ["progress", "Progress"], ["skeleton", "Skeleton"], ["spinner", "Spinner"], ["toaster", "Toaster"],
+  ["card", "Card"], ["chip", "Chip"], ["accordion", "Accordion"], ["collapsible", "Collapsible"], ["kbd", "Kbd"],
+  ["breadcrumbs", "Breadcrumbs"], ["pagination", "Pagination"], ["tabs", "Tabs"], ["menu", "Menu"],
+  ["dialog", "Dialog"], ["drawer", "Drawer"], ["popover", "Popover"], ["tooltip", "Tooltip"],
+  ["divider", "Divider"], ["resizable", "Resizable"],
+  ["text", "Text"],
+] as const;
+export type ComponentTypeId = typeof COMPONENT_TYPES[number][0];
+export const LIBRARY_ITEM_TYPES: Record<LibraryItemId, ComponentTypeId> = { "fold-button": "button", "slime-toggle": "switch", "glass-drop": "text", "image-reveal": "card" };
 export const COMPONENT_GROUPS = [
-  { id: "all", label: "All", items: LIBRARY_ITEMS.map(([id]) => id) },
+  { id: "all", label: "All", items: COMPONENT_TYPES.map(([id]) => id) },
   { id: "buttons", label: "Buttons", items: ["button", "icon-button"] },
   { id: "inputs", label: "Inputs", items: ["input", "textarea", "otp", "label"] },
   { id: "selection", label: "Selection", items: ["checkbox", "radio", "radio-group", "switch", "select", "segmented", "slider", "range"] },
   { id: "feedback", label: "Feedback", items: ["alert", "badge", "progress", "skeleton", "spinner", "toaster"] },
-  { id: "content", label: "Content", items: ["card", "chip", "accordion", "collapsible", "kbd"] },
+  { id: "content", label: "Content", items: ["card", "chip", "accordion", "collapsible", "kbd", "text"] },
   { id: "navigation", label: "Navigation", items: ["breadcrumbs", "pagination", "tabs", "menu"] },
   { id: "overlays", label: "Overlays", items: ["dialog", "drawer", "popover", "tooltip"] },
   { id: "layout", label: "Layout", items: ["divider", "resizable"] },
-] as const satisfies readonly { id: string; label: string; items: readonly LibraryItemId[] }[];
+] as const satisfies readonly { id: string; label: string; items: readonly ComponentTypeId[] }[];
 export type ComponentGroupId = typeof COMPONENT_GROUPS[number]["id"];
+export function componentCount(types: readonly ComponentTypeId[]) {
+  return LIBRARY_ITEMS.filter(([id]) => types.includes(LIBRARY_ITEM_TYPES[id])).length;
+}

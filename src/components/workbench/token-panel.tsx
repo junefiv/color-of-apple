@@ -14,6 +14,7 @@ import {
 } from "@/lib/color-engine";
 import { formatExport, type ExportFormat } from "@/lib/export";
 import { useCopy } from "@/hooks/use-copy";
+import { ProtectedCodeView } from "@/components/protected-code-view";
 import { preventProtectedCopy, preventProtectedCopyShortcut } from "@/lib/copy-protection";
 import { useMatchuStore } from "@/lib/store";
 import { trackProductEvent } from "@/lib/analytics";
@@ -108,20 +109,29 @@ export function TokenPanel({
     return acc;
   }, {});
 
+  function exportedFile() {
+    return formatExport(format, applyOverrides(result, overrides), input);
+  }
+
+  async function requireUser(source: "export_download" | "export_copy") {
+    if (user) return user;
+    const signedIn = await signIn();
+    void trackProductEvent("user_login", { source });
+    return signedIn;
+  }
+
   async function downloadFile() {
-    if (!file) return;
     try {
-      if (!user) {
-        await signIn();
-        void trackProductEvent("user_login", { source: "export_download" });
-      }
-      const blob = new Blob([file.code], {
-        type: file.language === "json" ? "application/json;charset=utf-8" : "text/plain;charset=utf-8",
+      const current = await requireUser("export_download");
+      if (!current) return;
+      const next = exportedFile();
+      const blob = new Blob([next.code], {
+        type: next.language === "json" ? "application/json;charset=utf-8" : "text/plain;charset=utf-8",
       });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = file.filename;
+      anchor.download = next.filename;
       anchor.click();
       URL.revokeObjectURL(url);
       uiToast.success(copy.result.downloaded, locale);
@@ -132,18 +142,15 @@ export function TokenPanel({
   }
 
   async function copyFile() {
-    if (!file) return;
     try {
-      if (!user) {
-        await signIn();
-        void trackProductEvent("user_login", { source: "export_copy" });
-      }
+      const current = await requireUser("export_copy");
+      if (!current) return;
     } catch {
       uiToast.error(locale === "ko" ? "로그인을 완료하지 못했습니다." : "Could not complete sign-in.", locale);
       return;
     }
     try {
-      await navigator.clipboard.writeText(file.code);
+      await navigator.clipboard.writeText(exportedFile().code);
       uiToast.success(copy.result.copied, locale);
       void trackProductEvent("export_copied", { format });
     } catch {
@@ -226,7 +233,7 @@ export function TokenPanel({
               }}>{label}</button>
             ))}
           </div>
-          <pre>{file?.code}</pre>
+          <ProtectedCodeView className="token-export-code" tone="dark" code={file?.code ?? ""} label={copy.export.title} />
           <div className="token-export-actions">
             <button type="button" data-primary onClick={downloadFile}><Download aria-hidden />{copy.export.download}</button>
             <button type="button" onClick={copyFile}><Copy aria-hidden />{copy.export.copy}</button>

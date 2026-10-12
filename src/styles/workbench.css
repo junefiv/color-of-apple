@@ -611,6 +611,10 @@
   overflow: hidden;
 }
 
+.workbench-main[data-token-panel="hidden"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .workbench-preview {
   position: relative;
   display: flex;
@@ -1754,9 +1758,11 @@
   outline-offset: 2px;
 }
 
-.copy-protected {
+.copy-protected,
+.copy-protected * {
   -webkit-user-select: none;
   user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .token-export-dialog {
@@ -1769,7 +1775,7 @@
 
 .token-export-dialog [data-slot="dialog-header"] { padding-right: 2rem; }
 .token-export-dialog .token-export-panel { padding: 0; }
-.token-export-dialog pre { height: min(24rem, 45dvh); flex: auto; }
+.token-export-dialog .token-export-code { height: min(24rem, 45dvh); flex: auto; background: var(--text-primary); border-radius: 0.75rem; }
 
 .token-export-panel {
   display: flex;

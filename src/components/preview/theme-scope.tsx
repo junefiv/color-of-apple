@@ -1,5 +1,7 @@
 "use client";
 
+import { createContext, useContext, type CSSProperties } from "react";
+
 import {
   previewComponentVars,
   chooseOnColor,
@@ -8,6 +10,9 @@ import {
   type ColorSystemResult,
 } from "@/lib/color-engine";
 import { paletteTokensToCssVariables } from "@/lib/palette-semantic-tokens";
+
+const PreviewThemeContext = createContext<CSSProperties>({});
+export function usePreviewTheme() { return useContext(PreviewThemeContext); }
 
 export function ThemeScope({
   result,
@@ -33,12 +38,12 @@ export function ThemeScope({
   };
 
   return (
-    <div
+    <PreviewThemeContext.Provider value={vars as CSSProperties}><div
       data-theme="light"
       className={`matchu-preview ${className ?? ""}`}
       style={vars as React.CSSProperties}
     >
       {children}
-    </div>
+    </div></PreviewThemeContext.Provider>
   );
 }

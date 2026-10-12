@@ -120,6 +120,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /uiKitStats/{componentId} {
+      allow read, write: if false;
+    }
+
     match /communityReports/{id} {
       allow read, write: if false;
     }

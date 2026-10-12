@@ -1,0 +1,35 @@
+// @vitest-environment jsdom
+import { afterEach, expect, it, vi } from 'vitest';
+import { mountFold } from '@/components/preview/library/fold-motion';
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); document.body.innerHTML = ''; });
+it('continues from the exact hover fold, clears its text, and reaches the opposite corner', () => {
+  let now = 0;
+  let callback: FrameRequestCallback | undefined;
+  vi.spyOn(performance, 'now').mockImplementation(() => now);
+  vi.stubGlobal('requestAnimationFrame', (next: FrameRequestCallback) => { callback = next; return 1; });
+  vi.stubGlobal('cancelAnimationFrame', () => { callback = undefined; });
+  vi.stubGlobal('matchMedia', () => ({ matches: false }));
+  const button = document.createElement('button'); button.innerHTML = '<b>Peel away</b>';
+  document.body.append(button);
+  Object.defineProperties(button, { offsetWidth: { value: 140 }, offsetHeight: { value: 50 } });
+  const cleanup = mountFold(button);
+  const step = (time: number) => { now = time; const frame = callback!; callback = undefined; frame(time); };
+  button.dispatchEvent(new Event('pointerenter'));
+  step(150);
+  const front = button.style.getPropertyValue('--fold-front');
+  const back = button.style.getPropertyValue('--fold-back');
+  expect(front).toMatch(/^polygon\(26\.880px 0\.000px,/);
+  button.click();
+  expect(button.style.getPropertyValue('--fold-front')).toBe(front);
+  expect(button.style.getPropertyValue('--fold-back')).toBe(back);
+  step(150);
+  expect(button.style.getPropertyValue('--fold-front')).toBe(front);
+  step(850);
+  expect(button.style.getPropertyValue('--fold-front')).not.toBe(front);
+  step(1550);
+  expect(button.style.getPropertyValue('--fold-line')).toBe((190 / Math.SQRT2) + 'px');
+  expect(Number(button.style.opacity)).toBeCloseTo(0, 8);
+  expect(button.style.transform).toMatch(/translateY\([1-9]/);
+  cleanup();
+  expect(button.hasAttribute('style')).toBe(false);
+});

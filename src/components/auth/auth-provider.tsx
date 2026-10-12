@@ -13,7 +13,7 @@ import { ensureUserProfile, subscribeUserProfile, type UserProfile } from "@/lib
 import { useRefresh } from "@/components/refresh-provider";
 import { useMatchuStore } from "@/lib/store";
 
-type AuthContextValue = {
+export type AuthContextValue = {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
@@ -21,7 +21,7 @@ type AuthContextValue = {
   signOut: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { runRefresh } = useRefresh();
