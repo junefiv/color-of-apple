@@ -205,7 +205,13 @@ function revealSources(options: ComponentOptions, theme: CSSProperties) {
   return { scope, html, css, js, settings: { ...settings, columns, rows, fit, direction, image, color: fill } };
 }
 
-export function componentSources(id: LibraryItemId, options: ComponentOptions, ko: boolean, theme: CSSProperties = {}) {
+export function componentSources(id: LibraryItemId, options: ComponentOptions, ko: boolean, theme: CSSProperties = {}): {
+  scope: string;
+  html: string;
+  css: string;
+  js: string;
+  settings: ComponentOptions;
+} {
   if (id === "image-reveal") return revealSources(options, theme);
   if (id === "glass-drop") return glassSources(options, theme);
   if (id === "slime-toggle") return slimeSources(options, ko, theme);
