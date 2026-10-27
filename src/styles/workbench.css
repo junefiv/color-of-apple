@@ -1441,9 +1441,35 @@
   height: 190px;
 }
 
-.primary-apple-picker-card > .token-name {
+.primary-apple-hex-input {
   display: block;
+  box-sizing: border-box;
+  width: 100%;
   margin-top: 0.65rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border-default);
+  border-radius: 0.55rem;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-code);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  outline: none;
+}
+
+.primary-apple-hex-input::placeholder {
+  color: var(--text-tertiary);
+  text-transform: none;
+}
+
+.primary-apple-hex-input:focus {
+  border-color: var(--text-primary);
+}
+
+.primary-apple-hex-input[aria-invalid="true"] {
+  border-color: #e5484d;
 }
 
 .primary-apple-generate-tip {

@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 import { createPortal } from "react-dom";
 import { HexColorPicker } from "react-colorful";
 import { MatchButton } from "@/components/flow/match-button";
+import { isHexColor, normalizeHex } from "@/lib/picked-color";
 
 type ActionSide = "bottom" | "top" | "right" | "left";
 
@@ -52,16 +53,44 @@ export function ColorPickerPopover({
   const onDismissRef = useRef(onDismiss);
   const [ready, setReady] = useState(false);
   const [side, setSide] = useState<ActionSide>("bottom");
+  const [draft, setDraft] = useState(() => color.toUpperCase());
+  const editing = useRef(false);
   onDismissRef.current = onDismiss;
   const [position, setPosition] = useState<CSSProperties>({ top: 0, left: 0 });
   const showAction = Boolean(actionLabel && ready);
+  const hexDraft = draft.toUpperCase();
+  const hexInvalid = hexDraft.length > 0 && !/^#[0-9A-F]{0,6}$/.test(hexDraft);
+
+  useEffect(() => {
+    if (editing.current) return;
+    setDraft(color.toUpperCase());
+  }, [color]);
+
+  function commitHex(raw: string, expandShort: boolean) {
+    const next = raw.trim().toUpperCase();
+    if (!next.startsWith("#")) return false;
+    const acceptable = expandShort ? /^#([0-9A-F]{3}|[0-9A-F]{6})$/.test(next) : /^#[0-9A-F]{6}$/.test(next);
+    const normalized = expandShort ? normalizeHex(next) : next;
+    if (!acceptable || !isHexColor(normalized)) return false;
+    if (normalized !== color.toUpperCase()) {
+      onChange(normalized);
+      setReady(true);
+    }
+    setDraft(normalized);
+    return true;
+  }
+
+  function finishHexEdit() {
+    editing.current = false;
+    if (!commitHex(draft, true)) setDraft(color.toUpperCase());
+  }
 
   useLayoutEffect(() => {
     function positionPopup() {
       const rect = anchorRef.current?.getBoundingClientRect();
       if (!rect) return;
       const width = Math.min(ACTION_WIDTH, window.innerWidth - 16);
-      const reserved = 320;
+      const reserved = 368;
       const left = rect.left >= width + 16 ? rect.left - width - 12 : Math.min(rect.right + 12, window.innerWidth - width - 8);
       setPosition({
         width,
@@ -120,9 +149,46 @@ export function ColorPickerPopover({
             if (event.key.startsWith("Arrow")) setReady(true);
           }}
         >
-          <HexColorPicker color={color} onChange={(value) => onChange(value.toUpperCase())} />
+          <HexColorPicker
+            color={color}
+            onChange={(value) => {
+              const next = value.toUpperCase();
+              setDraft(next);
+              onChange(next);
+            }}
+          />
         </div>
-        <span className="token-name">{color.toUpperCase()}</span>
+        <input
+          className="primary-apple-hex-input"
+          value={hexDraft}
+          placeholder="#000000"
+          spellCheck={false}
+          autoCapitalize="characters"
+          autoCorrect="off"
+          maxLength={7}
+          aria-label={`${title} hex`}
+          aria-invalid={hexInvalid}
+          data-testid="picker-hex-input"
+          onFocus={() => {
+            editing.current = true;
+          }}
+          onChange={(event) => {
+            const input = event.currentTarget;
+            const start = input.selectionStart ?? input.value.length;
+            const end = input.selectionEnd ?? start;
+            const next = input.value.toUpperCase();
+            setDraft(next);
+            commitHex(next, false);
+            requestAnimationFrame(() => input.setSelectionRange(start, end));
+          }}
+          onBlur={finishHexEdit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              event.currentTarget.blur();
+            }
+          }}
+        />
       </div>
       {showAction ? (
         <div className={`primary-apple-generate-tip is-${side}`}>
