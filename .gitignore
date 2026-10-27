@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Remotion promo video project (separate toolchain, kept on the promo-video branch)
+/promo-production/
