@@ -4,6 +4,9 @@
 @import "../styles/workbench.css";
 @import "../styles/ui-kit.css";
 @import "../styles/concept-samples.css";
+@import "../styles/layout-builder.css";
+@import "../styles/header-frame.css";
+
 
 @property --wash-fade {
   syntax: "<percentage>";

@@ -124,6 +124,9 @@ export const ko = {
   preview: {
     overview: "Page",
     components: "UI Kit",
+    modes: "보기 방식",
+    modePreview: "프리뷰",
+    modeBuild: "직접 빌드",
     states: "States",
     colors: "Colors",
     screens: {

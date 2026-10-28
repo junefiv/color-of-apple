@@ -125,6 +125,9 @@ export const en: Copy = {
   preview: {
     overview: "Find a class",
     components: "UI Kit",
+    modes: "View mode",
+    modePreview: "Preview",
+    modeBuild: "Build",
     states: "States",
     colors: "Colors",
     screens: {

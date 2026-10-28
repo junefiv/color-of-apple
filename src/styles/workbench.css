@@ -105,6 +105,81 @@
   font-weight: 500;
 }
 
+.studio-nav-item {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+}
+
+/* Hover/focus reveals the platform's modes beneath its chip, like a nested list. */
+.studio-nav-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.5rem);
+  left: 50%;
+  display: grid;
+  min-width: 6.5rem;
+  gap: 2px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid color-mix(in oklab, var(--text-primary) 12%, transparent);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  box-shadow: 0 8px 24px color-mix(in oklab, var(--text-primary) 14%, transparent);
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, -4px);
+  transition: opacity 160ms ease, transform 160ms ease, visibility 0s linear 160ms;
+}
+
+/* Bridges the gap so the pointer can travel from chip to menu. */
+.studio-nav-menu::before {
+  position: absolute;
+  inset: -0.6rem 0 100%;
+  content: "";
+}
+
+.studio-nav-item:hover .studio-nav-menu,
+.studio-nav-item:focus-within .studio-nav-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.studio-nav-menu button {
+  display: block;
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-secondary);
+  font: 500 12px/1.2 var(--font-ui);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.studio-nav-menu button:hover {
+  background: color-mix(in oklab, var(--text-primary) 6%, transparent);
+  color: var(--text-primary);
+}
+
+.studio-nav-menu button[aria-pressed="true"] {
+  background: color-mix(in oklab, var(--text-primary) 8%, transparent);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.studio-nav-menu button:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-nav-menu { transition: none; }
+}
+
 .studio-remake {
   display: inline-flex;
   max-width: min(100%, 15rem);
@@ -643,6 +718,8 @@
 }
 
 .workbench-preview-toolbar {
+  position: relative;
+  z-index: 5;
   display: flex;
   flex: 0 0 auto;
   align-items: center;

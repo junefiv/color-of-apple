@@ -35,6 +35,7 @@ import { TokenPanel, type TokenFocusRole } from "./token-panel";
 import { ProjectLibraryDialog } from "./project-library-dialog";
 import { PaletteControls } from "./palette-controls";
 import { PalettePicker } from "@/components/flow/palette-picker";
+import { LayoutBuilder } from "@/components/builder/layout-builder";
 
 function sameOverrides(left: Record<string, string>, right: Record<string, string>) {
   const entries = Object.entries(left);
@@ -48,6 +49,7 @@ export function Workbench({
   initialSource = null,
   projectId = null,
   mode = "edit",
+  initialBuilder = false,
 }: {
   initialTokenOverrides?: Record<string, string>;
   initialTokenSnapshot?: Record<string, string>;
@@ -55,6 +57,7 @@ export function Workbench({
   initialSource?: ProjectSource | null;
   projectId?: string | null;
   mode?: "edit" | "community";
+  initialBuilder?: boolean;
 }) {
   const copy = useCopy();
   const router = useRouter();
@@ -116,6 +119,7 @@ export function Workbench({
   const [previewToolbarHidden, setPreviewToolbarHidden] = useState(false);
   const [previewDockMounted, setPreviewDockMounted] = useState(false);
   const [previewDockOpen, setPreviewDockOpen] = useState(false);
+  const [building, setBuilding] = useState(initialBuilder);
 
   const generatedResult = useColorSystem(input, selectedPaletteId);
   const communityGenerated = useColorSystem(
@@ -135,7 +139,7 @@ export function Workbench({
       : result,
     [communityGenerated, communityPost, result, showingCommunity],
   );
-  const stage = mode === "community" || hasMatched ? "done" : matchStage;
+  const stage = initialBuilder || mode === "community" || hasMatched ? "done" : matchStage;
   const view = previewTab === "components" ? "components" : platform;
   const tokenOverrides = useMemo(
     () => tokenOverridesByPalette[selectedPaletteId] ?? {},
@@ -259,8 +263,8 @@ export function Workbench({
   }, []);
 
   useEffect(() => {
-    if (mobilePreviewOnly && platform === "web") setPlatform("app");
-  }, [mobilePreviewOnly, platform, setPlatform]);
+    if (mobilePreviewOnly && !building && platform === "web") setPlatform("app");
+  }, [building, mobilePreviewOnly, platform, setPlatform]);
 
   useEffect(() => {
     if (!savedProjectId || !projectTitle || pendingColorHistory.length === 0) return;
@@ -468,42 +472,74 @@ export function Workbench({
   }
 
   const showPalettePicker = mode === "edit" && inspector === "tokens" && !savedProjectId;
-  function previewViewSwitch() {
+  function selectPlatform(target: "web" | "app") {
+    setPlatform(target);
+    leaveUiKit();
+    setPreviewTab("overview");
+  }
+
+  // Preview / build are modes of a platform, so they hang under the Web and App chips.
+  function platformModeMenu(target: "web" | "app") {
+    const items = [
+      { key: "preview", label: copy.preview.modePreview, build: false },
+      { key: "build", label: copy.preview.modeBuild, build: true },
+    ];
+    return (
+      <ul className="studio-nav-menu" aria-label={copy.preview.modes}>
+        {items.map(item => (
+          <li key={item.key}>
+            <button
+              type="button"
+              aria-pressed={view === target && building === item.build}
+              onClick={(event) => {
+                selectPlatform(target);
+                setBuilding(item.build);
+                event.currentTarget.blur();
+              }}
+            >
+              {item.label}
+            </button>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  function previewViewSwitch(withModes = false) {
+    const canBuild = withModes && mode === "edit" && !showingCommunity;
     return (
     <div
       className="studio-nav"
       role="radiogroup"
       aria-label={copy.result.platforms}
       data-view={view}
-      data-mobile-preview={mobilePreviewOnly || undefined}
+      data-mobile-preview={(mobilePreviewOnly && !building) || undefined}
       style={{
         "--studio-switch-fill": effectivePrimary,
         "--studio-switch-on": chooseOnColor(effectivePrimary),
       } as CSSProperties}
     >
       {showingCommunity ? <span className="community-readonly">{copy.community.readonly}</span> : null}
-      {!mobilePreviewOnly ? (
-        <ChromeChip
-          active={view === "web"}
-          matched={hasMatched}
-          onClick={() => {
-            setPlatform("web");
-            leaveUiKit();
-            setPreviewTab("overview");
-          }}
-          label={copy.result.web}
-        />
+      {!mobilePreviewOnly || building ? (
+        <div className="studio-nav-item">
+          <ChromeChip
+            active={view === "web"}
+            matched={hasMatched}
+            onClick={() => selectPlatform("web")}
+            label={copy.result.web}
+          />
+          {canBuild ? platformModeMenu("web") : null}
+        </div>
       ) : null}
-      <ChromeChip
-        active={view === "app"}
-        matched={hasMatched}
-        onClick={() => {
-          setPlatform("app");
-          leaveUiKit();
-          setPreviewTab("overview");
-        }}
-        label={copy.result.app}
-      />
+      <div className="studio-nav-item">
+        <ChromeChip
+          active={view === "app"}
+          matched={hasMatched}
+          onClick={() => selectPlatform("app")}
+          label={copy.result.app}
+        />
+        {canBuild ? platformModeMenu("app") : null}
+      </div>
       <ChromeChip
         active={view === "components"}
         matched={hasMatched}
@@ -521,6 +557,7 @@ export function Workbench({
       <div
         className="workbench-main match-transition relative min-h-0 flex-1"
         data-stage={stage}
+        data-building={building && view !== "components" ? "true" : undefined}
         data-inspector={mode === "community" ? "community" : inspector}
         data-token-panel={view === "components" ? "hidden" : tokenPanelOpen ? "open" : "closed"}
       >
@@ -529,14 +566,14 @@ export function Workbench({
           <div className="workbench-preview-stage">
           <div className="workbench-preview-toolbar" ref={previewToolbarRef} inert={previewToolbarHidden || undefined} aria-hidden={previewToolbarHidden || undefined}>
             <div className="workbench-preview-toolbar-end">
-              {previewViewSwitch()}
+              {previewViewSwitch(true)}
               {showPalettePicker && !previewToolbarHidden ? <PalettePicker hex={input.hex} variant="panel" /> : null}
             </div>
           </div>
           {sourceMissing && inspector === "tokens" ? <p className="community-source-note">{copy.community.sourceMissing}</p> : null}
           <ThemeScope result={previewResult} extraVars={previewVars} className="flex min-h-0 flex-1 flex-col bg-transparent p-2">
             <div className="min-h-0 flex-1">
-              <PreviewCanvas platform={platform} tab={previewTab} />
+              {building && view !== "components" ? <LayoutBuilder platform={platform} /> : <PreviewCanvas platform={platform} tab={previewTab} />}
             </div>
           </ThemeScope>
           </div>
