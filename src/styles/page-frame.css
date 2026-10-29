@@ -1,0 +1,59 @@
+/* Page width modes, resize handles and page settings in the layout builder. */
+
+/* Contained page: dashed guides mark the container edge over the artboard. */
+.lb-page-content{position:relative}
+.lb-container-guide{position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);max-width:100%;z-index:45;pointer-events:none;border-left:calc(1px / var(--lb-scale,1)) dashed color-mix(in oklab,var(--color-primary-default,#5b5bd6) 55%,transparent);border-right:calc(1px / var(--lb-scale,1)) dashed color-mix(in oklab,var(--color-primary-default,#5b5bd6) 55%,transparent)}
+/* Heroes keep their media full width and move only the copy in to the container edge. */
+.lb-layout-node .hr:not([data-mobile]) .hr-body,.lb-layout-node .hr:not([data-mobile]) .hr-split>.hr-copy{padding-left:max(120px,calc(var(--lb-gutter,0px) + 24px))}
+.lb-layout-node .hr:not([data-mobile]) .hr-body{padding-right:max(120px,calc(var(--lb-gutter,0px) + 24px))}
+.lb-layout-node .hr:not([data-mobile]) .hr-nav:not([data-nav=thumbs]){left:max(120px,calc(var(--lb-gutter,0px) + 24px))}
+.lb-layout-node .hr:not([data-mobile])[data-align=center] .hr-nav{left:50%}
+.lb-layout-node .hr:not([data-mobile]) .hr-card,.lb-layout-node .hr:not([data-mobile]) .hr-nav[data-nav=thumbs]{right:max(64px,calc(var(--lb-gutter,0px) + 24px))}
+
+/* Mobile-first column: the phone layout centered on a backdrop, with an optional sticky brand panel. */
+.lb-page-column-wrap{flex:1;display:flex;justify-content:center;align-items:flex-start;gap:88px;min-height:100%;background:var(--lb-backdrop)}
+.lb-page-column{flex:none;width:var(--lb-col);max-width:100%;min-height:var(--lb-vh);display:flex;flex-direction:column;background:var(--color-background-default,var(--color-surface-default,#fff));box-shadow:0 0 0 1px color-mix(in oklab,var(--color-text-primary,#303039) 8%,transparent),0 24px 64px #0000001a}
+.lb-page-aside{position:sticky;top:0;flex:none;width:340px;height:var(--lb-vh);display:flex;flex-direction:column;justify-content:center;gap:18px;color:var(--lb-backdrop-fg)}
+.lb-page-aside>strong{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.lb-page-aside>h2{margin:0;font-size:40px;line-height:1.2;font-weight:750;letter-spacing:-.03em}
+.lb-page-aside>p{margin:0;font-size:16px;line-height:1.6;color:var(--lb-backdrop-muted)}
+.lb-page-qr{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;width:112px;padding:12px;border-radius:14px;background:var(--color-surface-default,#fff);box-shadow:0 6px 18px #0000001a}
+.lb-page-qr>i{aspect-ratio:1;border-radius:2px;background:#e9e9ee}
+.lb-page-qr>i[data-on]{background:#1d1d22}
+.lb-page-stores{display:flex;gap:8px}
+.lb-page-stores>span{padding:9px 14px;border-radius:10px;font-size:13px;font-weight:650;color:var(--lb-backdrop-fg);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--lb-backdrop-fg) 25%,transparent)}
+
+/* Resize handles on the selected layer; sizes divide out the artboard scale so they stay grabbable. */
+.lb-resize{position:absolute;z-index:46;background:var(--color-primary-default,#5b5bd6);border:calc(2px / var(--lb-scale,1)) solid #fff;border-radius:999px;box-shadow:0 1px 4px #0004}
+.lb-resize-y{left:50%;bottom:calc(10px / var(--lb-scale,1));width:calc(36px / var(--lb-scale,1));height:calc(12px / var(--lb-scale,1));transform:translateX(-50%);cursor:ns-resize}
+.lb-resize-x{top:50%;right:calc(-6px / var(--lb-scale,1));width:calc(12px / var(--lb-scale,1));height:calc(36px / var(--lb-scale,1));transform:translateY(-50%);cursor:ew-resize}
+.lb-resize-xy{right:calc(-7px / var(--lb-scale,1));bottom:calc(-7px / var(--lb-scale,1));width:calc(14px / var(--lb-scale,1));height:calc(14px / var(--lb-scale,1));border-radius:calc(3px / var(--lb-scale,1));cursor:nwse-resize}
+.lb-resize:hover{transform-origin:center;filter:brightness(1.15)}
+.lb-resize-size{position:absolute;right:0;bottom:calc(14px / var(--lb-scale,1));z-index:47;padding:calc(3px / var(--lb-scale,1)) calc(8px / var(--lb-scale,1));border-radius:calc(5px / var(--lb-scale,1));background:#1d1d22;color:#fff;font-size:calc(11px / var(--lb-scale,1));font-weight:650;pointer-events:none;white-space:nowrap}
+
+/* Page settings panel */
+.lb-tree-page{margin-bottom:4px;color:#5d5d6b!important;font-weight:600}
+.lb-page-settings{margin-top:0}
+.lb-page-modes{display:grid;gap:5px;margin:9px 0 4px}
+.lb-page-modes>button{display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;column-gap:9px;align-items:center;text-align:left;padding:7px;border:1px solid #e3e3e9;border-radius:6px;background:#fcfcfd;color:#40404b;font-size:10px;font-weight:600}
+.lb-page-modes>button[aria-checked=true]{border-color:#3c3c46;box-shadow:inset 0 0 0 1px #3c3c46;background:#fff}
+.lb-page-modes small{grid-column:2;font-size:8.5px;font-weight:400;color:#9b9ba7}
+.lb-page-modes i{grid-row:1/3;display:flex;justify-content:center;width:44px;height:30px;border-radius:4px;background:#ececf1;overflow:hidden}
+.lb-page-modes i>b{display:block;height:100%;background:#9a9aa8}
+.lb-page-modes i[data-mode=full]>b{width:100%}
+.lb-page-modes i[data-mode=contained]{background:linear-gradient(#9a9aa8 0 22%,#ececf1 22% 100%)}
+.lb-page-modes i[data-mode=contained]>b{width:62%;background:#c4c4ce}
+.lb-page-modes i[data-mode=column]>b{width:30%;background:#fff;box-shadow:0 0 0 1px #c4c4ce}
+.lb-page-widths{grid-template-columns:repeat(4,1fr)}
+.lb-page-main{position:relative}
+
+/* Padding (blue tint, inside) and margin (orange tint, outside) of the selected layer; margin
+   handles sit on the outer margin edge so they never overlap the padding handle inside. */
+.lb-pad-box,.lb-margin-box{position:absolute;z-index:44;box-sizing:border-box;border-style:solid;pointer-events:none}
+.lb-pad-box{inset:0;border-color:color-mix(in oklab,#3b82f6 16%,transparent)}
+.lb-margin-box{border-color:color-mix(in oklab,#f59e0b 22%,transparent)}
+.lb-margin-handle{position:absolute;left:50%;z-index:46;width:calc(28px / var(--lb-scale,1));height:calc(9px / var(--lb-scale,1));border:calc(2px / var(--lb-scale,1)) solid #fff;border-radius:999px;background:#f59e0b;box-shadow:0 1px 4px #0004;cursor:ns-resize}
+.lb-margin-handle[data-edge=top]{transform:translate(-50%,-100%)}
+.lb-margin-handle[data-edge=bottom]{transform:translate(-50%,100%)}
+.lb-margin-handle:hover,.lb-resize-y:hover{filter:brightness(1.12)}
+

@@ -6,6 +6,12 @@
 @import "../styles/concept-samples.css";
 @import "../styles/layout-builder.css";
 @import "../styles/header-frame.css";
+@import "../styles/header-menus.css";
+@import "../styles/hero-frame.css";
+@import "../styles/page-frame.css";
+@import "../styles/components.css";
+@import "../styles/blocks.css";
+@import "../styles/blocks-more.css";
 
 
 @property --wash-fade {
