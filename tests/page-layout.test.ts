@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { baseLayout, moveLayoutNode, resolveLayout, validLayoutDocument, type LayoutNode } from "../src/lib/page-layout";
+import { baseLayout, moveLayoutNode, pageOf, resolveLayout, validLayoutDocument, type LayoutNode } from "../src/lib/page-layout";
 const node = (id: string, children: LayoutNode[] = []): LayoutNode => ({ id, name: id, kind: "frame", desktop: { ...baseLayout, direction: "row" }, mobile: {}, children });
 describe("page layout", () => {
   it("inherits desktop spacing while stacking mobile children", () => {
@@ -24,5 +24,14 @@ describe("page layout", () => {
     expect(validLayoutDocument({ version: 1, menu: "overlay", nodes: [node("a")] })).toBe(true);
     expect(validLayoutDocument({ version: 1, menu: "overlay", nodes: [node("a"), node("a")] })).toBe(false);
     expect(validLayoutDocument({ version: 1, menu: "overlay", nodes: [{ ...node("a"), mobile: { gap: -10 } }] })).toBe(false);
+  });
+  it("accepts page width modes and bleed flags, and defaults older documents to full width", () => {
+    const doc = { version: 1 as const, menu: "overlay" as const, nodes: [{ ...node("a"), bleed: true }] };
+    expect(validLayoutDocument(doc)).toBe(true);
+    expect(pageOf(doc).mode).toBe("full");
+    expect(validLayoutDocument({ ...doc, page: { mode: "column", maxWidth: 480, backdrop: "subtle", aside: true } })).toBe(true);
+    expect(validLayoutDocument({ ...doc, page: { mode: "column", maxWidth: 200, backdrop: "subtle", aside: true } })).toBe(false);
+    expect(validLayoutDocument({ ...doc, page: { mode: "boxed", maxWidth: 1200, backdrop: "subtle", aside: false } })).toBe(false);
+    expect(validLayoutDocument({ ...doc, nodes: [{ ...node("a"), bleed: "yes" }] })).toBe(false);
   });
 });

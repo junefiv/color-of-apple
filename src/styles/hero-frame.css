@@ -1,0 +1,103 @@
+/* Hero frame: every color comes from --hr-* vars that heroColorVars() maps onto palette tokens. */
+.lb-field>textarea{min-width:0;width:100%;border:1px solid #e3e3e9;background:#fcfcfd;border-radius:4px;color:#484854;padding:6px 7px;outline:none;font:inherit;font-size:11px;resize:vertical}
+.lb-kind-hero{isolation:isolate}
+.hr{position:relative;flex:1;width:100%;display:flex;flex-direction:column;background:var(--hr-bg);color:var(--hr-fg);overflow:hidden;font-size:16px}
+/* Media placeholder echoes the transparent header's backdrop so the two read as one first screen. */
+.hr-media{position:absolute;inset:0;z-index:-1;display:flex;align-items:flex-start;justify-content:flex-end;padding:104px 28px;background:linear-gradient(120deg,color-mix(in oklab,var(--color-primary-default,#444) 55%,#000),color-mix(in oklab,var(--color-secondary-default,#666) 45%,#111))}
+.hr-media>span{position:relative;z-index:1;display:inline-flex;align-items:center;gap:6px;font-size:12px;color:color-mix(in oklab,#fff 60%,transparent)}
+.hr-media[data-scrim]::after{content:"";position:absolute;inset:0}
+.hr-media[data-scrim=gradient]::after{background:linear-gradient(to top,color-mix(in oklab,var(--color-surface-inverse,#1d1d22) 72%,transparent),transparent 65%)}
+.hr-media[data-scrim=solid]::after{background:color-mix(in oklab,var(--color-surface-inverse,#1d1d22) 42%,transparent)}
+
+.hr-body{flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:140px 120px 120px}
+.hr[data-layout=text] .hr-body,.hr[data-layout=color] .hr-body,.hr[data-align=center] .hr-body{justify-content:center}
+.hr[data-align=center] .hr-body{align-items:center;text-align:center}
+.hr[data-align=end] .hr-body{align-items:flex-end;text-align:right}
+.hr-copy{display:flex;flex-direction:column;gap:20px;max-width:760px}
+.hr[data-layout=text] .hr-copy,.hr[data-layout=color] .hr-copy{max-width:1100px}
+.hr[data-align=center] .hr-copy{align-items:center}
+.hr[data-align=end] .hr-copy{align-items:flex-end}
+.hr-eyebrow{font-size:14px;font-weight:650;letter-spacing:.14em;color:var(--hr-muted)}
+.hr-title{margin:0;font-size:64px;line-height:1.12;font-weight:750;letter-spacing:-.03em;color:inherit;white-space:pre-line}
+.hr[data-layout=text] .hr-title,.hr[data-layout=color] .hr-title{font-size:96px;line-height:1.05}
+.hr-text{margin:0;max-width:560px;font-size:19px;line-height:1.6;color:var(--hr-muted)}
+.hr-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.hr-btn{display:inline-flex;align-items:center;gap:8px;height:54px;padding:0 26px;border-radius:var(--hr-radius,999px);background:var(--hr-accent);color:var(--hr-accent-on);font-size:16px;font-weight:650;white-space:nowrap}
+.hr-btn-ghost{background:none;color:var(--hr-fg);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--hr-fg) 45%,transparent)}
+.hr[data-button=outline] .hr-btn:not(.hr-btn-ghost){background:none;color:var(--hr-accent);box-shadow:inset 0 0 0 1.5px var(--hr-accent)}
+.hr[data-layout=band] .hr-body{padding:48px 120px 72px}
+.hr[data-layout=band]:has(.hr-nav) .hr-body{padding-bottom:108px}
+.hr[data-layout=band] .hr-title{font-size:40px}
+.hr[data-layout=band] .hr-text{font-size:16px}
+
+.hr-split{flex:1;display:grid;grid-template-columns:1fr 1fr}
+.hr-split>.hr-copy{align-self:center;max-width:none;padding:140px 80px 110px 120px}
+.hr-split>.hr-media{position:relative;inset:auto;z-index:0;padding:28px}
+
+.hr-nav{position:absolute;left:120px;bottom:48px;display:flex;align-items:center;gap:10px;font-size:14px;color:var(--hr-muted)}
+.hr .hr-nav>i{font-style:normal}
+.hr[data-align=center] .hr-nav{left:50%;transform:translateX(-50%)}
+.hr[data-ticker] .hr-nav{bottom:104px}
+.hr-nav[data-nav=dots]>i{width:8px;height:8px;border-radius:4px;background:color-mix(in oklab,var(--hr-fg) 35%,transparent)}
+.hr-nav[data-nav=dots]>i[data-on]{width:28px;background:var(--hr-fg)}
+.hr-nav[data-nav=fraction] b,.hr-nav[data-nav=progress]>span:first-child{color:var(--hr-fg);font-weight:700}
+.hr-nav[data-nav=progress]>i{width:200px;height:2px;background:color-mix(in oklab,var(--hr-fg) 25%,transparent)}
+.hr-nav[data-nav=progress]>i>b{display:block;height:100%;background:var(--hr-fg)}
+.hr .hr-nav[data-nav=thumbs]{left:auto;right:64px;transform:none;gap:12px}
+.hr-nav[data-nav=thumbs]>i{display:flex;align-items:flex-end;width:120px;height:72px;padding:8px 10px;border-radius:8px;font-size:12px;background:color-mix(in oklab,var(--hr-fg) 16%,transparent)}
+.hr-nav[data-nav=thumbs]>i[data-on]{color:var(--hr-fg);box-shadow:inset 0 0 0 2px var(--hr-accent-chosen)}
+.hr:has(.hr-card) .hr-nav[data-nav=thumbs]{bottom:210px}
+
+/* Notice card stays on a light surface so it reads the same over any visual. */
+.hr-card{position:absolute;right:64px;bottom:48px;width:360px;display:grid;gap:6px;padding:22px 24px;border-radius:14px;background:var(--color-surface-default,#fff);color:var(--color-text-primary,#303039);box-shadow:0 18px 40px #0003}
+.hr-card>strong{font-size:13px;color:var(--color-text-secondary,#6b6b78)}
+.hr-card>span{font-size:18px;font-weight:650}
+.hr-card>small{font-size:13px;color:var(--color-text-tertiary,#9393a1)}
+.hr[data-ticker] .hr-card{bottom:104px}
+
+.hr-ticker{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;height:56px;overflow:hidden;border-top:1px solid var(--hr-line)}
+.hr-ticker>div{display:flex;gap:48px;padding-left:48px;white-space:nowrap;animation:hr-ticker 28s linear infinite}
+.hr-ticker span{font-size:15px;font-weight:600;color:var(--hr-muted)}
+.hr-ticker span::before{content:"✦";margin-right:48px;color:var(--hr-fg)}
+.hr[data-ticker] .hr-body{padding-bottom:160px}
+@keyframes hr-ticker{to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.hr-ticker>div{animation:none}}
+
+.hr[data-mobile] .hr-body{padding:96px 24px 72px}
+.hr[data-mobile] .hr-copy{gap:12px}
+.hr[data-mobile] .hr-eyebrow{font-size:12px}
+.hr[data-mobile] .hr-title{font-size:34px}
+.hr[data-mobile][data-layout=text] .hr-title,.hr[data-mobile][data-layout=color] .hr-title{font-size:44px}
+.hr[data-mobile] .hr-text{font-size:15px}
+.hr[data-mobile] .hr-btn{height:46px;padding:0 20px;font-size:14px}
+.hr[data-mobile] .hr-media{padding:72px 16px}
+.hr[data-mobile][data-layout=band] .hr-body{padding:32px 24px 56px}
+.hr[data-mobile][data-layout=band] .hr-title{font-size:24px}
+.hr[data-mobile] .hr-split{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+.hr[data-mobile] .hr-split>.hr-copy{padding:40px 24px 56px}
+.hr[data-mobile] .hr-split>.hr-media{min-height:260px;padding:16px}
+.hr[data-mobile] .hr-split[data-media-first]>.hr-media{order:-1}
+.hr[data-mobile] .hr-nav{left:24px;bottom:24px}
+.hr[data-mobile][data-align=center] .hr-nav{left:50%}
+.hr[data-mobile][data-ticker] .hr-nav{bottom:64px}
+.hr[data-mobile] .hr-nav[data-nav=progress]>i{width:120px}
+/* On a phone the notice card drops below the copy instead of covering it. */
+.hr[data-mobile] .hr-card{position:relative;right:auto;bottom:auto;width:auto;margin:0 24px 24px;padding:16px 18px}
+.hr[data-mobile] .hr-card>span{font-size:15px}
+.hr[data-mobile]:has(.hr-card) .hr-nav{position:static;transform:none;margin:0 24px 16px}
+.hr[data-mobile][data-align=center]:has(.hr-card) .hr-nav{align-self:center}
+.hr[data-mobile][data-ticker] .hr-card{margin-bottom:64px}
+.hr[data-mobile][data-ticker]:not(:has(.hr-card)) .hr-body{padding-bottom:110px}
+.hr[data-mobile] .hr-ticker{height:44px}
+.hr[data-mobile] .hr-ticker span{font-size:13px}
+/* Dropped images: object-fit decides between filling the box (cover) and keeping the whole image (contain). */
+.hr-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.hr-img[data-fit=contain]{object-fit:contain}
+.hr-media[data-filled]{background:var(--color-surface-inverse,#1d1d22)}
+.hr-split>.hr-media[data-filled]{background:var(--color-bg-subtle,#f4f4f6)}
+.hd-logo-slot[data-filled]{border:0;padding:0}
+.hd-logo img{display:block;width:auto;height:34px;max-width:200px;object-fit:contain}
+.hd[data-mobile] .hd-logo img{height:26px}
+/* A file dragged over an image slot. */
+.lb-layout-node[data-image-over=logo] .hd-logo{position:relative}
+.lb-layout-node[data-image-over=hero] .hr::after,.lb-layout-node[data-image-over=logo] .hd-logo::after{content:"여기에 이미지 놓기";position:absolute;inset:0;z-index:50;display:grid;place-items:center;min-width:max-content;padding:0 calc(8px / var(--lb-scale,1));font-size:calc(12px / var(--lb-scale,1));font-weight:700;color:var(--color-primary-on,#fff);background:color-mix(in oklab,var(--color-primary-default,#5b5bd6) 55%,transparent);outline:calc(2px / var(--lb-scale,1)) dashed #fff;outline-offset:calc(-6px / var(--lb-scale,1))}
