@@ -1,3 +1,4 @@
+import { validTexts, type Texts } from "./component-texts";
 import { int, listOf, oneOf, record, text } from "./config-check";
 import { headerIcons, type HeaderIcon } from "./header-config";
 import { validImageData } from "./image-data";
@@ -7,6 +8,7 @@ import type { SectionSurface } from "./section-surface";
 // contact cards, or a countdown before a deadline.
 export type CtaContact = { label: string; value: string; icon: HeaderIcon };
 export type CtaConfig = {
+  texts?: Texts;
   layout: "inline" | "center" | "split" | "cards";
   surface: Exclude<SectionSurface, "transparent">;
   accent: "primary" | "secondary" | "accent";
@@ -41,7 +43,7 @@ export const ctaPresets: CtaPreset[] = [
 ];
 export function applyCtaPreset(config: CtaConfig, preset: CtaPreset): CtaConfig {
   const { eyebrow, title, text: body, primary, secondary, contacts, image, accent, buttonRadius, countdownLabel } = config;
-  return { ...defaultCta(), ...preset.config, eyebrow, title, text: body, primary, secondary, contacts, image, accent, buttonRadius, countdownLabel };
+  return { ...defaultCta(), ...preset.config, eyebrow, title, text: body, primary, secondary, contacts, image, accent, buttonRadius, countdownLabel, texts: config.texts };
 }
 export const withCtaDefaults = (config: Partial<CtaConfig> | undefined): CtaConfig => ({ ...defaultCta(), ...config });
 
@@ -49,6 +51,7 @@ export function validCtaConfig(value: unknown): value is CtaConfig {
   if (!record(value)) return false;
   const v = value;
   const contact = (c: unknown) => record(c) && text(c.label, 30) && text(c.value, 60) && oneOf(c.icon, ["", ...headerIcons]);
+  if (!validTexts(v.texts)) return false;
   return oneOf(v.layout, ["inline", "center", "split", "cards"]) && oneOf(v.surface, ["surface", "subtle", "primary", "secondary", "inverse"]) && oneOf(v.accent, ["primary", "secondary", "accent"])
     && validImageData(v.image) && text(v.eyebrow, 40) && text(v.title, 80) && text(v.text, 200) && text(v.primary, 24) && text(v.secondary, 24) && int(v.buttonRadius, 0, 40)
     && listOf(v.contacts, 6, contact) && typeof v.countdown === "boolean" && text(v.countdownLabel, 30) && (v.padding === undefined || int(v.padding, 0, 240)) && (v.size === undefined || oneOf(v.size, ["compact", "regular", "large"])) && typeof v.boxed === "boolean";

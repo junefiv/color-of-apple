@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { headerTexts } from "@/lib/component-texts";
+import { TextOverrides } from "./text-overrides";
 import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { useSettingsFocus, type EditFocus } from "./settings-focus";
 import { ImagePicker } from "./image-picker";
@@ -74,7 +76,8 @@ export function HeaderSettings({ config, onChange, preview, onPreview, focus }: 
 
     <section data-part="utility"><strong>유틸리티</strong>
       <div className="lb-hd-checks">{check("topBar", "상단 유틸 바")}{check("search", "검색")}{check("language", "언어")}{check("login", "로그인")}{check("sitemap", "PC 전체메뉴 버튼")}</div>
-      <label className="lb-field">강조 버튼<input data-field="cta" value={config.cta} maxLength={24} placeholder="비우면 숨김 · 예: 예약하기" onChange={e => set({ cta: e.target.value })} /></label></section>
+      <label className="lb-field">강조 버튼<input data-field="cta" value={config.cta} maxLength={24} placeholder="비우면 숨김 · 예: 예약하기" onChange={e => set({ cta: e.target.value })} /></label>
+      <TextOverrides defs={headerTexts} texts={config.texts} onChange={texts => set({ texts })} /></section>
 
     <section data-part="menu"><strong>메뉴 항목</strong><p>하위 메뉴를 펼쳐 설명, 아이콘, 배지, 이미지, 3단 메뉴를 넣을 수 있어요.</p>
       {config.items.map((item, i) => <div className="lb-hd-item" key={i}><input aria-label={`메뉴 ${i + 1} 이름`} data-field={i === 0 ? "menu" : undefined} value={item.label} maxLength={40} onChange={e => setItem(i, { label: e.target.value })} />

@@ -1,3 +1,4 @@
+import { validTexts, type Texts } from "./component-texts";
 import { validImageData } from "./image-data";
 import { isLightSurface, sectionSurfaces, surfaceColors, type SectionSurface } from "./section-surface";
 
@@ -23,6 +24,7 @@ export type HeaderSubItem = { label: string; desc: string; icon: HeaderIcon; bad
 // Headers saved before rich depth-2 entries stored plain strings; withHeaderDefaults() upgrades them.
 export type HeaderMenuItem = { label: string; children: HeaderSubItem[] };
 export type HeaderConfig = {
+  texts?: Texts;
   arrangement: HeaderArrangement;
   submenu: HeaderSubmenu;
   trigger: "hover" | "click";
@@ -98,7 +100,7 @@ export function applyHeaderPreset(config: HeaderConfig, preset: HeaderPreset): H
   // Presets reshape structure and color, but keep the user's own logo, menu and promo copy, and
   // the placement the user dragged it into unless the preset is itself about placement.
   const { logo, logoText, logoImage, items, placement, promoTitle, promoText, promoCta, promoImage } = config;
-  return { ...defaultHeader(), placement, ...preset.config, logo, logoText, logoImage, items, promoTitle, promoText, promoCta, promoImage };
+  return { ...defaultHeader(), placement, ...preset.config, logo, logoText, logoImage, items, promoTitle, promoText, promoCta, promoImage, texts: config.texts };
 }
 
 const options: { [K in keyof HeaderConfig]?: readonly string[] } = {
@@ -135,6 +137,7 @@ export function validHeaderConfig(value: unknown): value is HeaderConfig {
   const copy = ([["promoTitle", 40], ["promoText", 80], ["promoCta", 24]] as const).every(([key, max]) => later(key) || text(v[key], max));
   const images = ["logoImage", "promoImage"].every(key => later(key) || validImageData(v[key]));
   const items = Array.isArray(v.items) && v.items.length <= 8 && v.items.every(item => item && text(item.label, 40) && Array.isArray(item.children) && item.children.length <= 12 && item.children.every(validSubItem));
+  if (!validTexts(v.texts)) return false;
   return enums && flags && copy && images && items && text(v.logoText, 40) && text(v.cta, 24);
 }
 

@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { floatingTexts } from "@/lib/component-texts";
+import { TextOverrides } from "./text-overrides";
 import type { FloatingConfig } from "@/lib/floating-config";
 import type { HeaderIcon } from "@/lib/header-config";
 import { IconOptions } from "./icons";
@@ -27,7 +29,8 @@ export function FloatingSettings({ config, onChange, focus }: { config: Floating
       <Segment label="모서리" value={config.shape} options={[["circle", "원"], ["rounded", "둥근 사각"], ["pill", "알약"]]} onChange={shape => set({ shape })} /></section>
     <section data-part="label"><strong>문구</strong>
       <label className="lb-field">버튼 문구<input data-field="label" value={config.label} maxLength={30} onChange={e => set({ label: e.target.value })} /></label>
-      <label className="lb-field">배지<input value={config.badge} maxLength={10} placeholder="예: D-3 · 비우면 숨김" onChange={e => set({ badge: e.target.value })} /></label></section>
+      <label className="lb-field">배지<input value={config.badge} maxLength={10} placeholder="예: D-3 · 비우면 숨김" onChange={e => set({ badge: e.target.value })} /></label>
+      <TextOverrides defs={floatingTexts} texts={config.texts} onChange={texts => set({ texts })} /></section>
     {usesItems && <section data-part="items"><strong>메뉴 항목</strong>
       <ItemList items={config.items} open={open} onOpen={setOpen} title={item => item.label} field={i => `item:${i}`} max={6} addLabel="항목 추가"
         onAdd={() => { set({ items: [...config.items, { label: "새 메뉴", icon: "star" }] }); setOpen(config.items.length); }} onRemove={i => set({ items: config.items.filter((_, j) => j !== i) })}

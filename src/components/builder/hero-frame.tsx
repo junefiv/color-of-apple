@@ -1,10 +1,10 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { csvText, heroTexts, tx } from "@/lib/component-texts";
 import { ArrowRight, Image as ImageIcon, Play } from "lucide-react";
 import { heroColorVars, heroHeight, type HeroConfig } from "@/lib/hero-config";
 
-const tickerWords = ["새 컬렉션", "브랜드 스토리", "이벤트", "오프라인 스토어", "멤버십"];
 
 export function HeroFrame({ config, mobile, viewport }: { config: HeroConfig; mobile: boolean; viewport: number }) {
   const onMedia = config.layout === "overlay" || config.layout === "band";
@@ -31,7 +31,7 @@ export function HeroFrame({ config, mobile, viewport }: { config: HeroConfig; mo
       {nav === "progress" && <><span>01</span><i><b style={{ width: `${100 / config.slides}%` }} /></i><span>{String(config.slides).padStart(2, "0")}</span></>}
       {nav === "thumbs" && Array.from({ length: config.slides }, (_, i) => <i key={i} data-on={i === 0 || undefined}><span>{String(i + 1).padStart(2, "0")}</span></i>)}
     </div>}
-    {config.card && <aside className="hr-card" data-edit="card"><strong>공지사항</strong><span>새로운 소식을 확인하세요</span><small>2026.10.29</small></aside>}
-    {config.ticker && <div className="hr-ticker" data-edit="ticker" aria-hidden><div>{[...tickerWords, ...tickerWords].map((word, i) => <span key={i}>{word}</span>)}</div></div>}
+    {config.card && <aside className="hr-card" data-edit="card"><strong>{tx(config.texts, heroTexts, "cardTitle")}</strong><span>{tx(config.texts, heroTexts, "cardText")}</span><small>{tx(config.texts, heroTexts, "cardDate")}</small></aside>}
+    {config.ticker && <div className="hr-ticker" data-edit="ticker" aria-hidden><div>{[0, 1].flatMap(() => csvText(tx(config.texts, heroTexts, "ticker"))).map((word, i) => <span key={i}>{word}</span>)}</div></div>}
   </div>;
 }

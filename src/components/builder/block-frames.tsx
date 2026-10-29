@@ -7,6 +7,7 @@ import type { HeaderIcon } from "@/lib/header-config";
 import { surfaceVars, type SectionSurface } from "@/lib/section-surface";
 import { SectionHeading } from "./cards-frame";
 import { iconMap } from "./icons";
+import { MORE_BODIES } from "./block-frames-more";
 
 // Preview frames for the schema-described blocks (src/lib/blocks.ts). data-edit marks the key a click
 // should edit; data-image-drop="img:<path>" marks where a dropped image file is written.
@@ -24,10 +25,20 @@ function Media({ src, slot, ratio, label = "이미지를 끌어다 놓으세요"
 const Head = ({ c, align = "start" }: { c: Config; align?: "start" | "center" | "split" }) => <SectionHeading eyebrow={S(c.eyebrow)} title={S(c.title)} desc={S(c.desc)} more={S(c.more)} align={align} />;
 const Btn = ({ children, ghost, edit }: { children: ReactNode; ghost?: boolean; edit?: string }) => <span className={`bk-btn${ghost ? " bk-ghost" : ""}`} data-edit={edit}>{children}</span>;
 
+// The style section's button look: a palette role (or outline) and a corner radius for every .bk-btn.
+const btnTones: Record<string, [string, string]> = { primary: ["var(--color-primary-default)", "var(--color-primary-on,#fff)"], secondary: ["var(--color-secondary-default)", "var(--color-secondary-on,#fff)"],
+  accent: ["var(--color-accent-default,var(--color-primary-default))", "var(--color-accent-on,#fff)"], light: ["#fff", "#303039"], dark: ["#1d1d22", "#fff"], outline: ["transparent", "var(--bk-fg)"] };
+function buttonVars(c: Config) {
+  const tone = btnTones[S(c.btnTone)], vars: Record<string, string> = {};
+  if (tone) { vars["--bk-btn-bg"] = tone[0]; vars["--bk-btn-fg"] = tone[1]; if (c.btnTone === "outline") vars["--bk-btn-ring"] = "inset 0 0 0 1.5px currentColor"; }
+  if (typeof c.btnRadius === "number") vars["--bk-btn-radius"] = `${c.btnRadius}px`;
+  return vars;
+}
+
 export function BlockFrame({ kind, config: c, mobile: m }: { kind: string; config: Config; mobile: boolean }) {
-  const style = { ...surfaceVars("bk", S(c.surface) as SectionSurface || "surface", (S(c.accent) || "primary") as "primary"), "--bk-radius": `${N(c.radius)}px` } as CSSProperties;
-  const overlay = ["popup", "intro", "consent", "progress", "sheet", "toast"].includes(kind);
-  const body = BODIES[kind]?.(c, m);
+  const style = { ...surfaceVars("bk", S(c.surface) as SectionSurface || "surface", (S(c.accent) || "primary") as "primary"), "--bk-radius": `${N(c.radius)}px`, ...buttonVars(c) } as CSSProperties;
+  const overlay = ["popup", "intro", "consent", "progress", "sheet", "toast", "buybar"].includes(kind);
+  const body = (BODIES[kind] ?? MORE_BODIES[kind])?.(c, m);
   return overlay ? <div className="bk-ov" data-kind={kind} data-mobile={m || undefined} style={style}>{body}</div>
     : <section className="bk" data-kind={kind} data-mobile={m || undefined} style={style}>{body}</section>;
 }
@@ -100,7 +111,7 @@ const BODIES: Record<string, (c: Config, m: boolean) => ReactNode> = {
       {Boolean(c.crumbs) && <span className="bk-crumbs" data-edit="path">{S(c.path).split(">").map((p, i, all) => <span key={i}>{p.trim()}{i < all.length - 1 && <ChevronRight size={13} />}</span>)}</span>}
       <h1 data-edit="title">{S(c.title)}</h1>{S(c.desc) && <p data-edit="desc">{S(c.desc)}</p>}
     </div>
-    {Boolean(c.showTabs) && L(c.tabs).length > 0 && <nav className="bk-sub-tabs" data-style={S(c.tabStyle)}>{L(c.tabs).map((tab, i) => <span key={i} data-on={i === 1 || undefined} data-edit={`tabs:${i}`}>{S(tab.label)}</span>)}</nav>}
+    {Boolean(c.showTabs) && L(c.tabs).length > 0 && <nav className="bk-sub-tabs" data-style={S(c.tabStyle)}>{L(c.tabs).map((tab, i) => <span key={i} data-on={i === (N(c.activeTab) || 1) - 1 || undefined} data-edit={`tabs:${i}`}>{S(tab.label)}</span>)}</nav>}
   </div>,
 
   tabs: (c, m) => <Tabs c={c} m={m} />,
@@ -113,7 +124,7 @@ const BODIES: Record<string, (c: Config, m: boolean) => ReactNode> = {
         <Media src={c.poster} slot="poster" label="포스터 이미지를 끌어다 놓으세요" className="bk-video-poster" />
         {Boolean(c.scrim) && <i className="bk-scrim" aria-hidden />}
         {c.layout === "full" && copy}
-        {c.play === "none" ? <span className="bk-autoplay">● 자동재생</span> : <span className="bk-play" data-play={S(c.play)}><Play size={c.play === "pill" ? 16 : 26} fill="currentColor" />{c.play === "pill" && "영상 보기"}</span>}
+        {c.play === "none" ? S(c.autoText) && <span className="bk-autoplay" data-edit="autoText">{S(c.autoText)}</span> : <span className="bk-play" data-play={S(c.play)} data-edit="play"><Play size={c.play === "pill" ? 16 : 26} fill="currentColor" />{c.play === "pill" && S(c.playText)}</span>}
       </div>
     </div>;
   },
@@ -130,7 +141,7 @@ const BODIES: Record<string, (c: Config, m: boolean) => ReactNode> = {
           : <span className="bk-input">{S(f.placeholder) || (type === "date" ? "YYYY. MM. DD" : "")}</span>;
         return <div key={i} className="bk-f" data-wide={["textarea", "chips", "file"].includes(type) || undefined} data-edit={`fields:${i}`}><span>{S(f.label)}{Boolean(f.required) && <em>*</em>}</span>{control}</div>;
       })}
-      {c.consent !== "none" && <div className="bk-consent" data-edit="consent"><i className="bk-checkbox" aria-hidden />[필수] 개인정보 수집 및 이용에 동의합니다{c.consent === "expandable" && <u>내용 보기</u>}</div>}
+      {c.consent !== "none" && <div className="bk-consent" data-edit="consent"><i className="bk-checkbox" aria-hidden />{S(c.consentText)}{c.consent === "expandable" && S(c.consentLink) && <u>{S(c.consentLink)}</u>}</div>}
       <span className="bk-btn bk-submit" data-width={S(c.submitWidth)} data-edit="submit">{S(c.submit)}<ArrowRight size={16} /></span>
     </div>
   </div>,
@@ -147,11 +158,12 @@ const BODIES: Record<string, (c: Config, m: boolean) => ReactNode> = {
   board: (c, m) => {
     const cats = S(c.categories).split(",").map(x => x.trim()).filter(Boolean), items = L(c.items);
     const style = m && c.style === "table" ? "list" : S(c.style);
+    const [lNo, lTitle, lDate, lViews] = S(c.labels).split(",").map(x => x.trim());
     return <div className="bk-board">
       <Head c={c} />
       {(cats.length > 0 || Boolean(c.search)) && <div className="bk-board-tools">{cats.length > 0 && <div className="bk-cats" data-edit="categories">{cats.map((x, i) => <span key={i} data-on={i === 0 || undefined}>{x}</span>)}</div>}
-        {Boolean(c.search) && <span className="bk-board-search" data-edit="search">검색어를 입력하세요<Search size={16} /></span>}</div>}
-      {style === "table" ? <div className="bk-board-table" data-edit="items"><div className="bk-bt-row bk-bt-head">{Boolean(c.number) && <span>번호</span>}<span className="bk-bt-title">제목</span><span>날짜</span>{Boolean(c.views) && <span>조회</span>}</div>
+        {Boolean(c.search) && <span className="bk-board-search" data-edit="searchText">{S(c.searchText)}<Search size={16} /></span>}</div>}
+      {style === "table" ? <div className="bk-board-table" data-edit="items"><div className="bk-bt-row bk-bt-head">{Boolean(c.number) && <span>{lNo}</span>}<span className="bk-bt-title">{lTitle}</span><span>{lDate}</span>{Boolean(c.views) && <span>{lViews}</span>}</div>
         {items.map((it, i) => <div key={i} className="bk-bt-row" data-edit={`items:${i}`}>{Boolean(c.number) && <span>{items.length - i}</span>}<span className="bk-bt-title"><em className="bk-tag">{S(it.tag)}</em>{S(it.title)}</span><span>{S(it.date)}</span>{Boolean(c.views) && <span>{120 + i * 37}</span>}</div>)}</div>
         : style === "gallery" ? <ul className="bk-board-gallery">{items.map((it, i) => <li key={i} data-edit={`items:${i}`}><Media src={it.image} slot={`items:${i}:image`} ratio="4 / 3" label="" /><em className="bk-tag">{S(it.tag)}</em><b>{S(it.title)}</b><small>{S(it.date)}</small></li>)}</ul>
         : <ul className="bk-board-list">{items.map((it, i) => <li key={i} data-edit={`items:${i}`}><em className="bk-tag">{S(it.tag)}</em><b>{S(it.title)}</b><small>{S(it.date)}</small><ChevronRight size={16} /></li>)}</ul>}
@@ -160,11 +172,11 @@ const BODIES: Record<string, (c: Config, m: boolean) => ReactNode> = {
   },
 
   post: c => <article className="bk-post" style={{ maxWidth: N(c.width) }}>
-    <header>{S(c.tag) && <span className="bk-tag" data-edit="tag">{S(c.tag)}</span>}<h1 data-edit="title">{S(c.title)}</h1><div className="bk-post-meta" data-edit="date">{S(c.date)}{S(c.author) && ` · ${S(c.author)}`} · 조회 128</div></header>
+    <header>{S(c.tag) && <span className="bk-tag" data-edit="tag">{S(c.tag)}</span>}<h1 data-edit="title">{S(c.title)}</h1><div className="bk-post-meta" data-edit="date">{[S(c.date), S(c.author), S(c.views)].filter(Boolean).join(" · ")}</div></header>
     <Media src={c.image} slot="image" ratio="16 / 9" label="본문 이미지를 끌어다 놓으세요" />
     <div className="bk-post-body" data-edit="body">{S(c.body)}</div>
     {L(c.files).length > 0 && <ul className="bk-files">{L(c.files).map((f, i) => <li key={i} data-edit={`files:${i}`}><Paperclip size={15} />{S(f.name)}<Download size={15} /></li>)}</ul>}
-    {Boolean(c.nav) && <div className="bk-post-nav" data-edit="nav"><div><small>이전 글</small><span>추석 연휴 고객센터 운영 안내</span></div><div><small>다음 글</small><span>신제품 출시 이벤트</span></div></div>}
+    {Boolean(c.nav) && <div className="bk-post-nav" data-edit="nav"><div><small>{S(c.prevLabel)}</small><span>{S(c.prevTitle)}</span></div><div><small>{S(c.nextLabel)}</small><span>{S(c.nextTitle)}</span></div></div>}
     <div className="bk-post-back"><Btn ghost edit="back">{S(c.back)}</Btn></div>
   </article>,
 
@@ -172,9 +184,9 @@ const BODIES: Record<string, (c: Config, m: boolean) => ReactNode> = {
     <Head c={c} />
     {L(c.branches).length > 0 && <div className="bk-cats">{L(c.branches).map((b, i) => <span key={i} data-on={i === 0 || undefined} data-edit={`branches:${i}`}>{S(b.name)}</span>)}</div>}
     <div className="bk-loc" data-layout={S(c.layout)}>
-      <div className="bk-map" data-map={S(c.map)} style={{ height: N(c.mapHeight) * (m ? .65 : 1) }} data-edit="map"><span className="bk-pin"><MapPin size={22} /></span><small>지도 자리 · 실제 사이트에서 지도 API로 바꿔요</small></div>
+      <div className="bk-map" data-map={S(c.map)} style={{ height: N(c.mapHeight) * (m ? .65 : 1) }} data-edit="map"><span className="bk-pin"><MapPin size={22} /></span>{S(c.mapNote) && <small>{S(c.mapNote)}</small>}</div>
       <dl className="bk-loc-info">
-        {([["address", "주소"], ["phone", "전화"], ["hours", "운영 시간"], ["transit", "교통 안내"]] as const).filter(([k]) => S(c[k])).map(([k, label]) => <div key={k} data-edit={k}><dt>{label}</dt><dd>{S(c[k])}</dd></div>)}
+        {(["address", "phone", "hours", "transit"] as const).map((k, i) => [k, S(c.labels).split(",")[i]?.trim() ?? ""] as const).filter(([k]) => S(c[k])).map(([k, label]) => <div key={k} data-edit={k}><dt>{label}</dt><dd>{S(c[k])}</dd></div>)}
       </dl>
     </div>
   </div>,
@@ -201,7 +213,7 @@ const BODIES: Record<string, (c: Config, m: boolean) => ReactNode> = {
   },
 
   appbar: c => <div className="bk-appbar" data-variant={S(c.variant)} data-divider={c.divider || undefined}>
-    <div className="bk-ab-row"><span className="bk-ab-left" data-edit="left">{c.left === "back" ? <ChevronLeft size={24} /> : c.left === "menu" ? <Menu size={22} /> : c.left === "logo" ? <b>Brand</b> : null}</span>
+    <div className="bk-ab-row"><span className="bk-ab-left" data-edit="left">{c.left === "back" ? <ChevronLeft size={24} /> : c.left === "menu" ? <Menu size={22} /> : c.left === "logo" ? <b>{S(c.logo)}</b> : null}</span>
       {c.variant !== "large" && <strong data-edit="title">{S(c.title)}</strong>}
       <span className="bk-ab-actions" data-edit="actions">{(c.actions === "search" || c.actions === "both") && <Search size={21} />}{(c.actions === "bell" || c.actions === "both") && <Bell size={21} />}</span></div>
     {c.variant === "large" && <h2 data-edit="title">{S(c.title)}</h2>}
@@ -209,7 +221,7 @@ const BODIES: Record<string, (c: Config, m: boolean) => ReactNode> = {
 
   search: c => <div className="bk-search" data-variant={S(c.variant)} data-chip={S(c.chipStyle)}>
     <div className="bk-search-row"><span className="bk-search-box" data-edit="placeholder"><Search size={18} />{S(c.placeholder)}</span>{Boolean(c.filter) && <span className="bk-filter" data-edit="filter"><SlidersHorizontal size={18} /></span>}</div>
-    {S(c.recent) && <div className="bk-recent" data-edit="recent"><small>최근 검색</small>{S(c.recent).split(",").map((r, i) => <span key={i}>{r.trim()}<X size={12} /></span>)}</div>}
+    {S(c.recent) && <div className="bk-recent" data-edit="recent"><small>{S(c.recentLabel)}</small>{S(c.recent).split(",").map((r, i) => <span key={i}>{r.trim()}<X size={12} /></span>)}</div>}
     {L(c.chips).length > 0 && <div className="bk-chips bk-chip-row">{L(c.chips).map((ch, i) => <span key={i} data-on={i === 0 || undefined} data-edit={`chips:${i}`}>{S(ch.label)}</span>)}</div>}
   </div>,
 
@@ -233,7 +245,7 @@ const BODIES: Record<string, (c: Config, m: boolean) => ReactNode> = {
       {(S(c.image) || c.kind !== "corner") && <Media src={c.image} slot="image" ratio={c.kind === "full" ? undefined : "4 / 3"} className="bk-pop-media" />}
       {N(c.pages) > 1 && <span className="bk-pager">1 / {N(c.pages)}</span>}
       <div className="bk-pop-body"><h3 data-edit="title">{S(c.title)}</h3><p data-edit="body">{S(c.body)}</p>{S(c.cta) && <Btn edit="cta">{S(c.cta)}</Btn>}</div>
-      <div className="bk-pop-foot" data-edit="dismiss">{c.dismiss === "both" && <span><i className="bk-checkbox" aria-hidden />오늘 하루 보지 않기</span>}<span>닫기 <X size={14} /></span></div>
+      <div className="bk-pop-foot" data-edit="dismiss">{c.dismiss === "both" && <span><i className="bk-checkbox" aria-hidden />{S(c.todayText)}</span>}<span>{S(c.closeText)} <X size={14} /></span></div>
     </div>
   </div>,
 
@@ -242,8 +254,8 @@ const BODIES: Record<string, (c: Config, m: boolean) => ReactNode> = {
     {/* eslint-disable-next-line @next/next/no-img-element -- inline data URL from the user's drop */}
     <strong className="bk-intro-logo" data-edit="logo" data-image-drop="img:image">{S(c.image) ? <img src={S(c.image)} alt={S(c.logo)} draggable={false} /> : S(c.logo)}</strong>
     {S(c.tagline) && <small data-edit="tagline">{S(c.tagline)}</small>}
-    {c.style === "progress" && <span className="bk-intro-bar"><b /></span>}
-    {c.style === "count" && <span className="bk-intro-count">72<small>%</small></span>}
+    {c.style === "progress" && <span className="bk-intro-bar"><b style={{ width: `${N(c.count)}%` }} /></span>}
+    {c.style === "count" && <span className="bk-intro-count">{N(c.count)}<small>%</small></span>}
   </div>,
 
   consent: c => <div className="bk-consent-layer" data-kind={S(c.kind)} data-side={S(c.side)}>

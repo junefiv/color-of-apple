@@ -1,3 +1,4 @@
+import { validTexts, type Texts } from "./component-texts";
 import { int, listOf, oneOf, record, text } from "./config-check";
 import { validImageData } from "./image-data";
 import type { SectionSurface } from "./section-surface";
@@ -5,6 +6,7 @@ import type { SectionSurface } from "./section-surface";
 // Footer options from the survey (docs/component-patterns.md §2): info block, sitemap columns that
 // reuse the header menu, a CTA/slogan/newsletter lead on top, and a one-line minimal variant.
 export type FooterConfig = {
+  texts?: Texts;
   layout: "info" | "columns" | "minimal" | "poster";
   surface: Exclude<SectionSurface, "transparent">;
   lead: "none" | "cta" | "slogan" | "newsletter";
@@ -42,13 +44,14 @@ export const footerPresets: FooterPreset[] = [
 export function applyFooterPreset(config: FooterConfig, preset: FooterPreset): FooterConfig {
   // Presets reshape structure and color but keep the user's own brand and company copy.
   const { logoText, logoImage, info, legal, copyright, leadText } = config;
-  return { ...defaultFooter(), ...preset.config, logoText, logoImage, info, legal, copyright, leadText };
+  return { ...defaultFooter(), ...preset.config, logoText, logoImage, info, legal, copyright, leadText, texts: config.texts };
 }
 export const withFooterDefaults = (config: Partial<FooterConfig> | undefined): FooterConfig => ({ ...defaultFooter(), ...config });
 
 export function validFooterConfig(value: unknown): value is FooterConfig {
   if (!record(value)) return false;
   const v = value;
+  if (!validTexts(v.texts)) return false;
   return oneOf(v.layout, ["info", "columns", "minimal", "poster"]) && oneOf(v.surface, ["surface", "subtle", "primary", "secondary", "inverse"]) && oneOf(v.lead, ["none", "cta", "slogan", "newsletter"])
     && oneOf(v.mobileColumns, ["stack", "two", "accordion"]) && text(v.leadTitle, 60) && text(v.leadText, 120) && text(v.leadCta, 24) && text(v.logoText, 40) && validImageData(v.logoImage)
     && text(v.info, 400) && listOf(v.legal, 8, item => text(item, 30)) && text(v.copyright, 80) && ["sitemap", "sns", "familySite", "backToTop"].every(key => typeof v[key] === "boolean")

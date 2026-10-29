@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { ctaTexts } from "@/lib/component-texts";
+import { TextOverrides } from "./text-overrides";
 import type { CtaConfig, CtaContact } from "@/lib/cta-config";
 import type { HeaderIcon } from "@/lib/header-config";
 import { accents } from "./header-settings";
@@ -27,7 +29,8 @@ export function CtaSettings({ config, onChange, focus }: { config: CtaConfig; on
       {text("eyebrow", "작은 머리말", 40)}{text("title", "제목", 80)}
       <label className="lb-field">설명<textarea data-field="text" rows={2} value={config.text} maxLength={200} placeholder="비우면 숨김" onChange={e => set({ text: e.target.value })} /></label>
       <label className="lb-check"><input data-field="countdown" type="checkbox" checked={config.countdown} onChange={e => set({ countdown: e.target.checked })} />마감 카운트다운</label>
-      {config.countdown && text("countdownLabel", "카운트다운 문구", 30)}</section>
+      {config.countdown && text("countdownLabel", "카운트다운 문구", 30)}
+      {config.countdown && <TextOverrides defs={ctaTexts} texts={config.texts} onChange={texts => set({ texts })} />}</section>
     <section data-part="buttons"><strong>버튼</strong>
       <div className="lb-two-fields">{text("primary", "주 버튼", 24, "buttons")}{text("secondary", "보조 버튼", 24)}</div>
       <Range label="모서리 둥글기" value={config.buttonRadius} min={0} max={40} onChange={buttonRadius => set({ buttonRadius })} /></section>

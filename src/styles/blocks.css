@@ -16,7 +16,7 @@
 .bk-copy h3{font-size:36px}
 .bk-copy p{margin:0;font-size:17px;line-height:1.7;color:var(--bk-muted);white-space:pre-line}
 .bk-link{display:inline-flex;align-items:center;gap:6px;font-weight:650;color:var(--bk-accent)}
-.bk-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 24px;border-radius:999px;background:var(--bk-accent);color:var(--bk-accent-on);font-size:15px;font-weight:650;white-space:nowrap}
+.bk-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 24px;border-radius:var(--bk-btn-radius,999px);background:var(--bk-btn-bg,var(--bk-accent));color:var(--bk-btn-fg,var(--bk-accent-on));box-shadow:var(--bk-btn-ring,none);font-size:15px;font-weight:650;white-space:nowrap}
 .bk-ghost{background:none;color:var(--bk-fg);box-shadow:inset 0 0 0 1px var(--bk-line)}
 .bk-btn-sm{height:36px;padding:0 14px;font-size:13px}
 .bk-tag{display:inline-flex;flex:none;align-self:center;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;font-style:normal;white-space:nowrap;background:var(--bk-tint);color:var(--bk-accent)}

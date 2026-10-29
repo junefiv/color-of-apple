@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
+import { headerTexts, tx } from "@/lib/component-texts";
 import { ArrowRight, ChevronDown, ChevronRight, Globe, Image as ImageIcon, Menu, Minus, Plus, Search, X } from "lucide-react";
 import { iconMap as icons } from "./icons";
 import { headerColorVars, type HeaderConfig, type HeaderMenuItem, type HeaderSubItem } from "@/lib/header-config";
@@ -32,8 +33,8 @@ export function HeaderFrame({ config, mobile, preview }: { config: HeaderConfig;
   // eslint-disable-next-line @next/next/no-img-element -- inline data URL from the user's drop
   const logo = <span className={`hd-logo hd-logo-${config.logo}`} data-edit="logo" data-image-drop="logo" data-filled={logoImage ? true : undefined}>{config.logo === "symbol" && <i aria-hidden />}{logoImage ? <img src={logoImage} alt={config.logoText || "로고"} draggable={false} /> : config.logo === "slot" ? "로고" : config.logoText || "Brand"}</span>;
   const actions = <div className="hd-actions" data-edit="utility">
-    {!mobile && config.language && <span className="hd-util"><Globe size={15} />KOR</span>}
-    {!mobile && config.login && <span className="hd-util">로그인</span>}
+    {!mobile && config.language && <span className="hd-util"><Globe size={15} />{tx(config.texts, headerTexts, "language")}</span>}
+    {!mobile && config.login && <span className="hd-util">{tx(config.texts, headerTexts, "login")}</span>}
     {config.search && <button type="button" aria-label="검색" onClick={stop}><Search size={mobile ? 20 : 17} /></button>}
     {!mobile && config.cta && <span className="hd-cta" data-edit="cta">{config.cta}</span>}
     {burger && <button type="button" aria-label={mobile ? (menuOpen ? "모바일 메뉴 닫기" : "모바일 메뉴 열기") : sitemap ? "전체 메뉴 닫기" : "전체 메뉴 열기"} aria-expanded={mobile ? menuOpen : sitemap}
@@ -67,7 +68,7 @@ export function HeaderFrame({ config, mobile, preview }: { config: HeaderConfig;
   return <div className="hd" data-edit="frame" data-arrangement={config.arrangement} data-submenu={config.submenu} data-surface={config.surface} data-active={config.active} data-motion={config.motion} data-divider={config.divider || undefined} data-raised={raised || undefined} data-mobile={mobile || undefined} data-mobile-logo={config.mobileLogo}
     style={vars} onMouseLeave={() => { if (config.trigger === "hover") setHovered(null); }}>
     <div className="hd-backdrop" aria-hidden>{config.surface === "transparent" && !raised && <span>히어로 이미지 위에 놓이는 투명 헤더</span>}</div>
-    {config.topBar && !mobile && <div className="hd-top"><span>새 소식을 확인하세요</span><span>고객센터 · 로그인 · 회원가입 · ENG</span></div>}
+    {config.topBar && !mobile && <div className="hd-top" data-edit="utility"><span>{tx(config.texts, headerTexts, "topLeft")}</span><span>{tx(config.texts, headerTexts, "topRight")}</span></div>}
     {config.arrangement === "stacked" && !mobile ? <div className="hd-stack"><div className="hd-row">{logo}{actions}</div>{nav}</div>
       : <div className="hd-row">{config.arrangement === "logo-center" && !mobile ? <>{nav}{logo}{actions}</> : <>{logo}{nav}{actions}</>}</div>}
     {dim}
@@ -124,14 +125,14 @@ function MobileMenu({ config, expanded, onExpand, onClose }: { config: HeaderCon
   const mode = config.mobileMenu;
   if (mode === "split") {
     const current = config.items[expanded] ?? config.items[0];
-    return <div className="hd-m hd-m-split" onClick={stop}><div className="hd-m-head"><strong>메뉴</strong><button type="button" aria-label="펼친 메뉴 닫기" onClick={onClose}><X size={20} /></button></div>
+    return <div className="hd-m hd-m-split" onClick={stop}><div className="hd-m-head"><strong>{tx(config.texts, headerTexts, "menuTitle")}</strong><button type="button" aria-label="펼친 메뉴 닫기" onClick={onClose}><X size={20} /></button></div>
       <div className="hd-m-split-body"><ul className="hd-m-tabs">{config.items.map((item, i) => <li key={i}><button type="button" aria-pressed={i === expanded} onClick={() => onExpand(i)}>{item.label}</button></li>)}</ul>
         <ul className="hd-m-list">{(current?.children.length ? current.children.map(child => child.label) : [current?.label ?? ""]).map((child, j) => <li key={j}>{child}</li>)}</ul></div></div>;
   }
   const list = <ul className="hd-m-accordion">{config.items.map((item, i) => <li key={i}><button type="button" aria-expanded={item.children.length ? expanded === i : undefined} onClick={() => item.children.length ? onExpand(expanded === i ? -1 : i) : onClose()}>
     {item.label}{item.children.length > 0 && (expanded === i ? <Minus size={16} /> : <Plus size={16} />)}</button>
     {expanded === i && item.children.length > 0 && <ul>{item.children.map((child, j) => <li key={j}>{child.label}</li>)}</ul>}</li>)}</ul>;
-  const foot = (config.login || config.language || config.cta) && <div className="hd-m-foot">{config.login && <span>로그인</span>}{config.language && <span>KOR / ENG</span>}{config.cta && <span className="hd-cta">{config.cta}</span>}</div>;
+  const foot = (config.login || config.language || config.cta) && <div className="hd-m-foot">{config.login && <span>{tx(config.texts, headerTexts, "login")}</span>}{config.language && <span>{tx(config.texts, headerTexts, "mobileLanguage")}</span>}{config.cta && <span className="hd-cta">{config.cta}</span>}</div>;
   if (mode === "drawer") return <div className="hd-m-scrim" onClick={e => { stop(e); onClose(); }}><div className="hd-m hd-m-drawer" onClick={stop}><div className="hd-m-head"><button type="button" aria-label="펼친 메뉴 닫기" onClick={onClose}><X size={20} /></button></div>{list}{foot}</div></div>;
-  return <div className={`hd-m hd-m-${mode}`} onClick={stop}>{mode === "overlay" && <div className="hd-m-head"><strong>메뉴</strong><button type="button" aria-label="펼친 메뉴 닫기" onClick={onClose}><X size={20} /></button></div>}{list}{foot}</div>;
+  return <div className={`hd-m hd-m-${mode}`} onClick={stop}>{mode === "overlay" && <div className="hd-m-head"><strong>{tx(config.texts, headerTexts, "menuTitle")}</strong><button type="button" aria-label="펼친 메뉴 닫기" onClick={onClose}><X size={20} /></button></div>}{list}{foot}</div>;
 }

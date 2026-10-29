@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { csvText, ctaTexts, tx } from "@/lib/component-texts";
 import { ArrowRight, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { surfaceVars } from "@/lib/section-surface";
 import type { CtaConfig } from "@/lib/cta-config";
@@ -14,7 +15,7 @@ export function CtaFrame({ config, mobile }: { config: CtaConfig; mobile: boolea
     {config.eyebrow && <span className="ct-eyebrow" data-edit="eyebrow">{config.eyebrow}</span>}
     <h2 data-edit="title">{config.title || "제목"}</h2>
     {config.text && <p data-edit="text">{config.text}</p>}
-    {config.countdown && <div className="ct-count" data-edit="countdown"><small>{config.countdownLabel}</small>{([["03", "일"], ["14", "시간"], ["27", "분"], ["50", "초"]] as const).map(([n, unit]) => <span key={unit}><b>{n}</b>{unit}</span>)}</div>}
+    {config.countdown && <div className="ct-count" data-edit="countdown"><small>{config.countdownLabel}</small>{csvText(tx(config.texts, ctaTexts, "countValues")).map((n, i) => <span key={i}><b>{n}</b>{csvText(tx(config.texts, ctaTexts, "countUnits"))[i] ?? ""}</span>)}</div>}
   </div>;
   const actions = (config.primary || config.secondary) && <div className="ct-actions" data-edit="buttons">
     {config.primary && <span className="ct-btn">{config.primary}<ArrowRight size={16} /></span>}{config.secondary && <span className="ct-btn ct-ghost">{config.secondary}</span>}</div>;

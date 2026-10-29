@@ -1,3 +1,4 @@
+import { validTexts, type Texts } from "./component-texts";
 import { listOf, oneOf, record, text } from "./config-check";
 import { headerIcons, type HeaderIcon } from "./header-config";
 
@@ -5,6 +6,7 @@ import { headerIcons, type HeaderIcon } from "./header-config";
 // change shape on a phone: a side rail becomes a bottom tab bar, a pill becomes a full-width bar.
 export type FloatingKind = "top" | "rail" | "fab" | "pill" | "chat" | "tabbar";
 export type FloatingConfig = {
+  texts?: Texts;
   kind: FloatingKind;
   mobileKind: FloatingKind | "hidden";
   side: "right" | "left";
@@ -31,7 +33,7 @@ export const floatingPresets: FloatingPreset[] = [
   { key: "tabbar", name: "앱 탭바", note: "모바일 하단 탭바 · PC 숨김", config: { kind: "tabbar", mobileKind: "tabbar", vertical: "bottom", surface: "surface", shape: "rounded" } },
 ];
 export function applyFloatingPreset(config: FloatingConfig, preset: FloatingPreset): FloatingConfig {
-  return { ...defaultFloating(), items: config.items, ...preset.config };
+  return { ...defaultFloating(), items: config.items, ...preset.config, texts: config.texts };
 }
 export const withFloatingDefaults = (config: Partial<FloatingConfig> | undefined): FloatingConfig => ({ ...defaultFloating(), ...config });
 
@@ -40,6 +42,7 @@ export function validFloatingConfig(value: unknown): value is FloatingConfig {
   if (!record(value)) return false;
   const v = value;
   const item = (i: unknown) => record(i) && text(i.label, 20) && oneOf(i.icon, ["", ...headerIcons]);
+  if (!validTexts(v.texts)) return false;
   return oneOf(v.kind, kinds) && oneOf(v.mobileKind, [...kinds, "hidden"]) && oneOf(v.side, ["right", "left"]) && oneOf(v.vertical, ["bottom", "center"])
     && listOf(v.items, 6, item) && text(v.label, 30) && text(v.badge, 10) && oneOf(v.surface, ["primary", "surface", "inverse"]) && oneOf(v.shape, ["circle", "rounded", "pill"]);
 }

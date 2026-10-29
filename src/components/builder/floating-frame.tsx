@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { floatingTexts, tx } from "@/lib/component-texts";
 import { ArrowDown, ArrowUp, ChevronRight, MessageCircle, Sparkles } from "lucide-react";
 import type { FloatingConfig } from "@/lib/floating-config";
 import { iconMap } from "./icons";
@@ -13,7 +14,7 @@ export function FloatingFrame({ config, mobile }: { config: FloatingConfig; mobi
   return <div className="fl" data-edit="frame" data-kind={kind} data-side={config.side} data-vertical={config.vertical} data-surface={config.surface} data-shape={config.shape} data-mobile={mobile || undefined}>
     {kind === "top" && <><span className="fl-round" data-edit="label"><ArrowUp size={18} /></span><span className="fl-round" data-edit="label"><ArrowDown size={18} /></span></>}
     {(kind === "rail" || kind === "tabbar") && <ul className="fl-items" data-edit="items">{config.items.map((item, i) => <li key={i} data-on={kind === "tabbar" && i === 0 || undefined}>{icon(item.icon, kind === "tabbar" ? 20 : 18)}<span>{item.label}</span></li>)}
-      {kind === "rail" && <li className="fl-rail-top"><ArrowUp size={16} /><span>TOP</span></li>}</ul>}
+      {kind === "rail" && <li className="fl-rail-top"><ArrowUp size={16} /><span>{tx(config.texts, floatingTexts, "top")}</span></li>}</ul>}
     {kind === "fab" && <span className="fl-fab" data-edit="label"><Sparkles size={mobile ? 16 : 20} /><span>{config.label}</span></span>}
     {kind === "pill" && <span className="fl-pill" data-edit="label">{config.label}{config.badge && <em>{config.badge}</em>}</span>}
     {kind === "chat" && <><span className="fl-bubble" data-edit="label">{config.label}</span><span className="fl-chat" data-edit="label"><MessageCircle size={20} /></span></>}

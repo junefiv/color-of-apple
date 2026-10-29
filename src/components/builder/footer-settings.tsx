@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef } from "react";
+import { footerTexts } from "@/lib/component-texts";
+import { TextOverrides } from "./text-overrides";
 import type { FooterConfig } from "@/lib/footer-config";
 import { ImagePicker } from "./image-picker";
 import { useSettingsFocus, type EditFocus } from "./settings-focus";
@@ -32,7 +34,8 @@ export function FooterSettings({ config, onChange, focus }: { config: FooterConf
         onBlur={e => { const legal = commaList(e.target.value); if (legal.join("|") !== config.legal.join("|")) set({ legal }); }} /></label>
       <label className="lb-field">저작권 문구<input value={config.copyright} maxLength={80} onChange={e => set({ copyright: e.target.value })} /></label></section>
     <section data-part="extras"><strong>부가 요소</strong>
-      <div className="lb-hd-checks">{check("sns", "SNS 아이콘")}{check("familySite", "패밀리 사이트")}{check("backToTop", "맨 위로 버튼")}</div></section>
+      <div className="lb-hd-checks">{check("sns", "SNS 아이콘")}{check("familySite", "패밀리 사이트")}{check("backToTop", "맨 위로 버튼")}</div>
+      <TextOverrides defs={footerTexts} texts={config.texts} onChange={texts => set({ texts })} /></section>
     <section data-part="mobile"><strong>모바일</strong>
       <Segment label="사이트맵 열" value={config.mobileColumns} options={[["accordion", "아코디언"], ["two", "2열"], ["stack", "1열"]]} onChange={mobileColumns => set({ mobileColumns })} /></section>
   </div>;

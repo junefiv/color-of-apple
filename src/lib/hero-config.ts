@@ -1,3 +1,4 @@
+import { validTexts, type Texts } from "./component-texts";
 import { isLightSurface, surfaceColors, type SectionSurface } from "./section-surface";
 import type { HeaderAccent } from "./header-config";
 import { validImageData } from "./image-data";
@@ -12,6 +13,7 @@ export type HeroSurface = Exclude<SectionSurface, "transparent">;
 // "auto" keeps the contrast-safe pairing; the rest pin the button to a palette role.
 export type HeroButtonColor = "auto" | "primary" | "secondary" | "accent" | "light" | "dark";
 export type HeroConfig = {
+  texts?: Texts;
   layout: HeroLayout;
   media: "image" | "video";
   height: HeroHeight;
@@ -67,7 +69,7 @@ export const heroPresets: HeroPreset[] = [
 export function applyHeroPreset(config: HeroConfig, preset: HeroPreset): HeroConfig {
   // Presets reshape structure and color, but keep the user's own copy, accent, button design and image.
   const { eyebrow, title, body, primary, secondary, accent, buttonRadius, buttonColor, buttonStyle, image, imageFit } = config;
-  return { ...defaultHero(), ...preset.config, eyebrow, title, body, primary, secondary, accent, buttonRadius, buttonColor, buttonStyle, image, imageFit };
+  return { ...defaultHero(), ...preset.config, eyebrow, title, body, primary, secondary, accent, buttonRadius, buttonColor, buttonStyle, image, imageFit, texts: config.texts };
 }
 
 const ratios: Record<Exclude<HeroHeight, "band" | "custom">, number> = { screen: 1, large: .8, medium: .6 };
@@ -119,5 +121,6 @@ export function validHeroConfig(value: unknown): value is HeroConfig {
   const radius = optional("buttonRadius") || (Number.isInteger(v.buttonRadius) && (v.buttonRadius as number) >= 0 && (v.buttonRadius as number) <= 40);
   const flags = ["card", "ticker", "mediaFirst"].every(key => typeof v[key] === "boolean");
   const copy = limits.every(([key, max]) => typeof v[key] === "string" && (v[key] as string).length <= max);
+  if (!validTexts(v.texts)) return false;
   return enums && flags && copy && radius && px && (optional("image") || validImageData(v.image)) && Number.isInteger(v.slides) && (v.slides as number) >= 1 && (v.slides as number) <= 6;
 }

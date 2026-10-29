@@ -1,16 +1,13 @@
-import { accent, chk, icon, img, list, rng, seg, sel, surface, t, type BlockSpec, type Config, type SchemaSection } from "./block-schema";
+import { chk, icon, img, list, rng, seg, sel, t, type BlockSpec, type Config } from "./block-schema";
+import { aligns, head, headDefaults, P, style, styleDefaults } from "./block-helpers";
+import { moreBlockPadding, moreBlockSpecs, MORE_KINDS } from "./blocks-more";
 
 // The remaining common components from the survey (docs/component-patterns.md, "사이트별 보유 빈도"):
 // body sections, sub-page and information blocks, layers that float over the page, and app patterns.
 // Field keys here are what the preview frames read and mark with data-edit / data-image-drop.
 
-const head = (title: string, note?: string): SchemaSection => ({ part: "heading", title, note, fields: [t("eyebrow", "작은 머리말", 40, { placeholder: "비우면 숨김" }), t("title", "제목", 80), t("desc", "설명", 200, { multiline: true, placeholder: "비우면 숨김" }), t("more", "더보기 링크", 24, { placeholder: "비우면 숨김" })] });
-const style = (...fields: SchemaSection["fields"]): SchemaSection => ({ part: "style", title: "색상과 모양", fields: [surface(), accent(), ...fields] });
-const headDefaults = (eyebrow: string, title: string, desc = "섹션을 한 문장으로 소개해 주세요.") => ({ eyebrow, title, desc, more: "", surface: "surface", accent: "primary" });
-const aligns = [["start", "왼쪽"], ["center", "가운데"]] as const;
-const P = (key: string, name: string, note: string, config: Config) => ({ key, name, note, config });
-
-export type Insets4 = [number, number, number, number];
+export type { Insets4 } from "./block-helpers";
+import type { Insets4 } from "./block-helpers";
 // Starting padding of in-flow blocks on PC and phones (the layer's own Padding fields after that).
 export const blockPadding: Record<string, [Insets4, Insets4]> = {
   split: [[96, 64, 96, 64], [56, 20, 56, 20]], marquee: [[40, 0, 40, 0], [28, 0, 28, 0]], subhero: [[0, 0, 0, 0], [0, 0, 0, 0]], tabs: [[96, 64, 96, 64], [56, 20, 56, 20]],
@@ -52,11 +49,11 @@ const marquee: BlockSpec = { kind: "marquee", name: "흐르는 띠", group: "본
 const subhero: BlockSpec = { kind: "subhero", name: "서브 페이지 상단", group: "정보 · 서브 페이지", note: "페이지 제목 · 경로 · 하위 탭", place: "flow",
   sections: [
     { part: "copy", title: "제목과 경로", fields: [t("title", "페이지 제목", 60), t("desc", "설명", 160, { multiline: true, placeholder: "비우면 숨김" }), t("path", "경로", 80, { placeholder: "홈 > 회사소개 > 연혁" }), chk("crumbs", "경로 보이기")] },
-    { part: "tabs", title: "하위 메뉴 탭", fields: [chk("showTabs", "하위 탭 보이기"), list("tabs", "탭", [t("label", "이름", 20)], i => ({ label: ["인사말", "연혁", "비전", "오시는 길"][i % 4] }), { max: 8, add: "탭 추가" }), seg("tabStyle", "탭 모양", [["underline", "밑줄"], ["pill", "알약"], ["box", "칸 나눔"]])] },
+    { part: "tabs", title: "하위 메뉴 탭", fields: [chk("showTabs", "하위 탭 보이기"), list("tabs", "탭", [t("label", "이름", 20)], i => ({ label: ["인사말", "연혁", "비전", "오시는 길"][i % 4] }), { max: 8, add: "탭 추가" }), seg("tabStyle", "탭 모양", [["underline", "밑줄"], ["pill", "알약"], ["box", "칸 나눔"]]), rng("activeTab", "선택된 탭", 1, 8, 1, "번째")] },
     { part: "layout", title: "배경과 크기", fields: [seg("bg", "배경", [["image", "이미지"], ["color", "색"], ["plain", "없음"]]), img("image", "배경 이미지"), seg("align", "정렬", aligns), rng("height", "높이", 160, 640, 8)] },
     style(),
   ],
-  defaults: () => ({ title: "회사소개", desc: "", path: "홈 > 회사소개 > 연혁", crumbs: true, showTabs: true, tabs: ["인사말", "연혁", "비전", "오시는 길"].map(label => ({ label })), tabStyle: "underline", bg: "image", image: "", align: "center", height: 360, surface: "inverse", accent: "primary" }),
+  defaults: () => ({ title: "회사소개", desc: "", path: "홈 > 회사소개 > 연혁", crumbs: true, showTabs: true, tabs: ["인사말", "연혁", "비전", "오시는 길"].map(label => ({ label })), tabStyle: "underline", activeTab: 2, bg: "image", image: "", align: "center", height: 360, surface: "inverse", accent: "primary" }),
   presets: [P("image", "이미지 배너", "사진 위 제목 · 아래 탭", { bg: "image", align: "center", height: 360, tabStyle: "underline", surface: "inverse" }), P("color", "브랜드 컬러", "Primary 배경 · 가운데 제목", { bg: "color", surface: "primary", align: "center", height: 300 }),
     P("plain", "글자만", "배경 없이 왼쪽 큰 제목", { bg: "plain", surface: "surface", align: "start", height: 240, tabStyle: "pill" }), P("boxtabs", "칸 나눔 탭", "아래 탭이 칸으로 꽉 참", { bg: "image", tabStyle: "box", height: 320, surface: "inverse" })],
 };
@@ -76,10 +73,10 @@ const tabs: BlockSpec = { kind: "tabs", name: "탭", group: "본문 섹션", not
 
 const video: BlockSpec = { kind: "video", name: "영상 섹션", group: "본문 섹션", note: "포스터 + 재생 버튼 · 배경 영상", place: "flow",
   sections: [{ part: "copy", title: "문구", fields: [t("eyebrow", "작은 머리말", 40, { placeholder: "비우면 숨김" }), t("title", "제목", 80), t("desc", "설명", 200, { multiline: true, placeholder: "비우면 숨김" }), t("cta", "버튼", 24, { placeholder: "비우면 숨김" })] },
-    { part: "layout", title: "배치", fields: [seg("layout", "모양", [["full", "화면 가득"], ["contained", "가운데 박스"], ["split", "글 + 영상"]]), img("poster", "포스터 이미지"), seg("play", "재생 버튼", [["circle", "원형"], ["pill", "알약"], ["none", "없음 · 자동재생"]]),
+    { part: "layout", title: "배치", fields: [seg("layout", "모양", [["full", "화면 가득"], ["contained", "가운데 박스"], ["split", "글 + 영상"]]), img("poster", "포스터 이미지"), seg("play", "재생 버튼", [["circle", "원형"], ["pill", "알약"], ["none", "없음 · 자동재생"]]), t("playText", "알약 버튼 문구", 20), t("autoText", "자동재생 표시", 20, { placeholder: "비우면 숨김" }),
       seg("align", "글 정렬", aligns), rng("height", "영상 높이", 240, 900, 10), rng("radius", "모서리", 0, 40), chk("scrim", "글 아래 어둡게")] },
     style()],
-  defaults: () => ({ eyebrow: "BRAND FILM", title: "우리가 일하는 방식", desc: "1분 영상으로 소개합니다.", cta: "", layout: "contained", poster: "", play: "circle", align: "center", height: 560, radius: 24, scrim: true, surface: "surface", accent: "primary" }),
+  defaults: () => ({ eyebrow: "BRAND FILM", title: "우리가 일하는 방식", desc: "1분 영상으로 소개합니다.", cta: "", layout: "contained", poster: "", play: "circle", playText: "영상 보기", autoText: "● 자동재생", align: "center", height: 560, radius: 24, scrim: true, surface: "surface", accent: "primary" }),
   presets: [P("contained", "가운데 박스", "제목 아래 둥근 영상", { layout: "contained", play: "circle", align: "center" }), P("full", "화면 가득 배경", "영상 위 큰 글 · 자동재생", { layout: "full", play: "none", height: 720, radius: 0, scrim: true, surface: "inverse" }),
     P("split", "글 + 영상", "왼쪽 글 · 오른쪽 영상", { layout: "split", play: "pill", align: "start", height: 420 }), P("dark", "다크 시네마", "다크 배경 · 와이드", { layout: "contained", surface: "inverse", height: 640, radius: 8 })],
 };
@@ -87,9 +84,9 @@ const video: BlockSpec = { kind: "video", name: "영상 섹션", group: "본문 
 const popup: BlockSpec = { kind: "popup", name: "레이어 팝업", group: "위에 뜨는 것", note: "공지 · 오늘 하루 보지 않기", place: "overlay",
   sections: [{ part: "copy", title: "내용", fields: [t("title", "제목", 60), t("body", "내용", 300, { multiline: true }), img("image", "이미지"), t("cta", "버튼", 24, { placeholder: "비우면 숨김" })] },
     { part: "layout", title: "모양", fields: [seg("kind", "위치", [["center", "가운데"], ["corner", "오른쪽 아래"], ["full", "전체 화면"]]), seg("size", "크기", [["small", "작게"], ["medium", "보통"], ["large", "크게"]]),
-      rng("pages", "공지 장 수", 1, 5, 1, "장"), seg("dismiss", "닫기", [["both", "오늘 하루 + 닫기"], ["close", "닫기만"]]), chk("dim", "뒤 배경 어둡게"), seg("mobile", "모바일", [["sheet", "아래에서 시트"], ["center", "가운데 그대로"]])] },
+      rng("pages", "공지 장 수", 1, 5, 1, "장"), seg("dismiss", "닫기", [["both", "오늘 하루 + 닫기"], ["close", "닫기만"]]), t("todayText", "오늘 하루 문구", 30), t("closeText", "닫기 문구", 12), chk("dim", "뒤 배경 어둡게"), seg("mobile", "모바일", [["sheet", "아래에서 시트"], ["center", "가운데 그대로"]])] },
     style(rng("radius", "모서리", 0, 32))],
-  defaults: () => ({ title: "공지사항", body: "11월 2일부터 본점 주소가 변경됩니다.\n자세한 내용을 확인해 주세요.", image: "", cta: "자세히 보기", kind: "center", size: "medium", pages: 1, dismiss: "both", dim: true, mobile: "sheet", surface: "surface", accent: "primary", radius: 16 }),
+  defaults: () => ({ title: "공지사항", body: "11월 2일부터 본점 주소가 변경됩니다.\n자세한 내용을 확인해 주세요.", image: "", cta: "자세히 보기", kind: "center", size: "medium", pages: 1, dismiss: "both", todayText: "오늘 하루 보지 않기", closeText: "닫기", dim: true, mobile: "sheet", surface: "surface", accent: "primary", radius: 16 }),
   presets: [P("notice", "공지 팝업", "가운데 · 오늘 하루 보지 않기", { kind: "center", size: "medium", pages: 1, dismiss: "both", dim: true }), P("slider", "여러 장 공지", "넘겨 보는 공지 3장", { kind: "center", size: "medium", pages: 3 }),
     P("corner", "구석 카드", "오른쪽 아래 작은 카드", { kind: "corner", size: "small", dim: false }), P("full", "전체 화면", "첫 진입 큰 공지", { kind: "full", size: "large", dim: true, surface: "inverse" })],
 };
@@ -99,13 +96,13 @@ const form: BlockSpec = { kind: "form", name: "문의 폼", group: "본문 섹�
   sections: [head("폼 제목"),
     { part: "fields", title: "입력 칸", fields: [list("fields", "입력 칸", formFields, i => ({ label: `항목 ${i + 1}`, type: "text", placeholder: "", options: "", required: false }), { max: 12, add: "입력 칸 추가", title: "label" })] },
     { part: "layout", title: "배치", fields: [seg("layout", "모양", [["stacked", "한 줄씩"], ["two", "두 칸씩"], ["split", "왼쪽 글 · 오른쪽 폼"]]), seg("fieldStyle", "입력 칸", [["outline", "테두리"], ["filled", "채움"], ["underline", "밑줄"]]),
-      seg("consent", "개인정보 동의", [["expandable", "동의 + 내용 보기"], ["single", "동의만"], ["none", "없음"]]), t("submit", "제출 버튼", 24), seg("submitWidth", "버튼 폭", [["full", "꽉 채움"], ["auto", "글자만큼"]]), chk("card", "폼을 카드로 감싸기")] },
+      seg("consent", "개인정보 동의", [["expandable", "동의 + 내용 보기"], ["single", "동의만"], ["none", "없음"]]), t("consentText", "동의 문구", 80), t("consentLink", "내용 보기 문구", 20), t("submit", "제출 버튼", 24), seg("submitWidth", "버튼 폭", [["full", "꽉 채움"], ["auto", "글자만큼"]]), chk("card", "폼을 카드로 감싸기")] },
     style(rng("radius", "입력 칸 모서리", 0, 24))],
   defaults: () => ({ ...headDefaults("CONTACT", "프로젝트를 이야기해 주세요", "남겨 주시면 1영업일 안에 연락드릴게요."), fields: [
     { label: "관심 분야", type: "chips", placeholder: "", options: "브랜딩, 디자인, 개발, 기타", required: true }, { label: "이름", type: "text", placeholder: "홍길동", options: "", required: true },
     { label: "이메일", type: "email", placeholder: "hello@company.com", options: "", required: true }, { label: "연락처", type: "tel", placeholder: "010-0000-0000", options: "", required: false },
     { label: "예산", type: "select", placeholder: "선택해 주세요", options: "1천만 원 미만, 1천만–3천만 원, 3천만 원 이상", required: false }, { label: "문의 내용", type: "textarea", placeholder: "어떤 도움이 필요하신가요?", options: "", required: true }],
-    layout: "split", fieldStyle: "outline", consent: "expandable", submit: "문의 보내기", submitWidth: "full", card: false, radius: 10 }),
+    layout: "split", fieldStyle: "outline", consent: "expandable", consentText: "[필수] 개인정보 수집 및 이용에 동의합니다", consentLink: "내용 보기", submit: "문의 보내기", submitWidth: "full", card: false, radius: 10 }),
   presets: [P("split", "왼쪽 글 · 오른쪽 폼", "에이전시형 장문 문의", { layout: "split", fieldStyle: "outline", card: false }), P("card", "가운데 카드", "짧은 상담 신청 카드", { layout: "stacked", card: true, surface: "subtle", fieldStyle: "filled" }),
     P("two", "두 칸 폼", "입력 칸 두 개씩 나란히", { layout: "two", fieldStyle: "outline" }), P("underline", "밑줄 미니멀", "밑줄 입력 · 글자만큼 버튼", { layout: "stacked", fieldStyle: "underline", submitWidth: "auto" }),
     P("dark", "다크 상담", "다크 배경 · 채움 입력", { layout: "split", surface: "inverse", fieldStyle: "filled" })],
@@ -136,9 +133,9 @@ const steps: BlockSpec = { kind: "steps", name: "진행 단계 · 연혁", group
 
 const intro: BlockSpec = { kind: "intro", name: "인트로 · 로딩", group: "위에 뜨는 것", note: "첫 진입 로고 · 진행률", place: "overlay",
   sections: [{ part: "copy", title: "내용", fields: [t("logo", "로고 이름", 40), img("image", "로고 이미지", 600), t("tagline", "한 줄 문구", 60, { placeholder: "비우면 숨김" })] },
-    { part: "layout", title: "모양", fields: [seg("style", "모양", [["logo", "로고만"], ["progress", "진행률"], ["count", "숫자 0→100"], ["curtain", "커튼"]])] },
+    { part: "layout", title: "모양", fields: [seg("style", "모양", [["logo", "로고만"], ["progress", "진행률"], ["count", "숫자 0→100"], ["curtain", "커튼"]]), rng("count", "표시 진행률", 0, 100, 1, "%")] },
     style()],
-  defaults: () => ({ logo: "Brand", image: "", tagline: "A universe of makers", style: "progress", surface: "inverse", accent: "primary" }),
+  defaults: () => ({ logo: "Brand", image: "", tagline: "A universe of makers", style: "progress", count: 72, surface: "inverse", accent: "primary" }),
   presets: [P("logo", "로고 페이드", "가운데 로고가 서서히", { style: "logo", surface: "inverse" }), P("progress", "진행 바", "로고 아래 진행률 바", { style: "progress", surface: "surface" }),
     P("count", "큰 숫자", "0%→100% 카운트", { style: "count", surface: "primary" }), P("curtain", "커튼", "위로 걷히는 색 커튼", { style: "curtain", surface: "primary" })],
 };
@@ -161,28 +158,28 @@ const progress: BlockSpec = { kind: "progress", name: "스크롤 진행 표시",
 const board: BlockSpec = { kind: "board", name: "게시판 목록", group: "정보 · 서브 페이지", note: "검색 · 분류 · 페이지 번호", place: "flow",
   sections: [head("게시판 제목"),
     { part: "items", title: "글 목록", fields: [list("items", "글", [t("title", "제목", 100), t("tag", "분류", 20), t("date", "날짜", 20), img("image", "썸네일", 800)], i => ({ title: `${["새 서비스 오픈 안내", "추석 연휴 고객센터 운영", "개인정보처리방침 개정", "신제품 출시 이벤트", "홈페이지 리뉴얼"][i % 5]}`, tag: i % 2 ? "이벤트" : "공지", date: `2026.10.${String(28 - i * 3).padStart(2, "0")}`, image: "" }), { max: 12, add: "글 추가", title: "title" })] },
-    { part: "layout", title: "모양", fields: [seg("style", "모양", [["table", "표"], ["list", "목록"], ["gallery", "썸네일"]]), t("categories", "분류 탭 (쉼표)", 120, { placeholder: "비우면 숨김" }), chk("search", "검색창"), chk("pagination", "페이지 번호"), chk("number", "번호 열"), chk("views", "조회수 열")] },
+    { part: "layout", title: "모양", fields: [seg("style", "모양", [["table", "표"], ["list", "목록"], ["gallery", "썸네일"]]), t("categories", "분류 탭 (쉼표)", 120, { placeholder: "비우면 숨김" }), chk("search", "검색창"), t("searchText", "검색창 안내", 40), chk("pagination", "페이지 번호"), chk("number", "번호 열"), chk("views", "조회수 열"), t("labels", "표 머리글 (쉼표)", 60)] },
     style()],
   defaults: () => ({ ...headDefaults("NOTICE", "공지사항", ""), items: Array.from({ length: 6 }, (_, i) => ({ title: ["새 서비스 오픈 안내", "추석 연휴 고객센터 운영", "개인정보처리방침 개정", "신제품 출시 이벤트", "홈페이지 리뉴얼", "채용 공고"][i], tag: i % 2 ? "이벤트" : "공지", date: `2026.10.${String(28 - i * 3).padStart(2, "0")}`, image: "" })),
-    style: "table", categories: "전체, 공지, 이벤트, 보도자료", search: true, pagination: true, number: true, views: true }),
+    style: "table", categories: "전체, 공지, 이벤트, 보도자료", search: true, searchText: "검색어를 입력하세요", pagination: true, number: true, views: true, labels: "번호, 제목, 날짜, 조회" }),
   presets: [P("table", "표 게시판", "번호 · 제목 · 날짜 · 조회", { style: "table", number: true, views: true }), P("list", "목록형", "분류 칩 · 큰 제목 줄", { style: "list", number: false, views: false }),
     P("gallery", "썸네일 게시판", "사진 카드 3열", { style: "gallery", number: false, views: false })],
 };
 
 const post: BlockSpec = { kind: "post", name: "게시글 상세", group: "정보 · 서브 페이지", note: "제목 · 본문 · 첨부 · 이전/다음", place: "flow",
   sections: [{ part: "copy", title: "글", fields: [t("tag", "분류", 20), t("title", "제목", 120), t("date", "날짜", 20), t("author", "작성자", 30, { placeholder: "비우면 숨김" }), t("body", "본문", 2000, { multiline: true }), img("image", "본문 이미지")] },
-    { part: "files", title: "첨부와 이동", fields: [list("files", "첨부 파일", [t("name", "파일 이름", 60)], i => ({ name: `첨부파일_${i + 1}.pdf` }), { max: 6, min: 0, add: "파일 추가" }), chk("nav", "이전 · 다음 글"), t("back", "목록 버튼", 20)] },
+    { part: "files", title: "첨부와 이동", fields: [list("files", "첨부 파일", [t("name", "파일 이름", 60)], i => ({ name: `첨부파일_${i + 1}.pdf` }), { max: 6, min: 0, add: "파일 추가" }), chk("nav", "이전 · 다음 글"), t("prevLabel", "이전 글 표시", 12), t("prevTitle", "이전 글 제목", 80), t("nextLabel", "다음 글 표시", 12), t("nextTitle", "다음 글 제목", 80), t("views", "조회 표시", 20, { placeholder: "비우면 숨김" }), t("back", "목록 버튼", 20)] },
     style(rng("width", "본문 최대 폭", 560, 1200, 20))],
-  defaults: () => ({ tag: "공지", title: "홈페이지가 새롭게 바뀌었습니다", date: "2026.10.30", author: "관리자", body: "안녕하세요. 더 편하게 둘러보실 수 있도록 홈페이지를 새로 단장했습니다.\n\n바뀐 점과 이용 방법을 아래에서 확인해 주세요.", image: "", files: [{ name: "리뉴얼_안내.pdf" }], nav: true, back: "목록", surface: "surface", accent: "primary", width: 880 }),
+  defaults: () => ({ tag: "공지", title: "홈페이지가 새롭게 바뀌었습니다", date: "2026.10.30", author: "관리자", body: "안녕하세요. 더 편하게 둘러보실 수 있도록 홈페이지를 새로 단장했습니다.\n\n바뀐 점과 이용 방법을 아래에서 확인해 주세요.", image: "", files: [{ name: "리뉴얼_안내.pdf" }], nav: true, prevLabel: "이전 글", prevTitle: "추석 연휴 고객센터 운영 안내", nextLabel: "다음 글", nextTitle: "신제품 출시 이벤트", views: "조회 128", back: "목록", surface: "surface", accent: "primary", width: 880 }),
   presets: [P("notice", "공지 글", "제목 줄 · 본문 · 첨부", { width: 880 }), P("wide", "매거진", "넓은 본문 · 큰 이미지", { width: 1200 })],
 };
 
 const location: BlockSpec = { kind: "location", name: "오시는 길", group: "정보 · 서브 페이지", note: "지도 · 주소 · 교통 안내", place: "flow",
   sections: [head("섹션 제목"),
     { part: "info", title: "주소와 안내", fields: [t("address", "주소", 120), t("phone", "전화", 40), t("hours", "운영 시간", 60), t("transit", "교통 안내", 300, { multiline: true }), list("branches", "지점 탭", [t("name", "지점 이름", 20)], i => ({ name: ["본사", "강남점", "부산점"][i % 3] }), { max: 6, min: 0, add: "지점 추가" })] },
-    { part: "layout", title: "모양", fields: [seg("layout", "배치", [["left", "지도 왼쪽"], ["top", "지도 위"], ["right", "지도 오른쪽"]]), seg("map", "지도 색", [["light", "밝게"], ["dark", "어둡게"], ["brand", "브랜드"]]), rng("mapHeight", "지도 높이", 240, 640, 10)] },
+    { part: "layout", title: "모양", fields: [seg("layout", "배치", [["left", "지도 왼쪽"], ["top", "지도 위"], ["right", "지도 오른쪽"]]), seg("map", "지도 색", [["light", "밝게"], ["dark", "어둡게"], ["brand", "브랜드"]]), rng("mapHeight", "지도 높이", 240, 640, 10), t("mapNote", "지도 안내 문구", 80, { placeholder: "비우면 숨김" }), t("labels", "항목 이름 (쉼표)", 60)] },
     style(rng("radius", "모서리", 0, 32))],
-  defaults: () => ({ ...headDefaults("LOCATION", "오시는 길", ""), address: "서울특별시 중구 세종대로 00, 10층", phone: "02-000-0000", hours: "평일 10:00 – 19:00", transit: "지하철 1·2호선 시청역 3번 출구 도보 3분\n버스 101, 402 시청앞 하차", branches: [], layout: "left", map: "light", mapHeight: 420, radius: 20 }),
+  defaults: () => ({ ...headDefaults("LOCATION", "오시는 길", ""), address: "서울특별시 중구 세종대로 00, 10층", phone: "02-000-0000", hours: "평일 10:00 – 19:00", transit: "지하철 1·2호선 시청역 3번 출구 도보 3분\n버스 101, 402 시청앞 하차", branches: [], layout: "left", map: "light", mapHeight: 420, mapNote: "지도 자리 · 실제 사이트에서 지도 API로 바꿔요", labels: "주소, 전화, 운영 시간, 교통 안내", radius: 20 }),
   presets: [P("left", "지도 왼쪽", "지도 + 오른쪽 안내", { layout: "left" }), P("top", "지도 위", "넓은 지도 · 아래 안내 3칸", { layout: "top", mapHeight: 380 }),
     P("branches", "지점 탭", "지점 탭으로 바꿔 보기", { layout: "left", branches: ["본사", "강남점", "부산점"].map(name => ({ name })) }), P("dark", "다크 지도", "어두운 지도 · 다크 배경", { map: "dark", surface: "inverse" })],
 };
@@ -221,10 +218,10 @@ const table: BlockSpec = { kind: "table", name: "표", group: "정보 · 서브 
 };
 
 const appbar: BlockSpec = { kind: "appbar", name: "상단 앱 바", group: "앱 패턴", note: "뒤로가기 · 제목 · 아이콘", place: "flow",
-  sections: [{ part: "copy", title: "내용", fields: [t("title", "제목", 40), seg("left", "왼쪽", [["back", "뒤로"], ["menu", "메뉴"], ["logo", "로고"], ["none", "없음"]]), seg("actions", "오른쪽", [["search", "검색"], ["bell", "알림"], ["both", "둘 다"], ["none", "없음"]])] },
+  sections: [{ part: "copy", title: "내용", fields: [t("title", "제목", 40), seg("left", "왼쪽", [["back", "뒤로"], ["menu", "메뉴"], ["logo", "로고"], ["none", "없음"]]), t("logo", "로고 글자", 20), seg("actions", "오른쪽", [["search", "검색"], ["bell", "알림"], ["both", "둘 다"], ["none", "없음"]])] },
     { part: "layout", title: "모양", fields: [seg("variant", "모양", [["plain", "기본"], ["center", "제목 가운데"], ["large", "큰 제목"]]), chk("divider", "아래 구분선")] },
     style()],
-  defaults: () => ({ title: "알림", left: "back", actions: "both", variant: "center", divider: true, surface: "surface", accent: "primary" }),
+  defaults: () => ({ title: "알림", logo: "Brand", left: "back", actions: "both", variant: "center", divider: true, surface: "surface", accent: "primary" }),
   presets: [P("center", "가운데 제목", "뒤로 · 제목 · 아이콘", { variant: "center", left: "back" }), P("large", "큰 제목", "iOS 스타일 큰 제목", { variant: "large", left: "none", divider: false }), P("brand", "브랜드 바", "로고 · Primary 배경", { variant: "plain", left: "logo", surface: "primary", divider: false })],
 };
 
@@ -237,10 +234,10 @@ const sheet: BlockSpec = { kind: "sheet", name: "바텀시트", group: "앱 패�
 };
 
 const search: BlockSpec = { kind: "search", name: "검색바 + 칩 필터", group: "앱 패턴", note: "검색창 · 가로 칩", place: "flow",
-  sections: [{ part: "copy", title: "내용", fields: [t("placeholder", "검색 안내", 60), list("chips", "칩", [t("label", "이름", 20)], i => ({ label: ["전체", "인기", "신상품", "할인", "브랜드", "카테고리"][i % 6] }), { max: 12, min: 0, add: "칩 추가" }), t("recent", "최근 검색 (쉼표)", 120, { placeholder: "비우면 숨김" })] },
+  sections: [{ part: "copy", title: "내용", fields: [t("placeholder", "검색 안내", 60), list("chips", "칩", [t("label", "이름", 20)], i => ({ label: ["전체", "인기", "신상품", "할인", "브랜드", "카테고리"][i % 6] }), { max: 12, min: 0, add: "칩 추가" }), t("recentLabel", "최근 검색 이름", 20), t("recent", "최근 검색 (쉼표)", 120, { placeholder: "비우면 숨김" })] },
     { part: "layout", title: "모양", fields: [seg("variant", "검색창", [["pill", "알약"], ["box", "사각"], ["underline", "밑줄"]]), chk("filter", "필터 버튼"), seg("chipStyle", "칩", [["solid", "채움"], ["outline", "테두리"]])] },
     style()],
-  defaults: () => ({ placeholder: "무엇을 찾으세요?", chips: ["전체", "인기", "신상품", "할인", "브랜드"].map(label => ({ label })), recent: "", variant: "pill", filter: true, chipStyle: "solid", surface: "surface", accent: "primary" }),
+  defaults: () => ({ placeholder: "무엇을 찾으세요?", chips: ["전체", "인기", "신상품", "할인", "브랜드"].map(label => ({ label })), recentLabel: "최근 검색", recent: "", variant: "pill", filter: true, chipStyle: "solid", surface: "surface", accent: "primary" }),
   presets: [P("pill", "알약 검색", "둥근 검색창 · 채운 칩", { variant: "pill", chipStyle: "solid" }), P("box", "사각 검색", "사각 검색창 · 테두리 칩", { variant: "box", chipStyle: "outline" }), P("recent", "최근 검색", "최근 검색어 줄 포함", { recent: "원피스, 운동화, 가방" })],
 };
 
@@ -268,8 +265,10 @@ const appbanner: BlockSpec = { kind: "appbanner", name: "앱 다운로드 배너
   presets: [P("strip", "위 띠", "페이지 맨 위 얇은 띠", { variant: "strip", surface: "subtle" }), P("card", "카드", "본문 사이 둥근 카드", { variant: "card", surface: "inverse" })],
 };
 
-export const BLOCK_KINDS = ["split", "tabs", "marquee", "video", "form", "faq", "steps", "subhero", "board", "post", "location", "about", "product", "table", "popup", "intro", "consent", "progress", "appbar", "search", "sheet", "toast", "empty", "appbanner"] as const;
+export const BLOCK_KINDS = [...MORE_KINDS, "split", "tabs", "marquee", "video", "form", "faq", "steps", "subhero", "board", "post", "location", "about", "product", "table", "popup", "intro", "consent", "progress", "appbar", "search", "sheet", "toast", "empty", "appbanner"] as const;
 export type BlockKindName = (typeof BLOCK_KINDS)[number];
-export const blockSpecs: BlockSpec[] = [split, tabs, marquee, video, form, faq, steps, subhero, board, post, location, about, product, table, popup, intro, consent, progress, appbar, search, sheet, toast, empty, appbanner];
+export const blockSpecs: BlockSpec[] = [split, tabs, marquee, video, form, faq, steps, subhero, board, post, location, about, product, table, popup, intro, consent, progress, appbar, search, sheet, toast, empty, appbanner, ...moreBlockSpecs]
+  .map(spec => ({ ...spec, defaults: () => ({ ...styleDefaults, ...spec.defaults() }) }));
+Object.assign(blockPadding, moreBlockPadding);
 export const isOverlayBlock = (kind: string) => specOf(kind)?.place === "overlay";
 export const specOf = (kind: string): BlockSpec | undefined => blockSpecs.find(s => s.kind === kind);

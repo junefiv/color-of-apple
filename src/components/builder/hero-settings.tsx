@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef } from "react";
+import { heroTexts } from "@/lib/component-texts";
+import { TextOverrides } from "./text-overrides";
 import { type HeroButtonColor, type HeroConfig, type HeroHeight, type HeroSurface } from "@/lib/hero-config";
 import type { HeaderAccent } from "@/lib/header-config";
 import { accents, surfaces } from "./header-settings";
@@ -57,7 +59,8 @@ export function HeroSettings({ config, onChange, focus }: { config: HeroConfig; 
       <div className="lb-two-fields"><label className="lb-field">장 수<select value={config.slides} onChange={e => set({ slides: Number(e.target.value) })}>{[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n === 1 ? "1 · 단일" : n}</option>)}</select></label>
         <label className="lb-field">표시<select data-field="nav" value={config.nav} disabled={config.slides < 2} onChange={e => set({ nav: e.target.value as HeroConfig["nav"] })}><option value="none">없음</option><option value="dots">점</option><option value="fraction">숫자 01 / 04</option><option value="progress">진행 바</option><option value="thumbs">썸네일</option></select></label></div>
       <div className="lb-hd-checks"><label className="lb-check"><input data-field="card" type="checkbox" checked={config.card} onChange={e => set({ card: e.target.checked })} />공지 카드 얹기</label>
-        <label className="lb-check"><input data-field="ticker" type="checkbox" checked={config.ticker} onChange={e => set({ ticker: e.target.checked })} />아래 티커 띠</label></div></section>
+        <label className="lb-check"><input data-field="ticker" type="checkbox" checked={config.ticker} onChange={e => set({ ticker: e.target.checked })} />아래 티커 띠</label></div>
+      {(config.card || config.ticker) && <TextOverrides defs={heroTexts} texts={config.texts} onChange={texts => set({ texts })} only={[...(config.card ? ["cardTitle", "cardText", "cardDate"] : []), ...(config.ticker ? ["ticker"] : [])]} />}</section>
 
     <section data-part="color"><strong>색상</strong><p>{onMedia ? "비주얼 위에서는 글자가 밝게 반전돼 어떤 팔레트에서도 읽혀요. 강조 컬러는 썸네일 표시와 자동 버튼에 쓰입니다." : "팔레트 토큰을 그대로 씁니다. 진한 배경에서는 자동 버튼이 배경과 반전돼 대비를 지켜요."}</p>
       {!onMedia && <div className="lb-hd-swatches" role="radiogroup" aria-label="히어로 배경">{surfaces.filter(s => s.value !== "transparent").map(s => <button key={s.value} type="button" role="radio" aria-checked={config.surface === s.value} onClick={() => set({ surface: s.value as HeroSurface })}><i style={{ background: s.swatch }} />{s.label}</button>)}</div>}
