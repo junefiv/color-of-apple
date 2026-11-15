@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { Palette } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/auth-provider";
@@ -508,6 +508,17 @@ export function Workbench({
     );
   }
 
+  // A mouse click on a chip or a menu item closes the mode menu; it opens again once the pointer
+  // leaves and comes back. Keyboard clicks (detail 0) keep it open so the items stay reachable.
+  const modeMenuDismiss = {
+    onClickCapture: (event: ReactMouseEvent<HTMLDivElement>) => {
+      if (event.detail > 0) event.currentTarget.dataset.menuClosed = "true";
+    },
+    onPointerLeave: (event: ReactPointerEvent<HTMLDivElement>) => {
+      delete event.currentTarget.dataset.menuClosed;
+    },
+  };
+
   function previewViewSwitch(withModes = false) {
     const canBuild = withModes && mode === "edit" && !showingCommunity;
     return (
@@ -524,7 +535,7 @@ export function Workbench({
     >
       {showingCommunity ? <span className="community-readonly">{copy.community.readonly}</span> : null}
       {!mobilePreviewOnly || building ? (
-        <div className="studio-nav-item">
+        <div className="studio-nav-item" {...modeMenuDismiss}>
           <ChromeChip
             active={view === "web"}
             matched={hasMatched}
@@ -534,7 +545,7 @@ export function Workbench({
           {canBuild ? platformModeMenu("web") : null}
         </div>
       ) : null}
-      <div className="studio-nav-item">
+      <div className="studio-nav-item" {...modeMenuDismiss}>
         <ChromeChip
           active={view === "app"}
           matched={hasMatched}

@@ -140,8 +140,8 @@
   content: "";
 }
 
-.studio-nav-item:hover .studio-nav-menu,
-.studio-nav-item:focus-within .studio-nav-menu {
+.studio-nav-item:not([data-menu-closed]):hover .studio-nav-menu,
+.studio-nav-item:has(:focus-visible) .studio-nav-menu {
   opacity: 1;
   visibility: visible;
   transform: translate(-50%, 0);
