@@ -154,10 +154,11 @@ function LayoutEditor({ platform }: { platform: "web" | "app" }) {
   const style = node ? resolveLayout(node, device === "mobile") : null;
   const storageKey = `coa-layout-v1-${platform}`;
   useEffect(() => {
-    // Each platform keeps its own page; one never saved (or unreadable) starts from the header-only page.
+    // Each platform keeps its own page; one never saved, unreadable or empty starts from the header-only page.
     let saved: LayoutDocument | null = null;
     try { const raw = localStorage.getItem(storageKey); const parsed: unknown = raw ? JSON.parse(raw) : null; if (validLayoutDocument(parsed)) saved = migrateLayoutDocument(parsed); } catch { /* Keep the editor usable without storage. */ }
-    setDoc(saved ?? starterDocument());
+    // An empty saved page (left from before pages started with a header) starts fresh too.
+    setDoc(saved?.nodes.length ? saved : starterDocument());
     setReady(true);
   }, [storageKey]);
   useEffect(() => {
