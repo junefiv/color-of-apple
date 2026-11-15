@@ -4,6 +4,7 @@ import { generateExport, type ExportPayload } from "../src/lib/codegen/generate"
 import { cleanMarkup, splitSections, toJsx } from "../src/lib/codegen/markup";
 import { parseExportPayload } from "../src/lib/codegen/payload";
 import { crc32, createZip } from "../src/lib/codegen/zip";
+import { appendToZip, dataUrlBytes } from "../src/lib/zip-append";
 import { newLayoutNode } from "../src/lib/page-layout";
 
 // Reads entry names and contents back out of a ZIP built by createZip.
@@ -12,9 +13,10 @@ function unzip(zip: Uint8Array) {
   const files = new Map<string, string>();
   let at = 0;
   while (view.getUint32(at, true) === 0x04034b50) {
-    const size = view.getUint32(at + 18, true), nameLength = view.getUint16(at + 26, true);
+    const method = view.getUint16(at + 8, true), size = view.getUint32(at + 18, true), nameLength = view.getUint16(at + 26, true);
     const name = new TextDecoder().decode(zip.subarray(at + 30, at + 30 + nameLength));
-    const data = inflateRawSync(zip.subarray(at + 30 + nameLength, at + 30 + nameLength + size));
+    const packed = zip.subarray(at + 30 + nameLength, at + 30 + nameLength + size);
+    const data = method === 0 ? packed : inflateRawSync(packed);
     files.set(name, new TextDecoder().decode(data));
     at += 30 + nameLength + size;
   }
@@ -26,7 +28,7 @@ function payload(format: ExportPayload["format"]): ExportPayload {
   const hero = newLayoutNode("hero");
   return {
     format, platform: "web", title: "웹 페이지", font: "system-ui", css: ".lb-layout-node{display:flex}.layout-builder *{box-sizing:border-box}",
-    tokens: { "--color-primary-default": "#2f5bea", "--color-primary-500": "#2f5bea" }, images: [pixel],
+    tokens: { "--color-primary-default": "#2f5bea", "--color-primary-500": "#2f5bea" }, images: ["image/png"],
     desktop: `<div class="lb-viewport" data-device="desktop"><div class="lb-layout-node lb-kind-hero" data-id="${hero.id}" data-coa-section="Hero" data-edit="x"><img src="coa-image:0" alt=""><h1 style="font-size: 40px; --hr-gap: 8px">브랜드 {첫} 화면</h1></div></div>`,
     mobile: `<div class="lb-viewport" data-device="mobile"><div class="lb-layout-node lb-kind-hero" data-coa-section="Hero"><h1>모바일</h1></div></div>`,
     doc: { version: 1, menu: "overlay", nodes: [hero] },
@@ -34,6 +36,17 @@ function payload(format: ExportPayload["format"]): ExportPayload {
 }
 
 describe("code export", () => {
+  it("appends stored files to a finished ZIP and keeps a valid central directory", () => {
+    const zip = appendToZip(createZip([{ path: "a.txt", data: "a" }]), [{ path: "b.bin", data: new Uint8Array([9, 8, 7]) }]);
+    expect([...unzip(zip).keys()]).toEqual(["a.txt", "b.bin"]);
+    const view = new DataView(zip.buffer, zip.byteOffset, zip.byteLength);
+    const end = zip.length - 22;
+    expect(view.getUint32(end, true)).toBe(0x06054b50);
+    expect(view.getUint16(end + 10, true)).toBe(2);
+    const central = view.getUint32(end + 16, true);
+    expect(view.getUint32(central, true)).toBe(0x02014b50);
+    expect(central + view.getUint32(end + 12, true)).toBe(end);
+  });
   it("writes a ZIP whose entries inflate back to their contents", () => {
     const files = unzip(createZip([{ path: "a/b.txt", data: "안녕" }, { path: "c.bin", data: new Uint8Array([1, 2, 3]) }]));
     expect(files.get("a/b.txt")).toBe("안녕");
@@ -54,10 +67,15 @@ describe("code export", () => {
     expect(page).toBe("<main>{{section:Hero}}<p>end</p></main>");
     expect(sections[0].html).toBe('<section data-coa-section="Hero"><div><br></div></section>');
   });
-  it("builds a runnable React project with one component per section and image files", () => {
-    const files = unzip(generateExport(payload("react")).body as Uint8Array);
+  it("builds a runnable React project with one component per section, leaving image files to the browser", () => {
+    const out = generateExport(payload("react"));
     const root = "color-of-apple-web/";
+    expect(out.images).toEqual([`${root}public/images/image-1.png`]);
+    expect(unzip(out.body as Uint8Array).has(`${root}public/images/image-1.png`)).toBe(false);
+    // The browser adds the image it holds at the path the server named.
+    const files = unzip(appendToZip(out.body as Uint8Array, [{ path: out.images[0], data: dataUrlBytes(pixel) }]));
     expect([...files.keys()]).toEqual(expect.arrayContaining([`${root}package.json`, `${root}src/App.jsx`, `${root}src/sections/Hero.jsx`, `${root}src/styles/tokens.css`, `${root}public/images/image-1.png`]));
+    expect(files.get(`${root}public/images/image-1.png`)).toBe(new TextDecoder().decode(dataUrlBytes(pixel)));
     expect(files.get(`${root}src/App.jsx`)).toContain('<Hero device="pc" />');
     expect(files.get(`${root}src/App.jsx`)).toContain('<Hero device="mobile" />');
     const hero = files.get(`${root}src/sections/Hero.jsx`)!;
@@ -68,7 +86,9 @@ describe("code export", () => {
     expect(files.get(`${root}src/styles/tokens.css`)).toContain("--color-primary-default: #2f5bea;");
   });
   it("builds an HTML folder and an AI brief that names the tokens and layers", () => {
-    const html = unzip(generateExport(payload("html")).body as Uint8Array);
+    const htmlOut = generateExport(payload("html"));
+    expect(htmlOut.images).toEqual(["color-of-apple-web/images/image-1.png"]);
+    const html = unzip(htmlOut.body as Uint8Array);
     expect(html.get("color-of-apple-web/index.html")).toContain('<link rel="stylesheet" href="css/tokens.css">');
     expect(html.get("color-of-apple-web/index.html")).toContain('src="images/image-1.png"');
     const brief = generateExport(payload("markdown")).body as string;
@@ -82,6 +102,9 @@ describe("code export", () => {
     expect(parseExportPayload({ ...ok, format: "vue" })).toBeNull();
     expect(parseExportPayload({ ...ok, tokens: { "--x": "red;}body{display:none" } })).toBeNull();
     expect(parseExportPayload({ ...ok, images: ["javascript:alert(1)"] })).toBeNull();
+    expect(parseExportPayload({ ...ok, images: ["constructor"] })).toBeNull();
+    // Image data never goes to the server, so a data URL in its place is refused too.
+    expect(parseExportPayload({ ...ok, images: [pixel] })).toBeNull();
     expect(parseExportPayload({ ...ok, platform: "app" })).toBeNull();
     expect(parseExportPayload({ ...ok, doc: { version: 2 } })).toBeNull();
   });

@@ -19,6 +19,7 @@ export async function POST(request: Request) {
     const profile = await getFirebaseAdminDb().doc(`users/${uid}`).get();
     if (effectiveProfilePlan(profile.data() ?? {}) !== "pro") return fail("pro_required", 403);
   } catch { return fail("plan_check_failed", 503); }
+  // Images stay in the browser, so a request is markup and CSS only.
   if (Number(request.headers.get("content-length") ?? 0) > 4_400_000) return fail("too_large", 413);
   let body: unknown;
   try { body = await request.json(); } catch { return fail("invalid_request", 400); }
@@ -27,7 +28,9 @@ export async function POST(request: Request) {
   try {
     const file = generateExport(payload);
     const body = typeof file.body === "string" ? file.body : new Blob([file.body as BlobPart]);
-    return new Response(body, { headers: { "Content-Type": file.contentType, "Content-Disposition": `attachment; filename="${file.filename}"`, "Cache-Control": "no-store" } });
+    return new Response(body, { headers: { "Content-Type": file.contentType, "Content-Disposition": `attachment; filename="${file.filename}"`,
+      // Where each image goes in the archive; the browser adds the files it holds.
+      "X-Export-Images": file.images.join(","), "Cache-Control": "no-store" } });
   } catch {
     console.error("Builder export failed");
     return fail("export_failed", 500);

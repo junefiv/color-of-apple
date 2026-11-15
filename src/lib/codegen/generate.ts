@@ -11,19 +11,19 @@ export type ExportFormat = "react" | "html" | "markdown";
 export type ExportPayload = {
   format: ExportFormat; platform: "web" | "app"; title: string;
   tokens: Record<string, string>; font: string; css: string;
+  // Media type of each image, in coa-image:N order.
   desktop?: string; mobile: string; images: string[]; doc: LayoutDocument;
 };
-export type ExportFile = { filename: string; contentType: string; body: Uint8Array | string };
+// `images` holds the archive path for each image, for the browser to fill in.
+export type ExportFile = { filename: string; contentType: string; body: Uint8Array | string; images: string[] };
 
 const IMAGE_REF = /coa-image:(\d+)/g;
-const MIME_EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif", "image/svg+xml": "svg" };
+export const MIME_EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif", "image/svg+xml": "svg" };
 
-function imageFiles(images: string[]) {
-  return images.map((src, i) => {
-    const m = src.match(/^data:([^;]+);base64,(.*)$/);
-    const ext = (m && MIME_EXT[m[1]]) || "png";
-    return { name: `image-${i + 1}.${ext}`, data: m ? new Uint8Array(Buffer.from(m[2], "base64")) : new Uint8Array() };
-  });
+// Images stay in the browser: the request names only their types, the archive leaves them out, and the
+// response lists where each one goes so the browser can add the files it already holds.
+function imageNames(types: string[]) {
+  return types.map((type, i) => `image-${i + 1}.${MIME_EXT[type] ?? "png"}`);
 }
 const withImages = (text: string, names: string[], base: string) => text.replace(IMAGE_REF, (_, i: string) => names[Number(i)] ? `${base}${names[Number(i)]}` : "");
 
@@ -58,8 +58,7 @@ function readme(kind: "react" | "html", title: string, imageCount: number): stri
 }
 
 function htmlBundle(p: ExportPayload, slug: string): ExportFile {
-  const files = imageFiles(p.images);
-  const names = files.map(f => f.name);
+  const names = imageNames(p.images);
   const both = p.desktop !== undefined;
   const body = (html: string) => withImages(cleanMarkup(html), names, "images/");
   const index = `<!doctype html>
@@ -80,15 +79,13 @@ ${both ? `<div class="${SCOPE} coa-desktop">${body(p.desktop!)}</div>\n` : ""}<d
     { path: `${slug}/index.html`, data: index },
     { path: `${slug}/css/tokens.css`, data: tokensCss(p.tokens, p.font) },
     { path: `${slug}/css/page.css`, data: withImages(renameCss(p.css), names, "../images/") + "\n\n" + shellCss(both) },
-    { path: `${slug}/README.md`, data: readme("html", p.title, files.length) },
-    ...files.map(f => ({ path: `${slug}/images/${f.name}`, data: f.data })),
+    { path: `${slug}/README.md`, data: readme("html", p.title, names.length) },
   ];
-  return { filename: `${slug}-html.zip`, contentType: "application/zip", body: createZip(entries) };
+  return { filename: `${slug}-html.zip`, contentType: "application/zip", body: createZip(entries), images: names.map(n => `${slug}/images/${n}`) };
 }
 
 function reactBundle(p: ExportPayload, slug: string): ExportFile {
-  const files = imageFiles(p.images);
-  const names = files.map(f => f.name);
+  const names = imageNames(p.images);
   const both = p.desktop !== undefined;
   const devices = (both ? [["pc", p.desktop!], ["mobile", p.mobile]] : [["mobile", p.mobile]]) as [string, string][];
   // Each device page splits into its section components; a section's markup per device is kept.
@@ -128,20 +125,19 @@ function reactBundle(p: ExportPayload, slug: string): ExportFile {
     ...sectionFiles,
     { path: `${slug}/src/styles/tokens.css`, data: tokensCss(p.tokens, p.font) },
     { path: `${slug}/src/styles/page.css`, data: withImages(renameCss(p.css), names, "/images/") + "\n\n" + shellCss(both) },
-    { path: `${slug}/README.md`, data: readme("react", p.title, files.length) },
+    { path: `${slug}/README.md`, data: readme("react", p.title, names.length) },
     { path: `${slug}/.gitignore`, data: "node_modules\ndist\n" },
-    ...files.map(f => ({ path: `${slug}/public/images/${f.name}`, data: f.data })),
   ];
-  return { filename: `${slug}-react.zip`, contentType: "application/zip", body: createZip(entries) };
+  return { filename: `${slug}-react.zip`, contentType: "application/zip", body: createZip(entries), images: names.map(n => `${slug}/public/images/${n}`) };
 }
 
 export function generateExport(p: ExportPayload): ExportFile {
   const slug = `color-of-apple-${p.platform}`;
   if (p.format === "markdown") {
-    const names = imageFiles(p.images).map(f => f.name);
+    const names = imageNames(p.images);
     // The brief names images by file so it lines up with the ZIP exports.
     const doc = JSON.parse(withImages(JSON.stringify(p.doc), names, "images/")) as LayoutDocument;
-    return { filename: `${slug}-brief.md`, contentType: "text/markdown; charset=utf-8", body: layoutMarkdown({ doc, tokens: p.tokens, platform: p.platform, title: p.title, images: names }) };
+    return { filename: `${slug}-brief.md`, contentType: "text/markdown; charset=utf-8", body: layoutMarkdown({ doc, tokens: p.tokens, platform: p.platform, title: p.title, images: names }), images: [] };
   }
   return p.format === "react" ? reactBundle(p, slug) : htmlBundle(p, slug);
 }

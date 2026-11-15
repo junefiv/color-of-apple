@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from "react";
 import Link from "next/link";
 import { captureExport } from "@/lib/html-export";
+import { appendToZip, dataUrlBytes } from "@/lib/zip-append";
 import { useAuth } from "@/components/auth/auth-provider";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, ChevronRight, Bot, Code2, Download, FileCode2, FileJson, Frame, Lock, GripVertical, Image as ImageIcon, LayoutGrid, Layers, Megaphone, MousePointerClick, PanelBottom, Menu, Monitor, Plus, Redo2, RotateCcw, Smartphone, Trash2, Undo2 } from "lucide-react";
 import { HeaderFrame } from "./header-frame";
@@ -285,18 +286,25 @@ function LayoutEditor({ platform }: { platform: "web" | "app" }) {
   }
   async function requestExport(format: ExportKind, captured: NonNullable<ReturnType<typeof captureExport>>) {
     if (!user) { setNotice("로그인한 Pro 계정에서 내보낼 수 있어요"); return; }
-    const body = JSON.stringify({ ...captured, format });
-    if (body.length > 4_300_000) { setNotice("이미지가 커서 보낼 수 없어요 · 이미지 수나 크기를 줄여 주세요"); return; }
+    // Images stay here: the server gets only their types and says where each one goes in the ZIP.
+    const body = JSON.stringify({ ...captured, format, images: captured.images.map(src => src.slice(5, src.indexOf(";"))) });
+    if (body.length > 4_300_000) { setNotice("페이지가 너무 커서 내보낼 수 없어요 · 레이어 수를 줄여 주세요"); return; }
     setNotice("코드를 만드는 중이에요…");
     try {
       const response = await fetch("/api/builder/export", { method: "POST", headers: { Authorization: `Bearer ${await user.getIdToken()}`, "Content-Type": "application/json" }, body });
       if (!response.ok) {
         const code = ((await response.json().catch(() => ({}))) as { error?: string }).error;
-        setNotice(code === "pro_required" ? "코드 내보내기는 Pro 전용이에요" : code === "sign_in_required" ? "로그인이 필요해요 · 이메일 인증을 마친 계정으로 로그인해 주세요" : response.status === 413 ? "이미지가 커서 보낼 수 없어요 · 이미지 수나 크기를 줄여 주세요" : "내보내지 못했어요 · 잠시 후 다시 시도해 주세요");
+        setNotice(code === "pro_required" ? "코드 내보내기는 Pro 전용이에요" : code === "sign_in_required" ? "로그인이 필요해요 · 이메일 인증을 마친 계정으로 로그인해 주세요" : response.status === 413 ? "페이지가 너무 커서 내보낼 수 없어요 · 레이어 수를 줄여 주세요" : "내보내지 못했어요 · 잠시 후 다시 시도해 주세요");
         return;
       }
       const name = response.headers.get("content-disposition")?.match(/filename="([^"]+)"/)?.[1] ?? `color-of-apple-${platform}.${format === "markdown" ? "md" : "zip"}`;
-      const url = URL.createObjectURL(await response.blob());
+      let file: Blob = await response.blob();
+      const paths = response.headers.get("x-export-images")?.split(",").filter(Boolean) ?? [];
+      if (format !== "markdown" && paths.length) {
+        const images = paths.flatMap((path, i) => captured.images[i] ? [{ path, data: dataUrlBytes(captured.images[i]) }] : []);
+        file = new Blob([appendToZip(new Uint8Array(await file.arrayBuffer()), images) as BlobPart], { type: "application/zip" });
+      }
+      const url = URL.createObjectURL(file);
       const a = document.createElement("a"); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
       setNotice(format === "markdown" ? "AI용 브리프를 내려받았어요" : "코드 ZIP을 내려받았어요");
     } catch { setNotice("내보내지 못했어요 · 연결을 확인해 주세요"); }
