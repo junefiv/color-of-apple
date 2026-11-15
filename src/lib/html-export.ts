@@ -2,7 +2,7 @@
 // the page uses and the live palette tokens. The deliverable itself is built on the server.
 
 // Editing chrome drawn inside the artboard that has no place in a published page.
-const CHROME = [".lb-node-label", ".lb-insert-before", ".lb-drop-line", ".lb-drop-placeholder", ".lb-page-add", ".lb-start", ".lb-resize", ".lb-resize-size",
+const CHROME = [".lb-node-label", ".lb-insert-before", ".lb-drop-line", ".lb-drop-placeholder", ".lb-page-add-row", ".lb-page-add", ".lb-start", ".lb-resize", ".lb-resize-size",
   ".lb-pad-box", ".lb-margin-box", ".lb-margin-handle", ".lb-container-guide", ".lb-overlay-chips", ".lb-side-zone"];
 const EDIT_ATTRS = ["contenteditable", "draggable", "data-drop", "data-removing", "data-image-over", "spellcheck"];
 

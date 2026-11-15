@@ -38,6 +38,10 @@ export type LayoutNode = { id: string; name: string; kind: LayoutKind; desktop: 
 // Component frames render their own content and sit at page level; they never take children.
 export const componentKinds = ["header", "hero", "cards", "cta", "footer", "floating"] as const;
 export const isComponentKind = (kind: LayoutKind) => (componentKinds as readonly string[]).includes(kind) || (BLOCK_KINDS as readonly string[]).includes(kind);
+// Layouts ("section") split the page into cells ("frame"); content components go at page level or into a cell.
+export const isContainerKind = (kind: LayoutKind) => kind === "section" || kind === "frame";
+// Layouts, headers, footers and floating layers belong to the page itself and never go into a cell.
+export const isPageOnly = (kind: LayoutKind) => kind === "section" || kind === "header" || kind === "footer" || kind === "floating" || specOf(kind)?.place === "overlay";
 const configs = { header: [defaultHeader, validHeaderConfig], hero: [defaultHero, validHeroConfig], cards: [defaultCards, validCardsConfig], cta: [defaultCta, validCtaConfig], footer: [defaultFooter, validFooterConfig], floating: [defaultFloating, validFloatingConfig] } as const;
 // How the PC page uses its width: edge to edge, a centered container with full-width backgrounds,
 // or a mobile-first column (the phone layout centered on a backdrop, optionally beside a brand panel).
@@ -60,7 +64,7 @@ function validPage(value: unknown): boolean {
     && later("asideQr", x => typeof x === "boolean") && later("asideStores", x => typeof x === "boolean") && later("asideAlign", x => x === "start" || x === "center");
 }
 export const baseLayout: LayoutStyle = { direction: "column", gap: 24, columns: 3, align: "stretch", justify: "start", padding: [32, 32, 32, 32], margin: [0, 0, 0, 0], height: 180, width: 240, sizing: "fill", hidden: false };
-export const kindNames = { section: "섹션", frame: "빈 프레임", header: "헤더", hero: "히어로", cards: "카드 섹션", cta: "CTA", footer: "푸터", floating: "플로팅 버튼",
+export const kindNames = { section: "레이아웃", frame: "칸", header: "헤더", hero: "히어로", cards: "카드 섹션", cta: "CTA", footer: "푸터", floating: "플로팅 버튼",
   ...Object.fromEntries(blockSpecs.map(spec => [spec.kind, spec.name])) } as Record<LayoutKind, string>;
 // Cards, CTAs and footers paint their background across the layer, so the layer's padding is
 // their inner spacing; phones start from a tighter override.
@@ -83,6 +87,9 @@ const legacyShare: Record<string, number> = { cards: .6, cta: .66, footer: .75 }
 const ctaSizes: Record<string, number> = { compact: 56, regular: 96, large: 160 };
 export function migrateLayoutDocument(doc: LayoutDocument): LayoutDocument {
   const fix = (n: LayoutNode): LayoutNode => {
+    // Sections and frames became layouts and cells; layers still wearing the old default names follow.
+    if (n.kind === "section" && n.name === "섹션") n = { ...n, name: kindNames.section };
+    if (n.kind === "frame" && n.name === "빈 프레임") n = { ...n, name: kindNames.frame };
     const children = n.children.map(fix);
     if (n.kind !== "cards" && n.kind !== "cta" && n.kind !== "footer") return { ...n, children };
     const config = { ...(n[n.kind] as unknown as Record<string, unknown>) };
@@ -116,6 +123,33 @@ export function layoutFlow(s: LayoutStyle, viewportHeight: number) {
 export function findLayoutNode(nodes: LayoutNode[], id: string): LayoutNode | undefined {
   for (const node of nodes) { if (node.id === id) return node; const child = findLayoutNode(node.children, id); if (child) return child; }
 }
+// The id of the layer holding `id` (null at page level, undefined when it isn't there).
+export function parentOf(nodes: LayoutNode[], id: string, parent: string | null = null): string | null | undefined {
+  for (const node of nodes) {
+    if (node.id === id) return parent;
+    const found = parentOf(node.children, id, node.id);
+    if (found !== undefined) return found;
+  }
+  return undefined;
+}
+// Layouts offered in the component library: a band that stacks components, or a row/grid of cells.
+export const layoutPresets = [
+  { key: "band", name: "1단", note: "컴포넌트를 위에서 아래로" },
+  { key: "two", name: "2단", note: "칸 두 개를 나란히" },
+  { key: "three", name: "3단", note: "칸 세 개를 나란히" },
+  { key: "grid", name: "그리드 2×2", note: "칸 네 개를 바둑판으로" },
+] as const;
+export type LayoutPresetKey = typeof layoutPresets[number]["key"];
+export const isLayoutPreset = (key: string): key is LayoutPresetKey => layoutPresets.some(p => p.key === key);
+// A cell starts flat; the layout around it carries the padding and the gap.
+export const newCell = (): LayoutNode => { const cell = newLayoutNode("frame"); return { ...cell, desktop: { ...cell.desktop, padding: [0, 0, 0, 0], height: 120 } }; };
+export function applyLayoutPreset(node: LayoutNode, key: LayoutPresetKey): LayoutNode {
+  const preset = layoutPresets.find(p => p.key === key)!;
+  const cells = key === "two" ? 2 : key === "three" ? 3 : key === "grid" ? 4 : 0;
+  const direction = key === "grid" ? "grid" as const : cells ? "row" as const : "column" as const;
+  return { ...node, name: `레이아웃 · ${preset.name}`, desktop: { ...node.desktop, direction, columns: key === "grid" ? 2 : node.desktop.columns, height: cells ? 0 : node.desktop.height },
+    children: Array.from({ length: cells }, newCell) };
+}
 export function updateLayoutNode(nodes: LayoutNode[], id: string, update: (node: LayoutNode) => LayoutNode): LayoutNode[] {
   return nodes.map(node => node.id === id ? update(node) : { ...node, children: updateLayoutNode(node.children, id, update) });
 }
@@ -130,7 +164,7 @@ export function moveLayoutNode(nodes: LayoutNode[], source: string, parent: stri
   const node = findLayoutNode(nodes, source);
   if (!node || source === before || source === parent || (parent && findLayoutNode(node.children, parent))) return nodes;
   const target = parent ? findLayoutNode(nodes, parent) : undefined;
-  if (parent && (!target || isComponentKind(target.kind))) return nodes;
+  if (parent && (!target || !isContainerKind(target.kind) || isPageOnly(node.kind))) return nodes;
   const stripped = removeLayoutNode(nodes, source);
   const siblings = parent ? findLayoutNode(stripped, parent)!.children : stripped;
   const index = before ? siblings.findIndex(n => n.id === before) : siblings.length;

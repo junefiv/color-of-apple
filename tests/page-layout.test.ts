@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { baseLayout, layoutFlow, moveLayoutNode, pageOf, resolveLayout, validLayoutDocument, type LayoutNode } from "../src/lib/page-layout";
+import { applyLayoutPreset, baseLayout, isPageOnly, layoutFlow, migrateLayoutDocument, moveLayoutNode, newLayoutNode, pageOf, parentOf, resolveLayout, validLayoutDocument, type LayoutNode } from "../src/lib/page-layout";
 const node = (id: string, children: LayoutNode[] = []): LayoutNode => ({ id, name: id, kind: "frame", desktop: { ...baseLayout, direction: "row" }, mobile: {}, children });
 describe("page layout", () => {
   it("inherits desktop spacing while stacking mobile children", () => {
@@ -48,5 +48,31 @@ describe("page layout", () => {
   it("accepts layouts saved without the newer flags and rejects malformed ones", () => {
     expect(validLayoutDocument({ version: 1, menu: "overlay", nodes: [node("a")] })).toBe(true);
     expect(validLayoutDocument({ version: 1, menu: "overlay", nodes: [{ ...node("a"), mobile: { swipe: "yes" } }] })).toBe(false);
+  });
+  it("builds layouts as rows or grids of empty cells", () => {
+    const two = applyLayoutPreset(newLayoutNode("section"), "two");
+    expect(two.desktop.direction).toBe("row");
+    expect(two.children.map(c => c.kind)).toEqual(["frame", "frame"]);
+    const grid = applyLayoutPreset(newLayoutNode("section"), "grid");
+    expect([grid.desktop.direction, grid.desktop.columns, grid.children.length]).toEqual(["grid", 2, 4]);
+    expect(applyLayoutPreset(newLayoutNode("section"), "band").children).toEqual([]);
+    expect(validLayoutDocument({ version: 1, menu: "overlay", nodes: [two, grid] })).toBe(true);
+  });
+  it("lets content components into cells but keeps page-level layers out", () => {
+    const layout = applyLayoutPreset(newLayoutNode("section"), "two"), cell = layout.children[0].id;
+    const cards = newLayoutNode("cards"), header = newLayoutNode("header"), inner = newLayoutNode("section");
+    const into = moveLayoutNode([layout, cards], cards.id, cell);
+    expect(parentOf(into, cards.id)).toBe(cell);
+    expect(parentOf(moveLayoutNode([layout, header], header.id, cell), header.id)).toBeNull();
+    expect(parentOf(moveLayoutNode([layout, inner], inner.id, cell), inner.id)).toBeNull();
+    // Nothing goes inside a component.
+    expect(parentOf(moveLayoutNode([cards, header], header.id, cards.id), header.id)).toBeNull();
+    expect([isPageOnly("footer"), isPageOnly("floating"), isPageOnly("hero"), isPageOnly("frame")]).toEqual([true, true, false, false]);
+  });
+  it("renames layers that still carry the old section and frame names", () => {
+    const old = { ...newLayoutNode("section"), name: "섹션", children: [{ ...newLayoutNode("frame"), name: "빈 프레임" }] };
+    const kept = { ...newLayoutNode("section"), name: "메인 비주얼" };
+    const [renamed, untouched] = migrateLayoutDocument({ version: 1, menu: "overlay", nodes: [old, kept] }).nodes;
+    expect([renamed.name, renamed.children[0].name, untouched.name]).toEqual(["레이아웃", "칸", "메인 비주얼"]);
   });
 });

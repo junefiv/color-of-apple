@@ -108,3 +108,40 @@
 .lb-file-pro>a:focus-visible{outline:2px solid #2b2a26;outline-offset:2px}
 .lb-pro-tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;background:#ece8dc;color:#6b6450;font-size:10px;font-style:normal;font-weight:700;vertical-align:1px}
 .lb-file-menu>div>button:disabled{opacity:.55;cursor:not-allowed}
+/* Empty layouts and cells are buttons that open the component library for that spot. */
+.lb-drop-placeholder{pointer-events:auto;cursor:pointer;font-family:inherit;transition:border-color .15s,color .15s,background-color .15s}
+.lb-drop-placeholder:hover,.lb-drop-placeholder:focus-visible{border-color:var(--color-primary-default,#6b6bf2);color:var(--color-text-secondary,#6b6b78);background:color-mix(in srgb,var(--color-primary-default,#6b6bf2) 6%,var(--color-background-subtle,#fafafb))}
+.lb-drop-placeholder:focus-visible{outline:2px solid var(--color-primary-default,#6b6bf2);outline-offset:2px}
+.lb-container-actions{display:flex;flex-wrap:wrap;gap:6px;margin:16px 13px 0}
+.lb-container-actions button{display:flex;align-items:center;gap:5px;padding:6px 9px;border:1px solid #e1e1e7;border-radius:4px;background:#fff;color:#55555f;font-size:11.5px}
+.lb-container-actions button:first-child{border-color:#202027;background:#202027;color:#fff}
+.lb-container-actions button:hover{filter:brightness(.96)}
+/* The page's add button reads as an action, not as part of the page: a solid pill in editor ink. */
+.lb-page-add-row{display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;margin:22px 18px 28px}
+.lb-page-add-row .lb-page-add{display:inline-flex;align-items:center;gap:8px;min-height:0;margin:0;padding:13px 26px;border:0;border-radius:999px;background:#202027;color:#fff;font-size:15px;font-weight:650;letter-spacing:-.01em;box-shadow:0 6px 18px rgb(32 32 39/22%),0 1px 0 rgb(255 255 255/8%) inset;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,background-color .15s ease}
+.lb-page-add-row .lb-page-add:hover{background:#000;transform:translateY(-1px);box-shadow:0 10px 24px rgb(32 32 39/28%)}
+.lb-page-add-row .lb-page-add:active{transform:translateY(0);box-shadow:0 3px 10px rgb(32 32 39/22%)}
+.lb-page-add-row .lb-page-add:focus-visible{outline:3px solid #6b6bf2;outline-offset:3px}
+.lb-page-add-row small{color:var(--color-text-tertiary,#9898a5);font-size:12px}
+@media (prefers-reduced-motion:reduce){.lb-page-add-row .lb-page-add{transition:none}.lb-page-add-row .lb-page-add:hover{transform:none}}
+/* The artboard is drawn scaled down; the add button undoes that so it always reads at screen size. */
+.lb-page-add-row{--lb-unscale:calc(1px / var(--lb-scale,1));gap:calc(6 * var(--lb-unscale));margin:calc(16 * var(--lb-unscale)) 18px calc(20 * var(--lb-unscale))}
+.lb-page-add-row .lb-page-add{gap:.5em;padding:.8em 1.6em;font-size:calc(14 * var(--lb-unscale))}
+.lb-page-add-row .lb-page-add svg{width:1.25em;height:1.25em}
+.lb-page-add-row small{font-size:calc(11.5 * var(--lb-unscale))}
+/* Style picker with a large preview: choices scroll on the left, the hovered one shows big on the right. */
+.lb-popover[data-preview]{width:min(860px,calc(100vw - 16px));max-height:min(600px,calc(100vh - 16px));display:grid;grid-template-columns:262px minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);column-gap:14px;overflow:hidden}
+.lb-popover[data-preview]>.lb-popover-head,.lb-popover[data-preview]>p{grid-column:1/-1}
+.lb-popover[data-preview] ul{grid-template-columns:1fr;min-height:0;overflow:auto;padding:2px 4px 4px 2px;align-content:start}
+.lb-popover[data-preview] li[data-active]{border-color:#202027;background:#fff;box-shadow:0 0 0 1px #202027}
+.lb-choice-preview{display:flex;flex-direction:column;gap:12px;min-height:0;padding:12px;border-radius:9px;background:#f4f4f7}
+.lb-thumb[data-size=large]{height:320px;border-radius:7px;box-shadow:0 8px 24px #0000001a,inset 0 0 0 1px #00000012}
+.lb-choice-preview-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.lb-choice-preview-foot>span{display:grid;gap:2px;min-width:0}
+.lb-choice-preview-foot b{font-size:14px}
+.lb-choice-preview-foot small{font-size:12px}
+.lb-choice-preview-foot>button{flex-shrink:0;padding:10px 18px;border:0;border-radius:999px;background:#202027;color:#fff;font:inherit;font-size:13px;font-weight:650;cursor:pointer;transition:background-color .15s}
+.lb-choice-preview-foot>button:hover{background:#000}
+.lb-choice-preview-foot>button:focus-visible{outline:3px solid #6b6bf2;outline-offset:2px}
+/* Without room for the side preview, the picker keeps its two-column grid of thumbnails. */
+@media (max-width:760px){.lb-popover[data-preview]{display:block;width:min(516px,calc(100vw - 16px));overflow:auto}.lb-popover[data-preview] ul{grid-template-columns:repeat(2,minmax(0,1fr))}.lb-choice-preview{display:none}}

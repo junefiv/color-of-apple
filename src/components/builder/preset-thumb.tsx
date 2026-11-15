@@ -19,19 +19,25 @@ import { phoneBlocks } from "./block-registry";
 import { blockPadding, specOf } from "@/lib/blocks";
 import { withBlockDefaults } from "@/lib/block-schema";
 
-// Thumbnail box in the style popover; each stage is centered and scaled to fit it, taken out of
-// layout so its artboard-size box never widens the popover.
-const box = { w: 232, h: 116 };
+// Thumbnail boxes in the style popover: a small one per choice and a large preview of the hovered
+// choice. Each stage is centered and scaled to fit its box, taken out of layout so its artboard-size
+// box never widens the popover. Page stages are narrower than a 1440 screen so text stays legible;
+// the components reflow to that width the way they would on a laptop.
+const boxes = { small: { w: 232, h: 116, page: 1100, header: 900 }, large: { w: 540, h: 320, page: 960, header: 820 } } as const;
+export type ThumbSize = keyof typeof boxes;
 const fake = <div className="lb-thumb-fill" aria-hidden><i /><i /><i /></div>;
 
 // A live, shrunken render of a component in one style, painted with the current palette.
 // Headers open their first menu so the submenu frame is visible at a glance.
-export function PresetThumb({ node, menu, items }: { node: LayoutNode; menu: HeaderMobileMenu; items: HeaderMenuItem[] }) {
-  let stage = { w: 1440, h: 720 };
+export function PresetThumb({ node, menu, items, size = "small" }: { node: LayoutNode; menu: HeaderMobileMenu; items: HeaderMenuItem[]; size?: ThumbSize }) {
+  const box = boxes[size];
+  // A page stage shaped like its box, so the render fills it edge to edge.
+  const pageStage = (w: number) => ({ w, h: Math.round(w * box.h / box.w) });
+  let stage: { w: number; h: number } = pageStage(box.page);
   let content: ReactNode = null;
   if (node.kind === "header") {
     // Headers are a thin bar at full PC width, so their stage is narrower to zoom in on the menu.
-    stage = { w: 1040, h: 520 };
+    stage = pageStage(box.header);
     const header = withHeaderDefaults(node.header ?? { items }, menu);
     const side = header.placement !== "top";
     content = side ? <div className="lb-thumb-row" data-side={header.placement}><div className="lb-thumb-node lb-thumb-sidebar"><HeaderFrame config={header} mobile={false} preview /></div>{fake}</div>
@@ -59,5 +65,5 @@ export function PresetThumb({ node, menu, items }: { node: LayoutNode; menu: Hea
       : <div className="lb-thumb-block" style={{ "--np-t": `${pad[0]}px`, "--np-r": `${pad[1]}px`, "--np-b": `${pad[2]}px`, "--np-l": `${pad[3]}px` } as CSSProperties}>{frame}</div>;
   }
   const scale = Math.min(box.w / stage.w, box.h / stage.h);
-  return <span className="lb-thumb" aria-hidden><span className="lb-thumb-stage" style={{ width: stage.w, height: stage.h, transform: `translate(-50%, -50%) scale(${scale})` } as CSSProperties}>{content}</span></span>;
+  return <span className="lb-thumb" data-size={size} aria-hidden><span className="lb-thumb-stage" style={{ width: stage.w, height: stage.h, transform: `translate(-50%, -50%) scale(${scale})` } as CSSProperties}>{content}</span></span>;
 }
