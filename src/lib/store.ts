@@ -10,11 +10,16 @@ import { clearPreviewDraft } from "@/lib/preview-draft";
 
 export type PreviewTab = "overview" | "components";
 export type PlatformView = "web" | "app";
+// Which sample service the web/app preview shows the palette on.
+export const PREVIEW_GENRES = ["budget", "shop", "booking", "travel"] as const;
+export type PreviewGenre = typeof PREVIEW_GENRES[number];
+export const isPreviewGenre = (value: unknown): value is PreviewGenre => PREVIEW_GENRES.includes(value as PreviewGenre);
 
 type Persisted = {
   locale: Locale;
   platform: PlatformView;
   previewTab: PreviewTab;
+  genre: PreviewGenre;
 };
 
 type HydrationInput = Partial<Persisted> & {
@@ -46,6 +51,7 @@ type MatchuState = Persisted & {
   replaceInput: (input: GenerateInput) => void;
   setPlatform: (platform: PlatformView) => void;
   setPreviewTab: (tab: PreviewTab) => void;
+  setGenre: (genre: PreviewGenre) => void;
   setSkipLoader: (value: boolean) => void;
   setPendingBleed: (value: boolean) => void;
   setMatchStage: (stage: MatchStage) => void;
@@ -71,6 +77,7 @@ export const useMatchuStore = create<MatchuState>((set) => ({
   primaryDraftHex: null,
   platform: "web",
   previewTab: "overview",
+  genre: "budget",
   hydrated: false,
   skipLoader: false,
   pendingBleed: false,
@@ -90,6 +97,7 @@ export const useMatchuStore = create<MatchuState>((set) => ({
   replaceInput: (input) => set({ input }),
   setPlatform: (platform) => set({ platform }),
   setPreviewTab: (previewTab) => set({ previewTab }),
+  setGenre: (genre) => set({ genre }),
   setSkipLoader: (skipLoader) => set({ skipLoader }),
   setPendingBleed: (pendingBleed) => set({ pendingBleed }),
   setMatchStage: (matchStage) => set({ matchStage }),
@@ -138,6 +146,7 @@ export const useMatchuStore = create<MatchuState>((set) => ({
       locale: value.locale ?? state.locale,
       platform: value.platform ?? state.platform,
       previewTab: value.previewTab === "components" ? "components" : state.previewTab,
+      genre: isPreviewGenre(value.genre) ? value.genre : state.genre,
       hydrated: true,
     })),
 }));
@@ -158,6 +167,7 @@ export function writeDraft(state: MatchuState) {
     locale: state.locale,
     platform: state.platform,
     previewTab: state.previewTab,
+    genre: state.genre,
   };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
 }

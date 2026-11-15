@@ -11,6 +11,7 @@ import { PlanUpgradeDialog } from "@/components/billing/plan-upgrade-dialog";
 import { SiteHeader } from "@/components/brand/site-header";
 import { SiteFooter } from "@/components/brand/site-footer";
 import { ChromeChip } from "@/components/chrome/chrome-chip";
+import { GenrePicker } from "./genre-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -472,6 +473,8 @@ export function Workbench({
   }
 
   const showPalettePicker = mode === "edit" && inspector === "tokens" && !savedProjectId;
+  // The sample service only matters for the web/app preview, not the UI kit or the builder.
+  const showGenrePicker = view !== "components" && !building;
   function selectPlatform(target: "web" | "app") {
     setPlatform(target);
     leaveUiKit();
@@ -567,6 +570,7 @@ export function Workbench({
           <div className="workbench-preview-toolbar" ref={previewToolbarRef} inert={previewToolbarHidden || undefined} aria-hidden={previewToolbarHidden || undefined}>
             <div className="workbench-preview-toolbar-end">
               {previewViewSwitch(true)}
+              {showGenrePicker && !previewToolbarHidden ? <GenrePicker /> : null}
               {showPalettePicker && !previewToolbarHidden ? <PalettePicker hex={input.hex} variant="panel" /> : null}
             </div>
           </div>
@@ -583,6 +587,7 @@ export function Workbench({
           {previewDockMounted ? (
             <div className="workbench-preview-dock" data-state={previewDockOpen ? "open" : "closed"} role="region" aria-hidden={previewDockOpen ? undefined : true} aria-label={locale === "ko" ? "미리보기 조작" : "Preview controls"}>
               {previewViewSwitch()}
+              {showGenrePicker ? <GenrePicker /> : null}
               {showPalettePicker ? <PalettePicker hex={input.hex} variant="panel" /> : null}
             </div>
           ) : null}

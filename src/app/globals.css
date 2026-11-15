@@ -2951,3 +2951,22 @@
   .landing-about-sticker { left: 0; }
   .landing-contact-sticker { right: 0; }
 }
+
+/* Web samples grow to their page height and the workbench scrolls them, so overlays and toasts
+   follow the on-screen slice the viewport publishes (see IntroViewport). */
+.ledger-web .ledger-scrim,
+.shop-web .shop-scrim,
+.book-web .book-scrim,
+.trip-web .trip-scrim {
+  top: var(--pv-visible-top, 0px);
+  bottom: auto;
+  height: var(--pv-visible-height, 100%);
+}
+.ledger-web .ledger-toast,
+.shop-web .shop-toast-region,
+.book-web .book-live,
+.trip-web .trip-toast-region {
+  top: calc(var(--pv-visible-top, 0px) + var(--pv-visible-height, 100%) - 24px);
+  bottom: auto;
+  transform: translate(-50%, -100%);
+}

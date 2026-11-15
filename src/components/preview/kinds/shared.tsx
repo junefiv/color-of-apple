@@ -51,8 +51,41 @@ export function useTimedOverlay<T extends { type: string }>(idle: T) {
   return { overlay, setOverlay, show };
 }
 
+// A web sample is as tall as its page, so the workbench scrolls it. Its dialogs and drawers would
+// centre on the whole page; the viewport publishes the slice that is on screen instead
+// (--pv-visible-top / --pv-visible-height), and the sample scrims are pinned to it.
 export function IntroViewport({ children }: { children: ReactNode }) {
-  return <div className="preview-viewport pv-preview">{children}</div>;
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    let scroller: HTMLElement | null = node.parentElement;
+    while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement;
+    let frame = 0;
+    function measure() {
+      frame = 0;
+      const box = node!.getBoundingClientRect();
+      const view = scroller ? scroller.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+      const top = Math.max(0, view.top - box.top);
+      const bottom = Math.min(box.height, view.bottom - box.top);
+      node!.style.setProperty("--pv-visible-top", `${Math.round(top)}px`);
+      node!.style.setProperty("--pv-visible-height", `${Math.max(0, Math.round(bottom - top))}px`);
+    }
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(measure); };
+    measure();
+    const target: EventTarget = scroller ?? window;
+    target.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule);
+    observer?.observe(node);
+    return () => {
+      cancelAnimationFrame(frame);
+      target.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      observer?.disconnect();
+    };
+  }, []);
+  return <div ref={ref} className="preview-viewport pv-preview">{children}</div>;
 }
 
 export function IntroHeader({
