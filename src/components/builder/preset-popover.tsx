@@ -42,20 +42,27 @@ export function usePopover(anchor: Anchor, onClose: () => void): [RefObject<HTML
 export function PresetPopover({ title, note, anchor, choices, onPick, onClose, action = "이 스타일로 추가" }: { title: string; note: string; anchor: Anchor; choices: PresetChoice[]; onPick: (key: string) => void; onClose: () => void; action?: string }) {
   const [box, pos] = usePopover(anchor, onClose);
   const previews = choices.some(c => c.preview);
-  // The large preview follows the hovered or focused choice and stays on the last one.
-  const [active, setActive] = useState(choices[0]?.key ?? "");
-  const shown = choices.find(c => c.key === active) ?? choices[0];
+  // With previews, a click only selects; the button under the large preview adds the selected style
+  // (a double click adds at once). Hovering or focusing another choice shows it until the pointer leaves.
+  const [selected, setSelected] = useState(choices[0]?.key ?? "");
+  const [peek, setPeek] = useState<string | null>(null);
+  const picked = choices.find(c => c.key === selected) ?? choices[0];
+  const shown = choices.find(c => c.key === peek) ?? picked;
   return <div ref={box} className="lb-popover" data-thumbs={choices.some(c => c.thumb) || undefined} data-preview={previews || undefined} role="dialog" aria-label={title} style={pos ? { left: pos.left, top: pos.top } : { visibility: "hidden", left: 0, top: 0 }}>
     <div className="lb-popover-head"><strong>{title}</strong><button type="button" aria-label="닫기" onClick={onClose}><X size={13} /></button></div>
     <p>{note}</p>
     {/* Thumbnails render real component markup (with its own buttons), so a transparent button laid over each
         choice takes the click instead of wrapping it. */}
-    <ul>{choices.map(choice => <li key={choice.key} data-active={previews && choice.key === shown?.key || undefined} onPointerEnter={() => setActive(choice.key)}>
-      <button type="button" className="lb-choice-hit" aria-label={`${choice.name} · ${choice.note}`} onFocus={() => setActive(choice.key)} onClick={() => onPick(choice.key)} />
+    <ul onPointerLeave={() => setPeek(null)}>{choices.map(choice => <li key={choice.key} data-selected={previews && choice.key === picked?.key || undefined} data-active={previews && choice.key === shown?.key || undefined} onPointerEnter={() => previews && setPeek(choice.key)}>
+      <button type="button" className="lb-choice-hit" aria-label={`${choice.name} · ${choice.note}`} aria-pressed={previews ? choice.key === picked?.key : undefined}
+        onFocus={() => previews && setPeek(choice.key)} onBlur={() => setPeek(null)}
+        onClick={() => { if (previews) { setSelected(choice.key); setPeek(null); } else onPick(choice.key); }}
+        onDoubleClick={() => previews && onPick(choice.key)} />
       {choice.thumb}<span className="lb-choice-text"><b>{choice.name}</b><small>{choice.note}</small></span><Check size={13} aria-hidden /></li>)}</ul>
-    {previews && shown && <aside className="lb-choice-preview" aria-live="polite">
+    {previews && shown && picked && <aside className="lb-choice-preview" aria-live="polite">
       {shown.preview}
-      <div className="lb-choice-preview-foot"><span><b>{shown.name}</b><small>{shown.note}</small></span><button type="button" onClick={() => onPick(shown.key)}>{action}</button></div>
+      <div className="lb-choice-preview-foot"><span><b>{shown.name}</b><small>{shown.key === picked.key ? "선택됨" : "미리 보는 중 · 눌러서 선택"}{" · "}{shown.note}</small></span>
+        <button type="button" onClick={() => onPick(picked.key)}>{action}</button></div>
     </aside>}
   </div>;
 }

@@ -145,3 +145,8 @@
 .lb-choice-preview-foot>button:focus-visible{outline:3px solid #6b6bf2;outline-offset:2px}
 /* Without room for the side preview, the picker keeps its two-column grid of thumbnails. */
 @media (max-width:760px){.lb-popover[data-preview]{display:block;width:min(516px,calc(100vw - 16px));overflow:auto}.lb-popover[data-preview] ul{grid-template-columns:repeat(2,minmax(0,1fr))}.lb-choice-preview{display:none}}
+/* Selected style: solid ring and check; a hovered (previewed) one only lifts. */
+.lb-popover[data-preview] li[data-active]{box-shadow:none;border-color:#9a9aa6}
+.lb-popover[data-preview] li[data-selected]{border-color:#202027;box-shadow:0 0 0 1px #202027}
+.lb-popover[data-preview] li[data-selected]>svg{display:block;position:absolute;top:10px;right:10px;z-index:1;opacity:1;padding:3px;border-radius:50%;background:#202027;color:#fff;width:20px;height:20px}
+@media (max-width:760px){.lb-choice-preview{display:flex;margin-top:10px}.lb-choice-preview>.lb-thumb{display:none}}
