@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, ChevronRight, Download, Frame, GripVertical, Image as ImageIcon, LayoutGrid, Layers, Megaphone, MousePointerClick, PanelBottom, Menu, Monitor, Plus, Redo2, RotateCcw, Smartphone, Trash2, Undo2 } from "lucide-react";
+import { buildHtmlDocument, cleanArtboard, collectCss, usedClasses } from "@/lib/html-export";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, ChevronRight, Code2, Download, FileJson, Frame, GripVertical, Image as ImageIcon, LayoutGrid, Layers, Megaphone, MousePointerClick, PanelBottom, Menu, Monitor, Plus, Redo2, RotateCcw, Smartphone, Trash2, Undo2 } from "lucide-react";
 import { HeaderFrame } from "./header-frame";
 import { HeaderSettings } from "./header-settings";
 import { HeroFrame } from "./hero-frame";
@@ -114,6 +115,13 @@ function LayoutEditor({ platform }: { platform: "web" | "app" }) {
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState("불러오는 중");
   const [headerPreview, setHeaderPreview] = useState(false);
+  // While set, both devices render off screen so the HTML export can read their markup.
+  const [exporting, setExporting] = useState(false);
+  // File actions report in a toast; the status line belongs to autosave and would overwrite them.
+  const [notice, setNotice] = useState("");
+  useEffect(() => { if (!notice) return; const timer = window.setTimeout(() => setNotice(""), 4000); return () => window.clearTimeout(timer); }, [notice]);
+  const exportStage = useRef<HTMLDivElement>(null);
+  const importInput = useRef<HTMLInputElement>(null);
   const [focus, setFocus] = useState<EditFocus>();
   const focusCount = useRef(0);
   const [hint, setHint] = useState<DropHint | null>(null);
@@ -257,10 +265,39 @@ function LayoutEditor({ platform }: { platform: "web" | "app" }) {
     if (target < 0 || target >= group.nodes.length) return;
     commit({ ...doc, nodes: moveLayoutNode(doc.nodes, selected, group.parent, offset < 0 ? group.nodes[target].id : group.nodes[target + 1]?.id) });
   }
-  function exportLayout() {
-    const url = URL.createObjectURL(new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" }));
-    const a = document.createElement("a"); a.href = url; a.download = `color-of-apple-${platform}-layout.json`; a.click(); URL.revokeObjectURL(url);
+  function download(name: string, body: string, type: string) {
+    const url = URL.createObjectURL(new Blob([body], { type }));
+    const a = document.createElement("a"); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
   }
+  function exportLayout() { download(`color-of-apple-${platform}-layout.json`, JSON.stringify(doc, null, 2), "application/json"); }
+  async function importLayout(file: File | undefined) {
+    if (!file) return;
+    try {
+      const parsed: unknown = JSON.parse(await file.text());
+      if (!validLayoutDocument(parsed)) { setNotice("불러오지 못했어요 · 이 빌더에서 내보낸 구조 JSON인지 확인해 주세요"); return; }
+      commit(migrateLayoutDocument(parsed)); setSelected(""); setNotice(`‘${file.name}’ 구조를 불러왔어요`);
+    } catch { setNotice("파일을 읽지 못했어요 · JSON 파일인지 확인해 주세요"); }
+  }
+  useEffect(() => {
+    if (!exporting) return;
+    // Two frames let the off-screen artboards mount and lay out before their markup is read.
+    let frame = requestAnimationFrame(() => { frame = requestAnimationFrame(() => {
+      const stage = exportStage.current;
+      const read = (device: "desktop" | "mobile") => stage?.querySelector(`.lb-viewport[data-device=${device}]`);
+      const mobileView = read("mobile"), desktopView = platform === "web" ? read("desktop") : undefined;
+      if (stage && mobileView) {
+        const mobileEl = cleanArtboard(mobileView), desktopEl = desktopView ? cleanArtboard(desktopView) : undefined;
+        const theme = stage.closest<HTMLElement>(".matchu-preview");
+        const font = `${getComputedStyle(mobileView).fontFamily}, system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`;
+        const css = collectCss(Array.from(document.styleSheets), usedClasses(desktopEl ? [mobileEl, desktopEl] : [mobileEl]));
+        const html = buildHtmlDocument({ title: `${platform === "web" ? "웹" : "앱"} 페이지 · Color of Apple`, vars: theme?.style.cssText ?? "", css, font, desktop: desktopEl?.outerHTML, mobile: mobileEl.outerHTML });
+        download(`color-of-apple-${platform}.html`, html, "text/html");
+        setNotice("HTML 파일을 내려받았어요");
+      } else setNotice("HTML을 만들지 못했어요 · 다시 시도해 주세요");
+      setExporting(false);
+    }); });
+    return () => cancelAnimationFrame(frame);
+  }, [exporting, platform]);
   function trackTrash(e: DragEvent) {
     const id = drag.current?.id;
     // Only existing layers can be thrown away, and only once the pointer has left the device frames.
@@ -374,7 +411,11 @@ function LayoutEditor({ platform }: { platform: "web" | "app" }) {
       onPick={kind => { setPicker({ kind: kind as LayoutKind, anchor: library }); setLibrary(null); }} />}
     {picker && pickerSet && <PresetPopover title={`${pickerSet.title} 스타일`} note={picker.node ? "고르면 지금 레이어에 적용돼요. 내가 쓴 문구와 이미지는 그대로 남아요." : "고른 스타일로 페이지에 추가돼요. 끌어서 원하는 자리에 놓아도 돼요."}
       anchor={picker.anchor} choices={pickerChoices} onPick={pickStyle} onClose={() => setPicker(null)} />}
-    <div className="lb-toolbar"><div className="lb-history"><button aria-label="배치 실행 취소" title="실행 취소 · Ctrl+Z" disabled={!past.length} onClick={undo}><Undo2 size={14} /></button><button aria-label="배치 다시 실행" title="다시 실행 · Ctrl+Shift+Z" disabled={!future.length} onClick={redo}><Redo2 size={14} /></button><span /></div><div className="lb-steps">{platform === "web" ? <><button aria-pressed={phase === "desktop"} onClick={() => { setPhase("desktop"); setDevice("desktop"); }}><span>1</span>PC 만들기</button><ChevronRight size={12} /><button aria-pressed={phase === "responsive"} onClick={() => { setPhase("responsive"); setDevice("mobile"); }}><span>2</span>모바일 다듬기</button></> : <span className="lb-app-label"><Smartphone size={14} />앱 화면 만들기 · 375 × 667</span>}</div><button className="lb-export" onClick={exportLayout} title="구조 JSON 내보내기"><Download size={14} /><span>구조</span></button></div>
+    <div className="lb-toolbar"><div className="lb-history"><button aria-label="배치 실행 취소" title="실행 취소 · Ctrl+Z" disabled={!past.length} onClick={undo}><Undo2 size={14} /></button><button aria-label="배치 다시 실행" title="다시 실행 · Ctrl+Shift+Z" disabled={!future.length} onClick={redo}><Redo2 size={14} /></button><span /></div><div className="lb-steps">{platform === "web" ? <><button aria-pressed={phase === "desktop"} onClick={() => { setPhase("desktop"); setDevice("desktop"); }}><span>1</span>PC 만들기</button><ChevronRight size={12} /><button aria-pressed={phase === "responsive"} onClick={() => { setPhase("responsive"); setDevice("mobile"); }}><span>2</span>모바일 다듬기</button></> : <span className="lb-app-label"><Smartphone size={14} />앱 화면 만들기 · 375 × 667</span>}</div><details className="lb-file-menu"><summary className="lb-export"><Download size={14} /><span>내보내기</span><ChevronDown size={12} /></summary><div role="menu">
+      <button role="menuitem" disabled={exporting || !doc.nodes.length} onClick={e => { (e.currentTarget.closest("details") as HTMLDetailsElement).open = false; setExporting(true); }}><Code2 size={14} /><span><b>HTML 코드</b><small>PC · 모바일 한 파일 · 팔레트 색 포함</small></span></button>
+      <button role="menuitem" onClick={e => { (e.currentTarget.closest("details") as HTMLDetailsElement).open = false; exportLayout(); }}><FileJson size={14} /><span><b>구조 JSON</b><small>백업하거나 다른 브라우저로 옮길 때</small></span></button>
+      <button role="menuitem" onClick={e => { (e.currentTarget.closest("details") as HTMLDetailsElement).open = false; importInput.current?.click(); }}><Download size={14} style={{ transform: "rotate(180deg)" }} /><span><b>구조 불러오기</b><small>내보낸 JSON으로 이어서 작업</small></span></button>
+    </div></details><input ref={importInput} type="file" accept="application/json,.json" hidden onChange={e => { void importLayout(e.target.files?.[0]); e.target.value = ""; }} /></div>
     <div className="lb-body"><aside className="lb-controls" aria-label="레이어와 배치 속성"><div className="lb-control-heading"><Layers size={14} /><strong>레이어</strong><small>드래그로 이동</small></div><div className="lb-inserts"><button draggable onDragStart={e => beginDrag(e, { kind: "section" })} onClick={() => add("section")}><Plus size={12} />섹션</button><button draggable onDragStart={e => beginDrag(e, { kind: "frame" })} onClick={() => add("frame", node && !isComponentKind(node.kind) ? node.id : null)}><Frame size={12} />빈 프레임</button><button className="lb-library-open" aria-haspopup="dialog" aria-expanded={!!library} onClick={e => setLibrary(library ? null : anchorOf(e.currentTarget))}><Plus size={12} />컴포넌트 추가<small>{libraryItems.length}종</small></button></div><p className="lb-note">프레임을 섹션 안으로 드래그하세요.<br />배치와 간격부터 잡고, 컴포넌트는 나중에.</p><div className="lb-tree" onDragOver={e => e.preventDefault()} onDrop={e => drop(e, null)}>{platform === "web" && <button className={`lb-tree-node lb-tree-page ${selected ? "" : "active"}`} onClick={() => setSelected("")}><Monitor size={12} />페이지<small>{pageFrame.mode === "full" ? "화면 가득" : pageFrame.mode === "contained" ? `컨테이너 ${pageFrame.maxWidth}` : `컬럼 ${pageFrame.maxWidth}`}</small></button>}{doc.nodes.length ? renderTree(doc.nodes, null) : <p>아직 레이어가 없어요.<br />섹션을 추가해 시작하세요.</p>}<div className="lb-root-drop">페이지 끝으로 이동</div></div>
       {node && style ? <div className="lb-properties"><div className="lb-control-heading"><strong>배치 속성</strong><span className="lb-device-tag">{device === "desktop" ? "PC" : "모바일"}</span></div><label className="lb-field">이름<input value={node.name} onChange={e => patchNode(n => ({ ...n, name: e.target.value }))} /></label><div className="lb-device-notice">{column ? "모바일 퍼스트 컬럼이에요.\nPC 화면도 모바일 배치를 그대로 씁니다." : device === "desktop" ? "PC의 기본 배치를 편집합니다." : "미지정 값은 PC에서 이어받습니다.\n변경한 속성만 모바일에 적용됩니다."}</div>
         {pageFrame.mode === "contained" && platform === "web" && doc.nodes.includes(node) && <label className="lb-check"><input type="checkbox" checked={!!node.bleed} onChange={e => patchNode(n => ({ ...n, bleed: e.target.checked }))} />컨테이너 무시 · 내용도 화면 끝까지</label>}
@@ -395,8 +436,8 @@ function LayoutEditor({ platform }: { platform: "web" | "app" }) {
         </details>
         {device === "mobile" && <><label className="lb-check"><input type="checkbox" checked={style.hidden} onChange={e => patchStyle({ hidden: e.target.checked })} />모바일에서 이 레이어 숨기기</label><button className="lb-reset" onClick={() => patchNode(n => ({ ...n, mobile: {} }))}><RotateCcw size={12} />모바일 조정 초기화</button></>}
         </> : <>
-        <label className="lb-field">배치 방향<select value={style.direction} onChange={e => patchStyle({ direction: e.target.value as LayoutStyle["direction"] })}><option value="column">세로 · Column</option><option value="row">가로 · Row</option><option value="grid">그리드 · Grid</option></select></label>
-        {style.direction === "grid" && <Numeric label="열 개수" value={style.columns} min={1} max={12} onChange={columns => patchStyle({ columns })} />}
+        <label className="lb-field">배치 방향{style.swipe && <small className="lb-field-note">밀어 넘기기를 켜면 가로 한 줄로 고정돼요</small>}<select value={style.swipe ? "row" : style.direction} disabled={style.swipe} onChange={e => patchStyle({ direction: e.target.value as LayoutStyle["direction"] })}><option value="column">세로 · Column</option><option value="row">가로 · Row</option><option value="grid">그리드 · Grid</option></select></label>
+        {style.direction === "grid" && !style.swipe && <Numeric label="열 개수" value={style.columns} min={1} max={12} onChange={columns => patchStyle({ columns })} />}
         <div className="lb-two-fields"><label className="lb-field">교차축 정렬<select value={style.align} onChange={e => patchStyle({ align: e.target.value as LayoutStyle["align"] })}><option value="stretch">채우기</option><option value="start">시작</option><option value="center">가운데</option><option value="end">끝</option></select></label><label className="lb-field">주축 정렬<select value={style.justify} onChange={e => patchStyle({ justify: e.target.value as LayoutStyle["justify"] })}><option value="start">시작</option><option value="center">가운데</option><option value="end">끝</option><option value="space-between">양쪽 분배</option></select></label></div>
         <div className="lb-flow-flags"><label className="lb-check"><input type="checkbox" checked={!!style.swipe} onChange={e => patchStyle({ swipe: e.target.checked })} />가로로 밀어 넘기기 · 카드 줄을 스와이프로</label><label className="lb-check"><input type="checkbox" checked={!!style.reverse} onChange={e => patchStyle({ reverse: e.target.checked })} />순서 뒤집기 · 이미지와 글 자리 바꾸기</label><label className="lb-check"><input type="checkbox" checked={!!style.screen} onChange={e => patchStyle({ screen: e.target.checked })} />화면 높이 가득 · 첫 화면을 꽉 채워요</label></div>
         <Numeric label="요소 사이 간격" value={style.gap} onChange={gap => patchStyle({ gap })} />
@@ -410,10 +451,13 @@ function LayoutEditor({ platform }: { platform: "web" | "app" }) {
       </div> : platform === "web" ? <PageSettings page={pageFrame} onChange={setPage} brand={pageBrand(doc)} focus={focus?.node === "page" ? focus : undefined} /> : <div className="lb-selection-hint"><Frame size={24} strokeWidth={1} /><p>레이어를 선택하면<br />배치와 간격을 조정할 수 있어요.</p></div>}
     </aside><div className="lb-stage-area" data-trash={trash ? true : undefined} onDragOver={trackTrash} onDrop={dropInTrash}>
       {trash && <div className="lb-trash-hint" role="status"><Trash2 size={14} />여기서 놓으면 레이어가 삭제돼요</div>}
-      {removed && !trash && <div className="lb-toast" role="status">‘{removed}’ 레이어를 삭제했어요<button onClick={() => { undo(); setRemoved(null); }}>되돌리기</button></div>}<div className="lb-stage-description"><span>{platform === "app" ? "폰 프레임에서 바로 구성하세요." : phase === "desktop" ? "PC의 구조부터 만드세요. 다음 단계에서 모바일을 다듬습니다." : "같은 구조, 다른 배치. PC와 비교하며 모바일만 조정하세요."}</span><small>{ready ? status : "불러오는 중"}</small></div><div className={`lb-artboards ${phase === "responsive" && platform === "web" ? "lb-compare" : ""}`}>
+      {notice && !removed && !trash && <div className="lb-toast" role="status">{notice}{notice.includes("불러왔어요") && <button onClick={() => { undo(); setNotice(""); }}>되돌리기</button>}</div>}{removed && !trash && <div className="lb-toast" role="status">‘{removed}’ 레이어를 삭제했어요<button onClick={() => { undo(); setRemoved(null); }}>되돌리기</button></div>}<div className="lb-stage-description"><span>{platform === "app" ? "폰 프레임에서 바로 구성하세요." : phase === "desktop" ? "PC의 구조부터 만드세요. 다음 단계에서 모바일을 다듬습니다." : "같은 구조, 다른 배치. PC와 비교하며 모바일만 조정하세요."}</span><small>{ready ? status : "불러오는 중"}</small></div><div className={`lb-artboards ${phase === "responsive" && platform === "web" ? "lb-compare" : ""}`}>
       {platform === "web" && <DeviceArtboard mobile={false} active={device === "desktop" || column} onActivate={() => setDevice(column ? "mobile" : "desktop")} onClear={() => setSelected("")} onPage={part => { setSelected(""); setFocus({ node: "page", part, at: ++focusCount.current }); }} onResize={beginResize} resizing={resizing} doc={doc} selected={selected} onSelect={(id, part) => selectFrom(id, part, column)} onStyle={(id, kind, el) => { if (presetSets[kind]) setPicker({ kind, node: id, anchor: anchorOf(el) }); }} onDrag={beginDrag} hint={hint} onHint={trackHint} onDropHint={dropAtHint} onLeave={() => { setHint(null); setImageOver(null); }} removing={trash} imageOver={imageOver} headerPreview={headerPreview ? selected : ""} onAdd={() => add("section")} />}
       {(platform === "app" || phase === "responsive") && <DeviceArtboard mobile active={device === "mobile"} onActivate={() => setDevice("mobile")} onClear={() => setSelected("")} onPage={() => undefined} onStyle={(id, kind, el) => { if (presetSets[kind]) setPicker({ kind, node: id, anchor: anchorOf(el) }); }} onResize={beginResize} resizing={resizing} doc={doc} selected={selected} onSelect={(id, part) => selectFrom(id, part, true)} onDrag={beginDrag} hint={hint} onHint={trackHint} onDropHint={dropAtHint} onLeave={() => { setHint(null); setImageOver(null); }} removing={trash} imageOver={imageOver} headerPreview={headerPreview ? selected : ""} onAdd={() => add("section")} />}
     </div><div className="lb-stage-footer"><span><Frame size={12} />{platform === "app" ? "iPhone SE · 375 × 667" : "PC 1440 × 1024 · iPhone SE 375 × 667"}</span>{platform === "web" && <button onClick={() => { setPhase(phase === "desktop" ? "responsive" : "desktop"); setDevice(phase === "desktop" ? "mobile" : "desktop"); }}>{phase === "desktop" ? <>다음 · 모바일 다듬기<ArrowRight size={14} /></> : <><ArrowLeft size={14} />PC 편집으로</>}</button>}</div></div></div>
+    {exporting && <div ref={exportStage} className="lb-export-stage" aria-hidden inert>
+      {(["desktop", "mobile"] as const).filter(d => platform === "web" || d === "mobile").map(d => <DeviceArtboard key={d} mobile={d === "mobile"} active={false} onActivate={NOOP} onClear={NOOP} onPage={NOOP} onStyle={NOOP} onResize={NOOP} resizing={null} doc={doc} selected="" onSelect={NOOP} onDrag={NOOP} hint={null} onHint={NOOP} onDropHint={NOOP} onLeave={NOOP} removing={null} imageOver={null} headerPreview="" onAdd={NOOP} />)}
+    </div>}
   </div>;
 }
 
@@ -424,6 +468,7 @@ function InsetsEditor({ label, value, onChange }: { label: string; value: Insets
   return <fieldset className="lb-insets"><legend>{label}</legend><div>{["위", "오른쪽", "아래", "왼쪽"].map((side, i) => <label key={side}><input aria-label={`${label} ${side}`} type="number" min={0} max={1440} value={value[i]} onChange={e => { if (e.target.value === "") return; const next: Insets = [...value]; next[i] = Math.max(0, Math.min(1440, Math.round(Number(e.target.value)))); onChange(next); }} /><span>{side}</span></label>)}</div></fieldset>;
 }
 
+const NOOP = () => undefined;
 function DeviceArtboard({ mobile, active, onActivate, onClear, onPage, onStyle, onResize, resizing, doc, selected, onSelect, onDrag, onAdd, headerPreview, hint, onHint, onDropHint, onLeave, removing, imageOver }: {
   headerPreview: string; mobile: boolean; active: boolean; onActivate: () => void; onClear: () => void; onPage: (part: string) => void; resizing: Resizing | null;
   onStyle: (id: string, kind: LayoutKind, handle: Element) => void;

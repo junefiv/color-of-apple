@@ -96,6 +96,9 @@ beforeEach(() => {
   mocks.save.mockReset().mockResolvedValue("slot-1");
   mocks.remove.mockReset().mockResolvedValue(undefined);
   vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
+  // The workbench hides its preview toolbar with an IntersectionObserver, which jsdom lacks.
+  vi.stubGlobal("IntersectionObserver", class { observe() {} unobserve() {} disconnect() {} takeRecords() { return []; } });
+  vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
   useMatchuStore.setState(useMatchuStore.getInitialState(), true);
   useMatchuStore.setState({ hydrated: true, hasMatched: true, matchStage: "done" });
   container = document.createElement("div");
