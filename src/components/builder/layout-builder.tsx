@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from "react";
-import { buildHtmlDocument, cleanArtboard, collectCss, usedClasses } from "@/lib/html-export";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, ChevronRight, Code2, Download, FileJson, Frame, GripVertical, Image as ImageIcon, LayoutGrid, Layers, Megaphone, MousePointerClick, PanelBottom, Menu, Monitor, Plus, Redo2, RotateCcw, Smartphone, Trash2, Undo2 } from "lucide-react";
+import Link from "next/link";
+import { captureExport } from "@/lib/html-export";
+import { useAuth } from "@/components/auth/auth-provider";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, ChevronRight, Bot, Code2, Download, FileCode2, FileJson, Frame, Lock, GripVertical, Image as ImageIcon, LayoutGrid, Layers, Megaphone, MousePointerClick, PanelBottom, Menu, Monitor, Plus, Redo2, RotateCcw, Smartphone, Trash2, Undo2 } from "lucide-react";
 import { HeaderFrame } from "./header-frame";
 import { HeaderSettings } from "./header-settings";
 import { HeroFrame } from "./hero-frame";
@@ -116,7 +118,10 @@ function LayoutEditor({ platform }: { platform: "web" | "app" }) {
   const [status, setStatus] = useState("불러오는 중");
   const [headerPreview, setHeaderPreview] = useState(false);
   // While set, both devices render off screen so the HTML export can read their markup.
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<ExportKind | null>(null);
+  const { user, profile } = useAuth();
+  // Exports are a Pro feature; the server checks the plan again before generating anything.
+  const pro = profile?.plan === "pro";
   // File actions report in a toast; the status line belongs to autosave and would overwrite them.
   const [notice, setNotice] = useState("");
   useEffect(() => { if (!notice) return; const timer = window.setTimeout(() => setNotice(""), 4000); return () => window.clearTimeout(timer); }, [notice]);
@@ -278,25 +283,39 @@ function LayoutEditor({ platform }: { platform: "web" | "app" }) {
       commit(migrateLayoutDocument(parsed)); setSelected(""); setNotice(`‘${file.name}’ 구조를 불러왔어요`);
     } catch { setNotice("파일을 읽지 못했어요 · JSON 파일인지 확인해 주세요"); }
   }
+  async function requestExport(format: ExportKind, captured: NonNullable<ReturnType<typeof captureExport>>) {
+    if (!user) { setNotice("로그인한 Pro 계정에서 내보낼 수 있어요"); return; }
+    const body = JSON.stringify({ ...captured, format });
+    if (body.length > 4_300_000) { setNotice("이미지가 커서 보낼 수 없어요 · 이미지 수나 크기를 줄여 주세요"); return; }
+    setNotice("코드를 만드는 중이에요…");
+    try {
+      const response = await fetch("/api/builder/export", { method: "POST", headers: { Authorization: `Bearer ${await user.getIdToken()}`, "Content-Type": "application/json" }, body });
+      if (!response.ok) {
+        const code = ((await response.json().catch(() => ({}))) as { error?: string }).error;
+        setNotice(code === "pro_required" ? "코드 내보내기는 Pro 전용이에요" : code === "sign_in_required" ? "로그인이 필요해요 · 이메일 인증을 마친 계정으로 로그인해 주세요" : response.status === 413 ? "이미지가 커서 보낼 수 없어요 · 이미지 수나 크기를 줄여 주세요" : "내보내지 못했어요 · 잠시 후 다시 시도해 주세요");
+        return;
+      }
+      const name = response.headers.get("content-disposition")?.match(/filename="([^"]+)"/)?.[1] ?? `color-of-apple-${platform}.${format === "markdown" ? "md" : "zip"}`;
+      const url = URL.createObjectURL(await response.blob());
+      const a = document.createElement("a"); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
+      setNotice(format === "markdown" ? "AI용 브리프를 내려받았어요" : "코드 ZIP을 내려받았어요");
+    } catch { setNotice("내보내지 못했어요 · 연결을 확인해 주세요"); }
+  }
   useEffect(() => {
     if (!exporting) return;
-    // Two frames let the off-screen artboards mount and lay out before their markup is read.
-    let frame = requestAnimationFrame(() => { frame = requestAnimationFrame(() => {
+    const format = exporting;
+    // The off-screen artboards are in the DOM by now; a short timer lets their own effects settle.
+    // (A timer, not animation frames: those pause in background tabs and would leave the export stuck.)
+    const timer = window.setTimeout(() => {
       const stage = exportStage.current;
-      const read = (device: "desktop" | "mobile") => stage?.querySelector(`.lb-viewport[data-device=${device}]`);
-      const mobileView = read("mobile"), desktopView = platform === "web" ? read("desktop") : undefined;
-      if (stage && mobileView) {
-        const mobileEl = cleanArtboard(mobileView), desktopEl = desktopView ? cleanArtboard(desktopView) : undefined;
-        const theme = stage.closest<HTMLElement>(".matchu-preview");
-        const font = `${getComputedStyle(mobileView).fontFamily}, system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`;
-        const css = collectCss(Array.from(document.styleSheets), usedClasses(desktopEl ? [mobileEl, desktopEl] : [mobileEl]));
-        const html = buildHtmlDocument({ title: `${platform === "web" ? "웹" : "앱"} 페이지 · Color of Apple`, vars: theme?.style.cssText ?? "", css, font, desktop: desktopEl?.outerHTML, mobile: mobileEl.outerHTML });
-        download(`color-of-apple-${platform}.html`, html, "text/html");
-        setNotice("HTML 파일을 내려받았어요");
-      } else setNotice("HTML을 만들지 못했어요 · 다시 시도해 주세요");
-      setExporting(false);
-    }); });
-    return () => cancelAnimationFrame(frame);
+      const captured = stage ? captureExport({ stage, platform, doc, title: `${platform === "web" ? "웹" : "앱"} 페이지` }) : null;
+      setExporting(null);
+      if (!captured) { setNotice("내보내지 못했어요 · 다시 시도해 주세요"); return; }
+      void requestExport(format, captured);
+    }, 60);
+    return () => window.clearTimeout(timer);
+  // The capture reads the document as it was when the export started.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exporting, platform]);
   function trackTrash(e: DragEvent) {
     const id = drag.current?.id;
@@ -412,8 +431,9 @@ function LayoutEditor({ platform }: { platform: "web" | "app" }) {
     {picker && pickerSet && <PresetPopover title={`${pickerSet.title} 스타일`} note={picker.node ? "고르면 지금 레이어에 적용돼요. 내가 쓴 문구와 이미지는 그대로 남아요." : "고른 스타일로 페이지에 추가돼요. 끌어서 원하는 자리에 놓아도 돼요."}
       anchor={picker.anchor} choices={pickerChoices} onPick={pickStyle} onClose={() => setPicker(null)} />}
     <div className="lb-toolbar"><div className="lb-history"><button aria-label="배치 실행 취소" title="실행 취소 · Ctrl+Z" disabled={!past.length} onClick={undo}><Undo2 size={14} /></button><button aria-label="배치 다시 실행" title="다시 실행 · Ctrl+Shift+Z" disabled={!future.length} onClick={redo}><Redo2 size={14} /></button><span /></div><div className="lb-steps">{platform === "web" ? <><button aria-pressed={phase === "desktop"} onClick={() => { setPhase("desktop"); setDevice("desktop"); }}><span>1</span>PC 만들기</button><ChevronRight size={12} /><button aria-pressed={phase === "responsive"} onClick={() => { setPhase("responsive"); setDevice("mobile"); }}><span>2</span>모바일 다듬기</button></> : <span className="lb-app-label"><Smartphone size={14} />앱 화면 만들기 · 375 × 667</span>}</div><details className="lb-file-menu"><summary className="lb-export"><Download size={14} /><span>내보내기</span><ChevronDown size={12} /></summary><div role="menu">
-      <button role="menuitem" disabled={exporting || !doc.nodes.length} onClick={e => { (e.currentTarget.closest("details") as HTMLDetailsElement).open = false; setExporting(true); }}><Code2 size={14} /><span><b>HTML 코드</b><small>PC · 모바일 한 파일 · 팔레트 색 포함</small></span></button>
-      <button role="menuitem" onClick={e => { (e.currentTarget.closest("details") as HTMLDetailsElement).open = false; exportLayout(); }}><FileJson size={14} /><span><b>구조 JSON</b><small>백업하거나 다른 브라우저로 옮길 때</small></span></button>
+      {!pro && <div className="lb-file-pro"><Lock size={13} /><span><b>내보내기는 Pro에서 열려요</b><small>무료 플랜에서는 만들고 저장까지 할 수 있어요.</small></span><Link href="/pricing">요금제 보기</Link></div>}
+      {EXPORTS.map(item => <button key={item.format} role="menuitem" disabled={!pro || !!exporting || !doc.nodes.length} onClick={e => { (e.currentTarget.closest("details") as HTMLDetailsElement).open = false; setExporting(item.format); }}><item.icon size={14} /><span><b>{item.name}{!pro && <i className="lb-pro-tag">Pro</i>}</b><small>{item.note}</small></span></button>)}
+      <button role="menuitem" disabled={!pro} onClick={e => { (e.currentTarget.closest("details") as HTMLDetailsElement).open = false; exportLayout(); }}><FileJson size={14} /><span><b>구조 JSON{!pro && <i className="lb-pro-tag">Pro</i>}</b><small>백업하거나 다른 브라우저로 옮길 때</small></span></button>
       <button role="menuitem" onClick={e => { (e.currentTarget.closest("details") as HTMLDetailsElement).open = false; importInput.current?.click(); }}><Download size={14} style={{ transform: "rotate(180deg)" }} /><span><b>구조 불러오기</b><small>내보낸 JSON으로 이어서 작업</small></span></button>
     </div></details><input ref={importInput} type="file" accept="application/json,.json" hidden onChange={e => { void importLayout(e.target.files?.[0]); e.target.value = ""; }} /></div>
     <div className="lb-body"><aside className="lb-controls" aria-label="레이어와 배치 속성"><div className="lb-control-heading"><Layers size={14} /><strong>레이어</strong><small>드래그로 이동</small></div><div className="lb-inserts"><button draggable onDragStart={e => beginDrag(e, { kind: "section" })} onClick={() => add("section")}><Plus size={12} />섹션</button><button draggable onDragStart={e => beginDrag(e, { kind: "frame" })} onClick={() => add("frame", node && !isComponentKind(node.kind) ? node.id : null)}><Frame size={12} />빈 프레임</button><button className="lb-library-open" aria-haspopup="dialog" aria-expanded={!!library} onClick={e => setLibrary(library ? null : anchorOf(e.currentTarget))}><Plus size={12} />컴포넌트 추가<small>{libraryItems.length}종</small></button></div><p className="lb-note">프레임을 섹션 안으로 드래그하세요.<br />배치와 간격부터 잡고, 컴포넌트는 나중에.</p><div className="lb-tree" onDragOver={e => e.preventDefault()} onDrop={e => drop(e, null)}>{platform === "web" && <button className={`lb-tree-node lb-tree-page ${selected ? "" : "active"}`} onClick={() => setSelected("")}><Monitor size={12} />페이지<small>{pageFrame.mode === "full" ? "화면 가득" : pageFrame.mode === "contained" ? `컨테이너 ${pageFrame.maxWidth}` : `컬럼 ${pageFrame.maxWidth}`}</small></button>}{doc.nodes.length ? renderTree(doc.nodes, null) : <p>아직 레이어가 없어요.<br />섹션을 추가해 시작하세요.</p>}<div className="lb-root-drop">페이지 끝으로 이동</div></div>
@@ -469,6 +489,12 @@ function InsetsEditor({ label, value, onChange }: { label: string; value: Insets
 }
 
 const NOOP = () => undefined;
+type ExportKind = "react" | "html" | "markdown";
+const EXPORTS: { format: ExportKind; name: string; note: string; icon: typeof Code2 }[] = [
+  { format: "react", name: "React 프로젝트", note: "개발자용 · Vite + React ZIP, 섹션별 컴포넌트", icon: Code2 },
+  { format: "markdown", name: "AI용 브리프", note: "바이브코딩용 · AI에게 붙여 넣는 MD 파일", icon: Bot },
+  { format: "html", name: "HTML 폴더", note: "index.html · 토큰 CSS · 이미지 ZIP", icon: FileCode2 },
+];
 function DeviceArtboard({ mobile, active, onActivate, onClear, onPage, onStyle, onResize, resizing, doc, selected, onSelect, onDrag, onAdd, headerPreview, hint, onHint, onDropHint, onLeave, removing, imageOver }: {
   headerPreview: string; mobile: boolean; active: boolean; onActivate: () => void; onClear: () => void; onPage: (part: string) => void; resizing: Resizing | null;
   onStyle: (id: string, kind: LayoutKind, handle: Element) => void;

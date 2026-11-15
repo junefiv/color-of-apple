@@ -60,7 +60,7 @@ function validPage(value: unknown): boolean {
     && later("asideQr", x => typeof x === "boolean") && later("asideStores", x => typeof x === "boolean") && later("asideAlign", x => x === "start" || x === "center");
 }
 export const baseLayout: LayoutStyle = { direction: "column", gap: 24, columns: 3, align: "stretch", justify: "start", padding: [32, 32, 32, 32], margin: [0, 0, 0, 0], height: 180, width: 240, sizing: "fill", hidden: false };
-const kindNames = { section: "섹션", frame: "빈 프레임", header: "헤더", hero: "히어로", cards: "카드 섹션", cta: "CTA", footer: "푸터", floating: "플로팅 버튼",
+export const kindNames = { section: "섹션", frame: "빈 프레임", header: "헤더", hero: "히어로", cards: "카드 섹션", cta: "CTA", footer: "푸터", floating: "플로팅 버튼",
   ...Object.fromEntries(blockSpecs.map(spec => [spec.kind, spec.name])) } as Record<LayoutKind, string>;
 // Cards, CTAs and footers paint their background across the layer, so the layer's padding is
 // their inner spacing; phones start from a tighter override.

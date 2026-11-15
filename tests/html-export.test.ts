@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { buildHtmlDocument, cleanArtboard, selectorUses, usedClasses } from "../src/lib/html-export";
+import { cleanArtboard, sectionNames, selectorUses, usedClasses } from "../src/lib/html-export";
 
 describe("html export", () => {
   it("keeps a rule only when every class it names is in the page", () => {
@@ -23,12 +23,8 @@ describe("html export", () => {
     expect(clean.textContent).toContain("제목");
     expect(usedClasses([clean]).has("matchu-preview")).toBe(true);
   });
-  it("switches the PC and mobile renders at 768px and escapes the title", () => {
-    const html = buildHtmlDocument({ title: "A <b>", vars: "--color-primary-default:#123456", css: ".x{color:red}", font: "system-ui", desktop: "<p>pc</p>", mobile: "<p>m</p>" });
-    expect(html).toContain("<title>A &lt;b&gt;</title>");
-    expect(html).toContain("@media (max-width: 767px){.coa-page.coa-desktop{display:none}");
-    expect(html).toContain("--color-primary-default:#123456");
-    const appOnly = buildHtmlDocument({ title: "앱", vars: "", css: "", font: "system-ui", mobile: "<p>m</p>" });
-    expect(appOnly).not.toContain("coa-desktop");
+  it("names top-level layers after their kind, numbering repeats", () => {
+    const names = sectionNames([{ id: "a", kind: "header" }, { id: "b", kind: "cards" }, { id: "c", kind: "cards" }, { id: "d", kind: "appbanner" }]);
+    expect([...names.values()]).toEqual(["Header", "Cards", "Cards2", "Appbanner"]);
   });
 });
