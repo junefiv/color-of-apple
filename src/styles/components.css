@@ -199,5 +199,5 @@
 .lb-page-aside [data-edit]:hover{outline:calc(1.5px / var(--lb-scale,1)) dashed color-mix(in oklab,var(--color-primary-default,#5b5bd6) 80%,#fff);outline-offset:calc(4px / var(--lb-scale,1))}
 
 /* Settings: collapsible item rows */
-.lb-item-title{min-width:0;padding:4px 6px;border:0;background:none;color:#5c5c68;font-size:10px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.lb-item-title{min-width:0;padding:4px 6px;border:0;background:none;color:#5c5c68;font-size:12px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .lb-item-list{margin-top:6px}

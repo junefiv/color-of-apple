@@ -1,5 +1,6 @@
 import { chk, icon, img, list, rng, seg, sel, t, type BlockSpec, type Config } from "./block-schema";
 import { aligns, head, headDefaults, P, style, type Insets4 } from "./block-helpers";
+import { MOBILE_LABEL as ML, mobileMode as MM } from "./mobile-modes";
 
 // Second batch from the full gdweb crawl (WEB and MOBILE sections): shop and booking patterns, social
 // proof, and the app screens that recur in the mobile winners. Every visible word is a field.
@@ -68,7 +69,7 @@ const productItem = (i: number): Config => ({ name: pick(["데일리 니트 가�
 const productlist: BlockSpec = { kind: "productlist", name: "상품 목록", group: "쇼핑 · 예약", note: "가격 · 할인 · 찜 · 정렬", place: "flow",
   sections: [head("섹션 제목"),
     { part: "items", title: "상품", fields: [list("items", "상품", [t("name", "상품명", 60), t("brand", "브랜드", 30), t("price", "가격", 20), t("sale", "할인율", 10), t("badge", "배지", 12), t("rating", "평점 표시", 30), img("image", "상품 사진", 1000)], productItem, { max: 24, add: "상품 추가", title: "name" })] },
-    { part: "layout", title: "배치", fields: [rng("columns", "PC 열 수", 2, 6, 1, "열"), seg("mobileColumns", "모바일 열 수", [["2", "2열"], ["1", "1열"]]), sel("ratio", "사진 비율", [["3:4", "3:4 세로"], ["1:1", "1:1"], ["4:5", "4:5"]]), chk("wish", "찜 하트"), chk("cart", "장바구니 버튼"), t("cartText", "장바구니 문구", 20), chk("toolbar", "정렬 · 필터 줄"), t("sortText", "정렬 이름 (쉼표)", 80), t("filterText", "필터 문구", 20)] },
+    { part: "layout", title: "배치", fields: [rng("columns", "PC 열 수", 2, 6, 1, "열"), seg("mobileColumns", ML, [["2", MM.two], ["1", MM.stack]]), sel("ratio", "사진 비율", [["3:4", "3:4 세로"], ["1:1", "1:1"], ["4:5", "4:5"]]), chk("wish", "찜 하트"), chk("cart", "장바구니 버튼"), t("cartText", "장바구니 문구", 20), chk("toolbar", "정렬 · 필터 줄"), t("sortText", "정렬 이름 (쉼표)", 80), t("filterText", "필터 문구", 20)] },
     style(rng("radius", "사진 모서리", 0, 24))],
   defaults: () => ({ ...headDefaults("NEW ARRIVALS", "이번 주 신상품", ""), more: "전체 보기", items: repeat(8, productItem), columns: 4, mobileColumns: "2", ratio: "3:4", wish: true, cart: false, cartText: "담기", toolbar: true, sortText: "추천순, 신상품순, 낮은 가격순, 높은 가격순", filterText: "필터", radius: 8 }),
   presets: [P("shop", "쇼핑 그리드", "4열 · 찜 · 정렬 줄", { columns: 4, toolbar: true, wish: true }), P("minimal", "미니멀", "정렬 줄 없이 3열", { columns: 3, toolbar: false, ratio: "4:5" }), P("cart", "담기 버튼", "카드마다 장바구니", { columns: 4, cart: true, ratio: "1:1" })],

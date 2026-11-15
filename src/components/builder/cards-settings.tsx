@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cardItem, type CardItem, type CardsConfig } from "@/lib/cards-config";
+import { MOBILE_LABEL, mobileMode } from "@/lib/mobile-modes";
 import type { HeaderIcon } from "@/lib/header-config";
 import { accents } from "./header-settings";
 import { IconOptions } from "./icons";
@@ -54,6 +55,6 @@ export function CardsSettings({ config, onChange, focus }: { config: CardsConfig
               : <label className="lb-field">아이콘<select value={item.icon} onChange={e => setItem(i, { icon: e.target.value as HeaderIcon })}><option value="">기본</option><IconOptions /></select></label>}</div>
           {showMedia && config.media !== "icon" && config.media !== "none" && <ImagePicker label="이미지" value={item.image} max={1200} onChange={image => setItem(i, { image })} />}</>} /></section>
     <section data-part="mobile"><strong>모바일</strong>
-      <Segment label="폰에서는" value={config.mobileMode} options={[["stack", "1열로 쌓기"], ["two", "2열"], ["swipe", "옆으로 넘기기"]]} onChange={mobileMode => set({ mobileMode })} /></section>
+      <Segment label={MOBILE_LABEL} value={config.mobileMode} options={[["stack", mobileMode.stack], ["two", mobileMode.two], ["swipe", mobileMode.swipe]]} onChange={mobileMode => set({ mobileMode })} /></section>
   </div>;
 }

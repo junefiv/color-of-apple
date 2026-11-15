@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { baseLayout, moveLayoutNode, pageOf, resolveLayout, validLayoutDocument, type LayoutNode } from "../src/lib/page-layout";
+import { baseLayout, layoutFlow, moveLayoutNode, pageOf, resolveLayout, validLayoutDocument, type LayoutNode } from "../src/lib/page-layout";
 const node = (id: string, children: LayoutNode[] = []): LayoutNode => ({ id, name: id, kind: "frame", desktop: { ...baseLayout, direction: "row" }, mobile: {}, children });
 describe("page layout", () => {
   it("inherits desktop spacing while stacking mobile children", () => {
@@ -33,5 +33,20 @@ describe("page layout", () => {
     expect(validLayoutDocument({ ...doc, page: { mode: "column", maxWidth: 200, backdrop: "subtle", aside: true } })).toBe(false);
     expect(validLayoutDocument({ ...doc, page: { mode: "boxed", maxWidth: 1200, backdrop: "subtle", aside: false } })).toBe(false);
     expect(validLayoutDocument({ ...doc, nodes: [{ ...node("a"), bleed: "yes" }] })).toBe(false);
+  });
+  it("keeps a desktop swipe row as a row on mobile and lets mobile opt into swipe alone", () => {
+    const strip = node("s"); strip.desktop.swipe = true;
+    expect(resolveLayout(strip, true).direction).toBe("row");
+    const plain = node("p"); plain.mobile.swipe = true;
+    expect(resolveLayout(plain, false).swipe).toBeUndefined();
+    expect(layoutFlow(resolveLayout(plain, true), 667)).toMatchObject({ display: "flex", flexDirection: "row", overflowX: "auto" });
+  });
+  it("maps screen height and reverse order onto the flow styles", () => {
+    expect(layoutFlow({ ...baseLayout, screen: true, height: 200 }, 1024).minHeight).toBe(1024);
+    expect(layoutFlow({ ...baseLayout, direction: "row", reverse: true }, 1024).flexDirection).toBe("row-reverse");
+  });
+  it("accepts layouts saved without the newer flags and rejects malformed ones", () => {
+    expect(validLayoutDocument({ version: 1, menu: "overlay", nodes: [node("a")] })).toBe(true);
+    expect(validLayoutDocument({ version: 1, menu: "overlay", nodes: [{ ...node("a"), mobile: { swipe: "yes" } }] })).toBe(false);
   });
 });

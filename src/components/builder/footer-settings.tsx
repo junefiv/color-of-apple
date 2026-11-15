@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { footerTexts } from "@/lib/component-texts";
+import { MOBILE_LABEL, mobileMode } from "@/lib/mobile-modes";
 import { TextOverrides } from "./text-overrides";
 import type { FooterConfig } from "@/lib/footer-config";
 import { ImagePicker } from "./image-picker";
@@ -37,6 +38,6 @@ export function FooterSettings({ config, onChange, focus }: { config: FooterConf
       <div className="lb-hd-checks">{check("sns", "SNS 아이콘")}{check("familySite", "패밀리 사이트")}{check("backToTop", "맨 위로 버튼")}</div>
       <TextOverrides defs={footerTexts} texts={config.texts} onChange={texts => set({ texts })} /></section>
     <section data-part="mobile"><strong>모바일</strong>
-      <Segment label="사이트맵 열" value={config.mobileColumns} options={[["accordion", "아코디언"], ["two", "2열"], ["stack", "1열"]]} onChange={mobileColumns => set({ mobileColumns })} /></section>
+      <Segment label={`${MOBILE_LABEL} · 사이트맵 열`} value={config.mobileColumns} options={[["accordion", mobileMode.accordion], ["two", mobileMode.two], ["stack", mobileMode.stack]]} onChange={mobileColumns => set({ mobileColumns })} /></section>
   </div>;
 }

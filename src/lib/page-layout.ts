@@ -21,7 +21,14 @@ export type LayoutStyle = {
   width: number;
   sizing: "fill" | "fixed";
   hidden: boolean;
+  // Optional so layouts saved before these existed still load. `screen` stretches the layer to the
+  // viewport height, `reverse` flips child order (image/text swaps), `swipe` turns the children into a
+  // horizontal scroll strip, the usual mobile fallback for card rows.
+  screen?: boolean;
+  reverse?: boolean;
+  swipe?: boolean;
 };
+export const layoutFlags = ["screen", "reverse", "swipe"] as const;
 // `bleed` lets a page-level layer ignore the contained page width and run edge to edge.
 export type LayoutKind = "section" | "frame" | "header" | "hero" | "cards" | "cta" | "footer" | "floating" | BlockKindName;
 export type LayoutNode = { id: string; name: string; kind: LayoutKind; desktop: LayoutStyle; mobile: Partial<LayoutStyle>; children: LayoutNode[]; bleed?: boolean;
@@ -92,7 +99,19 @@ export function migrateLayoutDocument(doc: LayoutDocument): LayoutDocument {
 // Mobile follows desktop values until a property is explicitly overridden.
 // Horizontal/grid layouts receive a natural single-column mobile fallback.
 export function resolveLayout(node: LayoutNode, mobile: boolean): LayoutStyle {
-  return mobile ? { ...node.desktop, direction: "column", columns: 1, ...node.mobile } : node.desktop;
+  // A desktop swipe row stays a row on mobile; everything else stacks unless mobile says otherwise.
+  return mobile ? { ...node.desktop, ...(node.desktop.swipe ? {} : { direction: "column" as const, columns: 1 }), ...node.mobile } : node.desktop;
+}
+// Flex/grid styles for a resolved layout; the builder artboards and any export share this mapping.
+export function layoutFlow(s: LayoutStyle, viewportHeight: number) {
+  const flex = s.direction === "row" || s.swipe ? "row" : "column";
+  return {
+    display: s.direction === "grid" && !s.swipe ? "grid" : "flex",
+    flexDirection: (s.reverse ? `${flex}-reverse` : flex) as "row" | "column" | "row-reverse" | "column-reverse",
+    gridTemplateColumns: s.direction === "grid" && !s.swipe ? `repeat(${s.columns}, minmax(0,1fr))` : undefined,
+    minHeight: s.screen ? Math.max(s.height, viewportHeight) : s.height,
+    ...(s.swipe ? { overflowX: "auto" as const, flexWrap: "nowrap" as const, scrollSnapType: "x mandatory", overscrollBehaviorX: "contain" as const } : {}),
+  };
 }
 export function findLayoutNode(nodes: LayoutNode[], id: string): LayoutNode | undefined {
   for (const node of nodes) { if (node.id === id) return node; const child = findLayoutNode(node.children, id); if (child) return child; }
@@ -132,7 +151,7 @@ export function validLayoutDocument(value: unknown): value is LayoutDocument {
       if (key === "hidden") return typeof v[key] === "boolean";
       if (key === "padding" || key === "margin") return Array.isArray(v[key]) && v[key].length === 4 && v[key].every(n => Number.isFinite(n) && n >= 0 && n <= 1440);
       return typeof v[key] === "number" && Number.isFinite(v[key]) && v[key] >= (key === "columns" ? 1 : 0) && v[key] <= (key === "columns" ? 12 : 1440);
-    });
+    }) && layoutFlags.every(key => v[key] === undefined || typeof v[key] === "boolean");
   }
   function nodes(value: unknown, depth: number): boolean {
     return depth < 16 && Array.isArray(value) && value.every(n => {

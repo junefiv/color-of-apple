@@ -448,24 +448,28 @@
 .lb-overlay .lb-layout-node:not(.lb-kind-floating){outline:none!important;padding:0!important}
 .lb-overlay .lb-kind-progress{pointer-events:none}
 .lb-overlay-chips{position:absolute;bottom:8px;left:8px;z-index:41;display:flex;flex-wrap:wrap;gap:4px;max-width:calc(100% - 16px)}
-.lb-overlay-chips>button{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border:0;border-radius:999px;background:#1d1d22d9;color:#fff;font-size:9px;cursor:pointer}
+.lb-overlay-chips>button{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border:0;border-radius:999px;background:#1d1d22d9;color:#fff;font-size:11.5px;cursor:pointer}
 .lb-overlay-chips>button:hover{background:#1d1d22}
 .lb-library{width:580px}
 .lb-library>section{margin-top:10px}
-.lb-library h4{margin:0 0 6px;font-size:9.5px;font-weight:650;color:#8b8b97}
+.lb-library h4{margin:0 0 6px;font-size:12px;font-weight:650;color:#8b8b97}
 .lb-library-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
 .lb-library-grid>button{display:flex;align-items:flex-start;gap:7px;padding:8px;border:1px solid #ececf0;border-radius:7px;background:#fcfcfd;color:#303039;font:inherit;text-align:left;cursor:pointer}
 .lb-library-grid>button:hover{border-color:#3c3c46;background:#fff}
 .lb-library-grid>button>svg{flex:none;margin-top:1px;color:#5a5a66}
 .lb-library-grid span{display:grid;gap:1px;min-width:0}
-.lb-library-grid b{font-size:10.5px;font-weight:650}
-.lb-library-grid small{font-size:8.5px;color:#9b9ba7;line-height:1.35}
+.lb-library-grid b{font-size:12.5px;font-weight:650}
+.lb-library-grid small{font-size:11px;color:#9b9ba7;line-height:1.35}
 .lb-library-open{flex-basis:100%;justify-content:center;font-weight:650}
-.lb-library-open>small{margin-left:4px;font-size:8px;color:#9b9ba7}
-.lb-block-list>small{display:block;margin-top:6px;font-size:9px;color:#9a9aa8}
+.lb-library-open>small{margin-left:4px;font-size:11px;color:#9b9ba7}
+.lb-block-list>small{display:block;margin-top:6px;font-size:11.5px;color:#9a9aa8}
 .lb-thumb-block{flex:1;display:flex;flex-direction:column}
 .lb-thumb-block>.bk{flex:none}
 .lb-thumb-layer{position:absolute;inset:0}
 /* On the phone artboard parked layers show as icons only (names on hover) so they keep off the page. */
 .lb-overlay-chips[data-compact]>button>span{display:none}
 .lb-overlay-chips[data-compact]>button{padding:5px}
+.lb-library-search{display:flex;align-items:center;gap:7px;margin:10px 0 4px;padding:0 10px;height:36px;border:1px solid #e3e3e9;border-radius:8px;background:#fcfcfd;color:#8a8a96}
+.lb-library-search:focus-within{border-color:#7a7a88}
+.lb-library-search>input{flex:1;min-width:0;border:0;background:none;outline:none;font:inherit;font-size:13px;color:#303039}
+.lb-library-empty{padding:18px 0;text-align:center;color:#8a8a96}

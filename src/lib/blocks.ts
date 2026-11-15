@@ -1,6 +1,7 @@
 import { chk, icon, img, list, rng, seg, sel, t, type BlockSpec, type Config } from "./block-schema";
 import { aligns, head, headDefaults, P, style, styleDefaults } from "./block-helpers";
 import { moreBlockPadding, moreBlockSpecs, MORE_KINDS } from "./blocks-more";
+import { MOBILE_LABEL as ML, mobileMode as MM } from "./mobile-modes";
 
 // The remaining common components from the survey (docs/component-patterns.md, "사이트별 보유 빈도"):
 // body sections, sub-page and information blocks, layers that float over the page, and app patterns.
@@ -63,7 +64,7 @@ const tabs: BlockSpec = { kind: "tabs", name: "탭", group: "본문 섹션", not
     { part: "items", title: "탭", note: "미리보기에서 탭을 누르면 그 탭 내용이 보여요.", fields: [list("items", "탭", [t("label", "탭 이름", 20), t("title", "내용 제목", 60), t("body", "내용", 300, { multiline: true }), img("image", "이미지")],
       i => ({ label: ["전체", "제품", "서비스", "고객 사례", "기술"][i % 5], title: ["모든 것을 한눈에", "우리 제품", "서비스 안내", "고객 이야기", "핵심 기술"][i % 5], body: "탭마다 다른 내용을 보여 줄 수 있어요. 한두 문장으로 설명해 주세요.", image: "" }), { max: 8, add: "탭 추가" })] },
     { part: "layout", title: "모양", fields: [seg("tabStyle", "탭 모양", [["underline", "밑줄"], ["pill", "알약"], ["box", "칸"], ["vertical", "세로"]]), seg("panel", "내용", [["media", "사진 + 글"], ["text", "글만"], ["image", "사진만"]]),
-      seg("tabAlign", "탭 정렬", [["start", "왼쪽"], ["center", "가운데"], ["stretch", "꽉 채움"]]), seg("mobile", "모바일 탭", [["scroll", "가로 스크롤"], ["accordion", "아코디언"]])] },
+      seg("tabAlign", "탭 정렬", [["start", "왼쪽"], ["center", "가운데"], ["stretch", "꽉 채움"]]), seg("mobile", `${ML} · 탭`, [["scroll", MM.swipe], ["accordion", MM.accordion]])] },
     style(rng("radius", "모서리", 0, 32))],
   defaults: () => ({ ...headDefaults("CATEGORY", "한눈에 둘러보기"), items: Array.from({ length: 4 }, (_, i) => ({ label: ["전체", "제품", "서비스", "고객 사례"][i], title: ["모든 것을 한눈에", "우리 제품", "서비스 안내", "고객 이야기"][i], body: "탭마다 다른 내용을 보여 줄 수 있어요. 한두 문장으로 설명해 주세요.", image: "" })), tabStyle: "underline", panel: "media", tabAlign: "start", mobile: "scroll", radius: 16 }),
   presets: [P("underline", "밑줄 탭", "제목 아래 가로 탭 · 사진 + 글", { tabStyle: "underline", panel: "media", tabAlign: "start" }), P("pill", "알약 탭", "가운데 정렬 둥근 버튼", { tabStyle: "pill", panel: "media", tabAlign: "center" }),
@@ -84,7 +85,7 @@ const video: BlockSpec = { kind: "video", name: "영상 섹션", group: "본문 
 const popup: BlockSpec = { kind: "popup", name: "레이어 팝업", group: "위에 뜨는 것", note: "공지 · 오늘 하루 보지 않기", place: "overlay",
   sections: [{ part: "copy", title: "내용", fields: [t("title", "제목", 60), t("body", "내용", 300, { multiline: true }), img("image", "이미지"), t("cta", "버튼", 24, { placeholder: "비우면 숨김" })] },
     { part: "layout", title: "모양", fields: [seg("kind", "위치", [["center", "가운데"], ["corner", "오른쪽 아래"], ["full", "전체 화면"]]), seg("size", "크기", [["small", "작게"], ["medium", "보통"], ["large", "크게"]]),
-      rng("pages", "공지 장 수", 1, 5, 1, "장"), seg("dismiss", "닫기", [["both", "오늘 하루 + 닫기"], ["close", "닫기만"]]), t("todayText", "오늘 하루 문구", 30), t("closeText", "닫기 문구", 12), chk("dim", "뒤 배경 어둡게"), seg("mobile", "모바일", [["sheet", "아래에서 시트"], ["center", "가운데 그대로"]])] },
+      rng("pages", "공지 장 수", 1, 5, 1, "장"), seg("dismiss", "닫기", [["both", "오늘 하루 + 닫기"], ["close", "닫기만"]]), t("todayText", "오늘 하루 문구", 30), t("closeText", "닫기 문구", 12), chk("dim", "뒤 배경 어둡게"), seg("mobile", ML, [["sheet", MM.sheet], ["center", MM.keep]])] },
     style(rng("radius", "모서리", 0, 32))],
   defaults: () => ({ title: "공지사항", body: "11월 2일부터 본점 주소가 변경됩니다.\n자세한 내용을 확인해 주세요.", image: "", cta: "자세히 보기", kind: "center", size: "medium", pages: 1, dismiss: "both", todayText: "오늘 하루 보지 않기", closeText: "닫기", dim: true, mobile: "sheet", surface: "surface", accent: "primary", radius: 16 }),
   presets: [P("notice", "공지 팝업", "가운데 · 오늘 하루 보지 않기", { kind: "center", size: "medium", pages: 1, dismiss: "both", dim: true }), P("slider", "여러 장 공지", "넘겨 보는 공지 3장", { kind: "center", size: "medium", pages: 3 }),
@@ -211,7 +212,7 @@ const product: BlockSpec = { kind: "product", name: "제품 · 포트폴리오 �
 const table: BlockSpec = { kind: "table", name: "표", group: "정보 · 서브 페이지", note: "가격 · 스펙 · 비교 표", place: "flow",
   sections: [head("표 제목"),
     { part: "data", title: "표 내용", note: "칸은 쉼표로 나눠요.", fields: [t("columns", "머리글 (쉼표)", 200), list("rows", "줄", [t("cells", "칸 (쉼표)", 300)], i => ({ cells: [`항목 ${i + 1}, 기본, 포함, 포함`][0] }), { max: 16, add: "줄 추가", title: "cells" })] },
-    { part: "layout", title: "모양", fields: [seg("style", "모양", [["line", "줄"], ["striped", "줄무늬"], ["boxed", "칸"], ["compare", "비교 강조"]]), rng("highlight", "강조할 열", 0, 6, 1, "번째"), seg("mobile", "모바일", [["scroll", "가로 스크롤"], ["cards", "카드로"]])] },
+    { part: "layout", title: "모양", fields: [seg("style", "모양", [["line", "줄"], ["striped", "줄무늬"], ["boxed", "칸"], ["compare", "비교 강조"]]), rng("highlight", "강조할 열", 0, 6, 1, "번째"), seg("mobile", ML, [["scroll", MM.swipe], ["cards", MM.cards]])] },
     style()],
   defaults: () => ({ ...headDefaults("PRICING", "요금 비교", ""), columns: "구분, 베이직, 프로, 엔터프라이즈", rows: ["월 요금, 무료, 29,000원, 문의", "프로젝트 수, 3개, 무제한, 무제한", "팀원, 1명, 10명, 무제한", "기술 지원, 메일, 메일 · 채팅, 전담 매니저"].map(cells => ({ cells })), style: "compare", highlight: 2, mobile: "scroll" }),
   presets: [P("compare", "요금 비교", "가운데 열 강조", { style: "compare", highlight: 2 }), P("line", "스펙 표", "가는 줄 표", { style: "line", highlight: 0 }), P("striped", "줄무늬", "한 줄씩 배경", { style: "striped", highlight: 0 }), P("cards", "모바일 카드", "폰에서 줄마다 카드", { style: "boxed", mobile: "cards" })],
